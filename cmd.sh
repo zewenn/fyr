@@ -1,0 +1,1 @@
+zig run cmd.zig -l c
