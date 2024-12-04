@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const rlz = @import("raylib-zig");
 const Allocator = @import("std").mem.Allocator;
-const String = @import("./src/engine/strings.m.zig").String;
+const String = @import("./.zap/libs/[string]/index.zig");
 
 const BUF_128MB = 1024000000;
 
@@ -211,12 +211,164 @@ pub fn build(b: *std.Build) !void {
         break :Scenes;
     }
 
+    Libs: {
+        const output_file = std.fs.cwd().createFile(
+            ".zap/.codegen/libs.zig",
+            .{
+                .truncate = true,
+                .exclusive = false,
+            },
+        ) catch unreachable;
+
+        var writer = output_file.writer();
+        writer.writeAll("") catch unreachable;
+
+        const scene_directories = getEntries(
+            "./.zap/libs/",
+            allocator,
+            true,
+            true,
+        );
+        defer {
+            for (scene_directories) |item| {
+                allocator.free(item);
+            }
+            allocator.free(scene_directories);
+        }
+
+        for (scene_directories) |shallow_entry_path| {
+            const libname = shallow_entry_path[1 .. shallow_entry_path.len - 1];
+
+            var shallow_entry_string = String.init_with_contents(
+                allocator,
+                shallow_entry_path,
+            ) catch @panic("Couldn't create shallow string");
+            defer shallow_entry_string.deinit();
+
+            if (!shallow_entry_string.startsWith("[") or !shallow_entry_string.endsWith("]")) continue;
+
+            var sub_path_string = String.init_with_contents(allocator, "./src/app/") catch unreachable;
+            defer sub_path_string.deinit();
+
+            sub_path_string.concat(shallow_entry_path) catch @panic("Failed to concat wtf");
+
+            const sub_path = (sub_path_string.toOwned() catch unreachable).?;
+            defer allocator.free(sub_path);
+
+            const script_paths = getEntries(
+                sub_path,
+                allocator,
+                false,
+                false,
+            );
+            defer {
+                for (script_paths) |item| {
+                    allocator.free(item);
+                }
+                // allocator.free(script_paths);
+            }
+
+            for (script_paths) |path| {
+                var string_path_from_cwd = sub_path_string.clone() catch @panic("Failed to initalise string");
+                defer string_path_from_cwd.deinit();
+
+                string_path_from_cwd.concat("/") catch @panic("Couldn't concat!");
+                string_path_from_cwd.concat(path) catch @panic("Couldn't concat!");
+
+                const path_from_cwd = (string_path_from_cwd.toOwned() catch
+                    @panic("Couldn't make into owned slice")).?;
+                defer allocator.free(path_from_cwd);
+
+                // pub const {s} = @import("../libs/{s}/index.zig"); \n
+
+                writer.print("pub const {s} = @import(\"../libs/[{s}]/index.zig\");\n", .{ libname, libname }) catch unreachable;
+            }
+        }
+        break :Libs;
+    }
+
+    Modules: {
+        const output_file = std.fs.cwd().createFile(
+            ".zap/.codegen/modules.zig",
+            .{
+                .truncate = true,
+                .exclusive = false,
+            },
+        ) catch unreachable;
+
+        var writer = output_file.writer();
+        writer.writeAll("") catch unreachable;
+
+        const scene_directories = getEntries(
+            "./.zap/modules/",
+            allocator,
+            true,
+            true,
+        );
+        defer {
+            for (scene_directories) |item| {
+                allocator.free(item);
+            }
+            allocator.free(scene_directories);
+        }
+
+        for (scene_directories) |shallow_entry_path| {
+            const libname = shallow_entry_path[1 .. shallow_entry_path.len - 1];
+
+            var shallow_entry_string = String.init_with_contents(
+                allocator,
+                shallow_entry_path,
+            ) catch @panic("Couldn't create shallow string");
+            defer shallow_entry_string.deinit();
+
+            if (!shallow_entry_string.startsWith("[") or !shallow_entry_string.endsWith("]")) continue;
+
+            var sub_path_string = String.init_with_contents(allocator, "./src/app/") catch unreachable;
+            defer sub_path_string.deinit();
+
+            sub_path_string.concat(shallow_entry_path) catch @panic("Failed to concat wtf");
+
+            const sub_path = (sub_path_string.toOwned() catch unreachable).?;
+            defer allocator.free(sub_path);
+
+            const script_paths = getEntries(
+                sub_path,
+                allocator,
+                false,
+                false,
+            );
+            defer {
+                for (script_paths) |item| {
+                    allocator.free(item);
+                }
+                // allocator.free(script_paths);
+            }
+
+            for (script_paths) |path| {
+                var string_path_from_cwd = sub_path_string.clone() catch @panic("Failed to initalise string");
+                defer string_path_from_cwd.deinit();
+
+                string_path_from_cwd.concat("/") catch @panic("Couldn't concat!");
+                string_path_from_cwd.concat(path) catch @panic("Couldn't concat!");
+
+                const path_from_cwd = (string_path_from_cwd.toOwned() catch
+                    @panic("Couldn't make into owned slice")).?;
+                defer allocator.free(path_from_cwd);
+
+                // pub const {s} = @import("../libs/{s}/index.zig"); \n
+
+                writer.print("pub const {s} = @import(\"../libs/[{s}]/index.zig\");\n", .{ libname, libname }) catch unreachable;
+            }
+        }
+        break :Modules;
+    }
+
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
         .name = "OverLife",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/app/main.zig"),
         .optimize = optimize,
         .target = target,
     });
@@ -247,7 +399,7 @@ pub fn build(b: *std.Build) !void {
 
     //web exports are completely separate
     if (target.query.os_tag == .emscripten) {
-        const exe_lib = rlz.emcc.compileForEmscripten(b, "OverLife", "src/main.zig", target, optimize);
+        const exe_lib = rlz.emcc.compileForEmscripten(b, "OverLife", "src/app/main.zig", target, optimize);
 
         exe_lib.linkLibrary(raylib_artifact);
         exe_lib.root_module.addImport("raylib", raylib);
@@ -288,7 +440,7 @@ const Segment = struct {
 /// Caller owns the returned memory.
 /// Returns the path of the entires.
 fn getEntries(files_dir: []const u8, allocator: Allocator, shallow: bool, include_dirs: bool) [][]const u8 {
-    var dir = std.fs.cwd().openDir(files_dir, .{ .iterate = true }) catch unreachable;
+    var dir = std.fs.cwd().openDir(files_dir, .{ .iterate = true }) catch return @constCast(&[_][]const u8{""});
     defer dir.close();
 
     var result = std.ArrayList([]const u8).init(allocator);
