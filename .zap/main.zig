@@ -7,6 +7,7 @@ pub const engine = @import("./.codegen/modules.zig");
 pub const Vector2 = libs.raylib.Vector2;
 pub const Vector3 = libs.raylib.Vector3;
 pub const Vector4 = libs.raylib.Vector4;
+pub const Rectangle = libs.raylib.Rectangle;
 
 pub fn changeType(comptime T: type, value: anytype) ?T {
     return switch (@typeInfo(T)) {
@@ -14,18 +15,28 @@ pub fn changeType(comptime T: type, value: anytype) ?T {
             .Int, .ComptimeInt => @as(T, @intCast(value)),
             .Float, .ComptimeFloat => @as(T, @intFromFloat(value)),
             .Bool => @as(T, @intFromBool(value)),
+            .Enum => @as(T, @intFromEnum(value)),
             else => null,
         },
         .Float, .ComptimeFloat => switch (@typeInfo(@TypeOf(value))) {
             .Int, .ComptimeInt => @as(T, @floatFromInt(value)),
             .Float, .ComptimeFloat => @as(T, @floatCast(value)),
             .Bool => @as(T, @floatFromInt(@intFromBool(value))),
+            .Enum => @as(T, @floatFromInt(@intFromEnum(value))),
             else => null,
         },
         .Bool => switch (@typeInfo(@TypeOf(value))) {
             .Int, .ComptimeInt => value != 0,
             .Float, .ComptimeFloat => @as(isize, @intFromFloat(@round(value))) != 0,
             .Bool => value,
+            .Enum => @as(isize, @intFromEnum(value)) != 0,
+            else => null,
+        },
+        .Enum => switch (@typeInfo(@TypeOf(value))) {
+            .Int, .ComptimeInt => @enumFromInt(value),
+            .Float, .ComptimeFloat => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
+            .Bool => @enumFromInt(@intFromBool(value)),
+            .Enum => @enumFromInt(@as(isize, @intFromEnum(value))),
             else => null,
         },
         else => Catch: {
@@ -38,26 +49,43 @@ pub fn changeType(comptime T: type, value: anytype) ?T {
     };
 }
 
-pub fn Vec2(x: anytype, y: anytype) libs.raylib.Vector2 {
-    return libs.raylib.Vector2{
-        .x = changeType(f32, x) orelse 0,
-        .y = changeType(f32, y) orelse 0,
+pub fn tof32(value: anytype) f32 {
+    return changeType(f32, value) orelse 0;
+}
+
+pub fn Vec2(x: anytype, y: anytype) Vector2 {
+    return Vector2{
+        .x = tof32(x),
+        .y = tof32(y),
     };
 }
 
-pub fn Vec3(x: anytype, y: anytype, z: anytype) libs.raylib.Vector3 {
-    return libs.raylib.Vector3{
-        .x = changeType(f32, x) orelse 0,
-        .y = changeType(f32, y) orelse 0,
-        .z = changeType(f32, z) orelse 0,
+pub fn Vec3(x: anytype, y: anytype, z: anytype) Vector3 {
+    return Vector3{
+        .x = tof32(x),
+        .y = tof32(y),
+        .z = tof32(z),
     };
 }
 
-pub fn Vec4(x: anytype, y: anytype, z: anytype, w: anytype) libs.raylib.Vector4 {
-    return libs.raylib.Vector4{
-        .x = changeType(f32, x) orelse 0,
-        .y = changeType(f32, y) orelse 0,
-        .z = changeType(f32, z) orelse 0,
-        .w = changeType(f32, w) orelse 0,
+pub fn Vec4(x: anytype, y: anytype, z: anytype, w: anytype) Vector4 {
+    return Vector4{
+        .x = tof32(x),
+        .y = tof32(y),
+        .z = tof32(z),
+        .w = tof32(w),
     };
+}
+
+pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
+    return Rectangle{
+        .x = tof32(x),
+        .y = tof32(y),
+        .width = tof32(width),
+        .height = tof32(height),
+    };
+}
+
+pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
+    return try @constCast(&(try list.clone())).toOwnedSlice();
 }
