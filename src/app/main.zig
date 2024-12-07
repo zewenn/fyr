@@ -1,10 +1,9 @@
+const std = @import("std");
 const zap = @import(".zap");
 
 pub fn main() !void {
-    zap.libs.raylib.initWindow(1280, 710, "Test");
+    const myvec2 = zap.Vec2(false, 120);
+    std.log.debug("{any}", .{myvec2});
 
-    while (true) {
-        if (!zap.libs.raylib.windowShouldClose()) continue;
-        break;
-    }
+    _ = zap.changeType([]isize, null);
 }
