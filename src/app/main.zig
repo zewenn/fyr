@@ -24,4 +24,17 @@ pub fn main() !void {
         9.9,
         10,
     }));
+
+    try zap.init();
+    defer zap.deinit();
 }
+
+pub const Behaviour = zap.engine.behaviour{
+    .awake = struct {
+        pub fn callback() !void {}
+    }.callback,
+
+    .tick = struct {
+        pub fn callback() !void {}
+    }.callback,
+};

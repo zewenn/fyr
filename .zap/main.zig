@@ -9,10 +9,30 @@ pub const Vector3 = libs.raylib.Vector3;
 pub const Vector4 = libs.raylib.Vector4;
 pub const Rectangle = libs.raylib.Rectangle;
 
+const global_allocators = struct {
+    pub var gpa: AllocatorInstance(std.heap.GeneralPurposeAllocator(.{})) = .{};
+    pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
+    pub var page: Allocator = std.heap.page_allocator;
+
+    pub const types = enum {
+        gpa,
+        arena,
+        page,
+    };
+};
+
 pub const WrappedArray = engine.WrappedArray.WrappedArray;
 pub const WrappedArrayOptions = engine.WrappedArray.WrappedArrayOptions;
 pub const array = engine.WrappedArray.array;
 pub const arrayAdvanced = engine.WrappedArray.arrayAdvanced;
+
+pub fn init() !void {
+    try engine.eventloop.init();
+}
+
+pub fn deinit() void {
+    engine.eventloop.deinit();
+}
 
 pub fn changeType(comptime T: type, value: anytype) ?T {
     return switch (@typeInfo(T)) {
@@ -96,4 +116,29 @@ pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     defer cloned.deinit();
 
     return try cloned.toOwnedSlice();
+}
+
+pub fn AllocatorInstance(comptime T: type) type {
+    return struct {
+        interface: ?T = null,
+        allocator: ?Allocator = null,
+    };
+}
+
+pub fn getAllocator(comptime T: global_allocators.types) Allocator {
+    return switch (T) {
+        .gpa => global_allocators.gpa.allocator orelse Blk: {
+            global_allocators.gpa.interface = std.heap.GeneralPurposeAllocator(.{}){};
+            global_allocators.gpa.allocator = global_allocators.gpa.interface.?.allocator();
+
+            break :Blk global_allocators.gpa.allocator.?;
+        },
+        .arena => global_allocators.arena.allocator orelse Blk: {
+            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.gpa));
+            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
+
+            break :Blk global_allocators.arena.allocator.?;
+        },
+        .page => global_allocators.page,
+    };
 }
