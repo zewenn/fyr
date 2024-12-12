@@ -150,15 +150,13 @@ pub fn WrappedArrayAdvanced(comptime T: type, comptime options: WrappedArrayOpti
         pub fn fromArrayList(arr: std.ArrayList(T)) !Self {
             const allocator = arr.allocator;
 
-            const new = try cloneToOwnedSlice(T, arr);
-
             return Self{
-                .items = new,
+                .items = try cloneToOwnedSlice(T, arr),
                 .alloc = allocator,
             };
         }
 
-        pub fn clone(self: Self) Self {
+        pub fn clone(self: Self) !Self {
             const new = try self.alloc.alloc(T, self.items.len);
             std.mem.copyForwards(T, new, self.items);
 
@@ -168,8 +166,8 @@ pub fn WrappedArrayAdvanced(comptime T: type, comptime options: WrappedArrayOpti
             };
         }
 
-        pub fn reverse(self: Self) !Self {
-            const new = try self.alloc.alloc(T, self.items.len);
+        pub fn reverse(self: Self) Self {
+            const new = self.alloc.alloc(T, self.items.len) catch @panic("Allocation failiure!");
 
             for (0..self.items.len) |jndex| {
                 const index = self.items.len - 1 - jndex;
@@ -179,6 +177,20 @@ pub fn WrappedArrayAdvanced(comptime T: type, comptime options: WrappedArrayOpti
 
             return Self{
                 .items = new,
+                .alloc = self.alloc,
+            };
+        }
+
+        pub fn map(self: Self, comptime R: type, map_fn: fn (T) anyerror!R) !WrappedArray(R) {
+            var arrlist = std.ArrayList(R).init(self.alloc);
+            defer arrlist.deinit();
+
+            for (self.items) |item| {
+                try arrlist.append(try map_fn(item));
+            }
+
+            return WrappedArrayAdvanced(R, options){
+                .items = try cloneToOwnedSlice(R, arrlist),
                 .alloc = self.alloc,
             };
         }

@@ -34,13 +34,23 @@ pub fn main() !void {
 
     // try zap.engine.eventloop.call(zap.engine.eventloop.SceneEvents.awake);
 
-    var myarr = zap.array(xy, .{ xy{}, xy{ .x = 99 } });
+    var myarr = zap.array(xy, .{
+        xy{},
+        xy{ .x = 99 },
+    });
     defer myarr.deinit();
 
-    var reversed = try myarr.reverse();
+    var reversed = myarr.reverse();
     defer reversed.deinit();
 
-    for (reversed.items) |item| {
+    var mapped = try reversed.map(u8, struct {
+        pub fn c(val: xy) !u8 {
+            return val.x;
+        }
+    }.c);
+    defer mapped.deinit();
+
+    for (mapped.items) |item| {
         std.debug.print("{any}\n", .{item});
     }
 }
