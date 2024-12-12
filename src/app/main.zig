@@ -6,7 +6,7 @@ const registerScripts = @import("../.temp/script_run.zig").register;
 var x: f32 = 10;
 
 const xy = struct {
-    x: u8 = 88, 
+    x: u8 = 88,
     y: bool = true,
 };
 
@@ -34,10 +34,13 @@ pub fn main() !void {
 
     // try zap.engine.eventloop.call(zap.engine.eventloop.SceneEvents.awake);
 
-    var myarr = zap.array(xy, .{ xy{}, xy{} });
+    var myarr = zap.array(xy, .{ xy{}, xy{ .x = 99 } });
     defer myarr.deinit();
 
-    for (myarr.items) |item| {
+    var reversed = try myarr.reverse();
+    defer reversed.deinit();
+
+    for (reversed.items) |item| {
         std.debug.print("{any}\n", .{item});
     }
 }

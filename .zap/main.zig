@@ -135,6 +135,54 @@ pub fn WrappedArrayAdvanced(comptime T: type, comptime options: WrappedArrayOpti
             };
         }
 
+        pub fn fromArray(arr: []T, alloc: ?Allocator) !Self {
+            const allocator = alloc orelse std.heap.page_allocator;
+
+            const new = try allocator.alloc(T, arr.len);
+            std.mem.copyForwards(T, new, arr);
+
+            return Self{
+                .items = new,
+                .alloc = allocator,
+            };
+        }
+
+        pub fn fromArrayList(arr: std.ArrayList(T)) !Self {
+            const allocator = arr.allocator;
+
+            const new = try cloneToOwnedSlice(T, arr);
+
+            return Self{
+                .items = new,
+                .alloc = allocator,
+            };
+        }
+
+        pub fn clone(self: Self) Self {
+            const new = try self.alloc.alloc(T, self.items.len);
+            std.mem.copyForwards(T, new, self.items);
+
+            return Self{
+                .items = new,
+                .alloc = self.alloc,
+            };
+        }
+
+        pub fn reverse(self: Self) !Self {
+            const new = try self.alloc.alloc(T, self.items.len);
+
+            for (0..self.items.len) |jndex| {
+                const index = self.items.len - 1 - jndex;
+
+                new[jndex] = self.items[index];
+            }
+
+            return Self{
+                .items = new,
+                .alloc = self.alloc,
+            };
+        }
+
         pub fn deinit(self: *Self) void {
             self.alloc.free(self.items);
         }
