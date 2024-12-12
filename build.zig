@@ -369,7 +369,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
-        .name = "OverLife",
+        .name = ".zap",
         .root_source_file = b.path("src/app/main.zig"),
         .optimize = optimize,
         .target = target,

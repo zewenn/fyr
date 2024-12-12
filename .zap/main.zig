@@ -9,11 +9,16 @@ pub const Vector3 = libs.raylib.Vector3;
 pub const Vector4 = libs.raylib.Vector4;
 pub const Rectangle = libs.raylib.Rectangle;
 
+pub const WrappedArray = engine.WrappedArray.WrappedArray;
+pub const WrappedArrayOptions = engine.WrappedArray.WrappedArrayOptions;
+pub const array = engine.WrappedArray.array;
+pub const arrayAdvanced = engine.WrappedArray.arrayAdvanced;
+
 pub fn changeType(comptime T: type, value: anytype) ?T {
     return switch (@typeInfo(T)) {
         .Int, .ComptimeInt => switch (@typeInfo(@TypeOf(value))) {
             .Int, .ComptimeInt => @as(T, @intCast(value)),
-            .Float, .ComptimeFloat => @as(T, @intFromFloat(value)),
+            .Float, .ComptimeFloat => @as(T, @intFromFloat(@round(value))),
             .Bool => @as(T, @intFromBool(value)),
             .Enum => @as(T, @intFromEnum(value)),
             else => null,
@@ -87,124 +92,8 @@ pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
 }
 
 pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
-    return try @constCast(&(try list.clone())).toOwnedSlice();
-}
+    var cloned = try list.clone();
+    defer cloned.deinit();
 
-pub const WrappedArrayOptions = struct {
-    try_type_change: bool = true,
-};
-
-pub fn WrappedArray(comptime T: type) type {
-    return WrappedArrayAdvanced(T, .{});
-}
-
-pub fn WrappedArrayAdvanced(comptime T: type, comptime options: WrappedArrayOptions) type {
-    return struct {
-        const Self = @This();
-
-        alloc: Allocator = std.heap.page_allocator,
-        items: []T,
-
-        pub fn init(tuple: anytype, alloc: ?Allocator) !Self {
-            const allocator = alloc orelse std.heap.page_allocator;
-
-            var arrlist = std.ArrayList(T).init(allocator);
-            defer arrlist.deinit();
-
-            inline for (tuple) |item| {
-                const item_value = @as(
-                    ?T,
-                    if (T != @TypeOf(item))
-                        switch (options.try_type_change) {
-                            true => changeType(T, item),
-                            false => null,
-                        }
-                    else
-                        item,
-                );
-                if (item_value) |c| {
-                    try arrlist.append(c);
-                }
-            }
-
-            const slice = try arrlist.toOwnedSlice();
-
-            return Self{
-                .alloc = allocator,
-                .items = slice,
-            };
-        }
-
-        pub fn fromArray(arr: []T, alloc: ?Allocator) !Self {
-            const allocator = alloc orelse std.heap.page_allocator;
-
-            const new = try allocator.alloc(T, arr.len);
-            std.mem.copyForwards(T, new, arr);
-
-            return Self{
-                .items = new,
-                .alloc = allocator,
-            };
-        }
-
-        pub fn fromArrayList(arr: std.ArrayList(T)) !Self {
-            const allocator = arr.allocator;
-
-            return Self{
-                .items = try cloneToOwnedSlice(T, arr),
-                .alloc = allocator,
-            };
-        }
-
-        pub fn clone(self: Self) !Self {
-            const new = try self.alloc.alloc(T, self.items.len);
-            std.mem.copyForwards(T, new, self.items);
-
-            return Self{
-                .items = new,
-                .alloc = self.alloc,
-            };
-        }
-
-        pub fn reverse(self: Self) Self {
-            const new = self.alloc.alloc(T, self.items.len) catch @panic("Allocation failiure!");
-
-            for (0..self.items.len) |jndex| {
-                const index = self.items.len - 1 - jndex;
-
-                new[jndex] = self.items[index];
-            }
-
-            return Self{
-                .items = new,
-                .alloc = self.alloc,
-            };
-        }
-
-        pub fn map(self: Self, comptime R: type, map_fn: fn (T) anyerror!R) !WrappedArray(R) {
-            var arrlist = std.ArrayList(R).init(self.alloc);
-            defer arrlist.deinit();
-
-            for (self.items) |item| {
-                try arrlist.append(try map_fn(item));
-            }
-
-            return WrappedArrayAdvanced(R, options){
-                .items = try cloneToOwnedSlice(R, arrlist),
-                .alloc = self.alloc,
-            };
-        }
-
-        pub fn deinit(self: *Self) void {
-            self.alloc.free(self.items);
-        }
-    };
-}
-
-pub fn array(comptime T: type, tuple: anytype) WrappedArray(T) {
-    return WrappedArray(T).init(tuple, null) catch unreachable;
-}
-
-pub fn arrayAdvanced(comptime T: type, comptime options: WrappedArrayOptions, alloc: Allocator, tuple: anytype) WrappedArrayAdvanced(T, options) {
-    return WrappedArrayAdvanced(T, options).init(tuple, alloc) catch unreachable;
+    return try cloned.toOwnedSlice();
 }
