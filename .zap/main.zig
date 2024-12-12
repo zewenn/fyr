@@ -89,3 +89,62 @@ pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
 pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     return try @constCast(&(try list.clone())).toOwnedSlice();
 }
+
+pub const WrappedArrayOptions = struct {
+    try_type_change: bool = true,
+};
+
+pub fn WrappedArray(comptime T: type) type {
+    return WrappedArrayAdvanced(T, .{});
+}
+
+pub fn WrappedArrayAdvanced(comptime T: type, comptime options: WrappedArrayOptions) type {
+    return struct {
+        const Self = @This();
+
+        alloc: Allocator = std.heap.page_allocator,
+        items: []T,
+
+        pub fn init(tuple: anytype, alloc: ?Allocator) !Self {
+            const allocator = alloc orelse std.heap.page_allocator;
+
+            var arrlist = std.ArrayList(T).init(allocator);
+            defer arrlist.deinit();
+
+            inline for (tuple) |item| {
+                const item_value = @as(
+                    ?T,
+                    if (T != @TypeOf(item))
+                        switch (options.try_type_change) {
+                            true => changeType(T, item),
+                            false => null,
+                        }
+                    else
+                        item,
+                );
+                if (item_value) |c| {
+                    try arrlist.append(c);
+                }
+            }
+
+            const slice = try arrlist.toOwnedSlice();
+
+            return Self{
+                .alloc = allocator,
+                .items = slice,
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.alloc.free(self.items);
+        }
+    };
+}
+
+pub fn array(comptime T: type, tuple: anytype) WrappedArray(T) {
+    return WrappedArray(T).init(tuple, null) catch unreachable;
+}
+
+pub fn arrayAdvanced(comptime T: type, comptime options: WrappedArrayOptions, alloc: Allocator, tuple: anytype) WrappedArrayAdvanced(T, options) {
+    return WrappedArrayAdvanced(T, options).init(tuple, alloc) catch unreachable;
+}
