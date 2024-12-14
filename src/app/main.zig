@@ -25,8 +25,27 @@ pub fn main() !void {
         10,
     }));
 
+    var arr = zap.array(u8, .{ 8, 9, 10 });
+    defer arr.deinit();
+
+    var res = try arr.map(f64, struct {
+        pub fn callback(v: u8) !f64 {
+            std.log.debug("n: {d}", .{v});
+            return zap.changeType(f64, v).?;
+        }
+    }.callback);
+    defer res.deinit();
+
     try zap.init();
     defer zap.deinit();
+
+    var test_instance = try zap.engine.eventloop.new(1);
+    {
+        test_instance.on(zap.engine.eventloop.Events.awake, .{
+            .fn_ptr = Behaviour.awake,
+            .on_fail = .ignore,
+        });
+    }
 }
 
 pub const Behaviour = zap.engine.behaviour{

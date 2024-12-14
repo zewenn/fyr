@@ -28,7 +28,6 @@ pub fn deinit(self: *Self) void {
         entry.value_ptr.deinit();
     }
 
-    emap.clearAndFree();
     emap.deinit();
 }
 
