@@ -27,8 +27,7 @@ pub fn init() !void {
 
     const ptr = &(instances.?);
 
-    var default_instance = Instance.init(zap.getAllocator(.gpa));
-    default_instance.executing = true;
+    const default_instance = Instance.init(zap.getAllocator(.gpa));
     ptr.put(0, default_instance) catch @panic("Failed to create default Instance. (eventloop)");
 }
 
@@ -60,15 +59,15 @@ pub fn remove(comptime id: Instance.EventEnumTarget) void {
     ptr.remove(id);
 }
 
-pub fn get(id: Instance.EventEnumTarget) ?Instance {
+pub fn get(id: Instance.EventEnumTarget) ?*Instance {
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
-        return;
+        return null;
     }
 
     const ptr = &(instances.?);
 
-    return ptr.get(id);
+    return ptr.getPtr(id);
 }
 
 pub fn execute() !void {
@@ -85,7 +84,6 @@ pub fn execute() !void {
 
         if (last_tick + tick_time <= now) {
             try exec.call(Events.tick);
-            last_tick = now;
         }
     }
     if (last_tick + tick_time <= now) {

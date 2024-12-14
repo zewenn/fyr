@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
 pub const libs = @import("./.codegen/libs.zig");
-pub const engine = @import("./.codegen/modules.zig");
+const engine = @import("./.codegen/modules.zig");
 
 pub const Vector2 = libs.raylib.Vector2;
 pub const Vector3 = libs.raylib.Vector3;
@@ -27,11 +27,25 @@ pub const array = libs.WrappedArray.array;
 pub const arrayAdvanced = libs.WrappedArray.arrayAdvanced;
 
 pub fn init() !void {
+    libs.raylib.initWindow(1280, 720, ".zap");
+
     try libs.eventloop.init();
+    try engine.register();
+
+    try libs.eventloop.setActive(0);
+}
+
+pub fn loop() !void {
+    while (!libs.raylib.windowShouldClose()) {
+        libs.eventloop.execute() catch {
+            std.log.warn("eventloop.execute() failed!", .{});
+        };
+    }
 }
 
 pub fn deinit() void {
     libs.eventloop.deinit();
+    libs.raylib.closeWindow();
 }
 
 pub fn changeType(comptime T: type, value: anytype) ?T {

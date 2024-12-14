@@ -61,4 +61,6 @@ pub fn main() !void {
 
     try zap.libs.eventloop.setActive(1);
     try zap.libs.eventloop.execute();
+
+    try zap.loop();
 }

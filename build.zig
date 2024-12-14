@@ -289,6 +289,17 @@ pub fn build(b: *std.Build) !void {
         break :Libs;
     }
 
+    // pub const eventloop = @import("../main.zig").libs.eventloop;
+    //
+    // pub fn register() !void {
+    //     var scene = eventloop.get(0) orelse return;
+
+    //     try scene.on(eventloop.Events.awake, .{
+    //         .fn_ptr = @import("../modules/[display]/index.zig").awake,
+    //         .on_fail = .panic,
+    //     });
+    // }
+
     Modules: {
         const output_file = std.fs.cwd().createFile(
             ".zap/.codegen/modules.zig",
@@ -300,6 +311,8 @@ pub fn build(b: *std.Build) !void {
 
         var writer = output_file.writer();
         writer.writeAll("") catch unreachable;
+        _ = writer.write("pub const eventloop = @import(\"../main.zig\").libs.eventloop;\n\n") catch unreachable;
+        _ = writer.write("pub fn register() !void {\n\tvar scene = eventloop.get(0) orelse return;\n") catch unreachable;
 
         const scene_directories = getEntries(
             "./.zap/modules/",
@@ -315,7 +328,7 @@ pub fn build(b: *std.Build) !void {
         }
 
         for (scene_directories) |shallow_entry_path| {
-            const libname = shallow_entry_path[1 .. shallow_entry_path.len - 1];
+            const scene_name = shallow_entry_path[1 .. shallow_entry_path.len - 1];
 
             var shallow_entry_string = String.init_with_contents(
                 allocator,
@@ -325,7 +338,7 @@ pub fn build(b: *std.Build) !void {
 
             if (!shallow_entry_string.startsWith("[") or !shallow_entry_string.endsWith("]")) continue;
 
-            var sub_path_string = String.init_with_contents(allocator, "./src/app/") catch unreachable;
+            var sub_path_string = String.init_with_contents(allocator, "./.zap/modules/") catch unreachable;
             defer sub_path_string.deinit();
 
             sub_path_string.concat(shallow_entry_path) catch @panic("Failed to concat wtf");
@@ -343,7 +356,7 @@ pub fn build(b: *std.Build) !void {
                 for (script_paths) |item| {
                     allocator.free(item);
                 }
-                // allocator.free(script_paths);
+                allocator.free(script_paths);
             }
 
             for (script_paths) |path| {
@@ -357,11 +370,91 @@ pub fn build(b: *std.Build) !void {
                     @panic("Couldn't make into owned slice")).?;
                 defer allocator.free(path_from_cwd);
 
-                // pub const {s} = @import("../libs/{s}/index.zig"); \n
+                const file = std.fs.cwd().openFile(path_from_cwd, .{}) catch @panic("Failed to open file");
+                defer file.close();
 
-                writer.print("pub const {s} = @import(\"../modules/[{s}]/index.zig\");\n", .{ libname, libname }) catch unreachable;
+                const contents = file.readToEndAlloc(allocator, BUF_128MB) catch |err| switch (err) {
+                    error.FileTooBig => @panic("Maximum file size exceeded"),
+                    else => @panic("Failed to read file"),
+                };
+                defer allocator.free(contents);
+
+                // writer.print("\ttry sc.register(\"{s}\", sc.Script", .{scene_name}) catch unreachable;
+                writer.print("\t// {s}\n", .{scene_name}) catch unreachable;
+
+                if (std.mem.containsAtLeast(
+                    u8,
+                    contents,
+                    1,
+                    "\npub fn awake(",
+                )) {
+                    _ = writer.write("\ttry scene.on(eventloop.Events.awake, .{\n") catch unreachable;
+                    writer.print(
+                        "\t\t.fn_ptr = @import(\"../modules/{s}/index.zig\").awake,\n",
+                        .{shallow_entry_path},
+                    ) catch unreachable;
+                    _ = writer.write("\t\t.on_fail = .panic,\n") catch unreachable;
+                    _ = writer.write("\t});\n\n") catch unreachable;
+                }
+                if (std.mem.containsAtLeast(
+                    u8,
+                    contents,
+                    1,
+                    "\npub fn init(",
+                )) {
+                    _ = writer.write("\ttry scene.on(eventloop.Events.init, .{\n") catch unreachable;
+                    writer.print(
+                        "\t\t.fn_ptr = @import(\"../modules/{s}/index.zig\").init,\n",
+                        .{shallow_entry_path},
+                    ) catch unreachable;
+                    _ = writer.write("\t\t.on_fail = .panic,\n") catch unreachable;
+                    _ = writer.write("\t});\n\n") catch unreachable;
+                }
+                if (std.mem.containsAtLeast(
+                    u8,
+                    contents,
+                    1,
+                    "\npub fn update(",
+                )) {
+                    _ = writer.write("\ttry scene.on(eventloop.Events.update, .{\n") catch unreachable;
+                    writer.print(
+                        "\t\t.fn_ptr = @import(\"../modules/{s}/index.zig\").update,\n",
+                        .{shallow_entry_path},
+                    ) catch unreachable;
+                    _ = writer.write("\t\t.on_fail = .panic,\n") catch unreachable;
+                    _ = writer.write("\t});\n\n") catch unreachable;
+                }
+                if (std.mem.containsAtLeast(
+                    u8,
+                    contents,
+                    1,
+                    "\npub fn tick(",
+                )) {
+                    _ = writer.write("\ttry scene.on(eventloop.Events.tick, .{\n") catch unreachable;
+                    writer.print(
+                        "\t\t.fn_ptr = @import(\"../modules/{s}/index.zig\").tick,\n",
+                        .{shallow_entry_path},
+                    ) catch unreachable;
+                    _ = writer.write("\t\t.on_fail = .panic,\n") catch unreachable;
+                    _ = writer.write("\t});\n\n") catch unreachable;
+                }
+                if (std.mem.containsAtLeast(
+                    u8,
+                    contents,
+                    1,
+                    "\npub fn deinit(",
+                )) {
+                    _ = writer.write("\ttry scene.on(eventloop.Events.deinit, .{\n") catch unreachable;
+                    writer.print(
+                        "\t\t.fn_ptr = @import(\"../modules/{s}/index.zig\").deinit,\n",
+                        .{shallow_entry_path},
+                    ) catch unreachable;
+                    _ = writer.write("\t\t.on_fail = .panic,\n") catch unreachable;
+                    _ = writer.write("\t});\n\n") catch unreachable;
+                }
             }
         }
+        _ = writer.write("\n}") catch unreachable;
         break :Modules;
     }
 
