@@ -39,21 +39,26 @@ pub fn main() !void {
     try zap.init();
     defer zap.deinit();
 
-    var test_instance = try zap.engine.eventloop.new(1);
+    var test_instance = (try zap.libs.eventloop.new(1)).?;
     {
-        test_instance.on(zap.engine.eventloop.Events.awake, .{
-            .fn_ptr = Behaviour.awake,
+        try test_instance.on(zap.libs.eventloop.Events.awake, .{
+            .fn_ptr = struct {
+                pub fn callback() !void {
+                    std.log.debug("Awoken", .{});
+                }
+            }.callback,
+            .on_fail = .ignore,
+        });
+        try test_instance.on(zap.libs.eventloop.Events.init, .{
+            .fn_ptr = struct {
+                pub fn callback() !void {
+                    std.log.debug("Inited", .{});
+                }
+            }.callback,
             .on_fail = .ignore,
         });
     }
+
+    try zap.libs.eventloop.setActive(1);
+    try zap.libs.eventloop.execute();
 }
-
-pub const Behaviour = zap.engine.behaviour{
-    .awake = struct {
-        pub fn callback() !void {}
-    }.callback,
-
-    .tick = struct {
-        pub fn callback() !void {}
-    }.callback,
-};

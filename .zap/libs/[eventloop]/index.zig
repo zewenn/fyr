@@ -1,13 +1,14 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+const TICK_TARGET: comptime_float = 20;
+
 const Instance = @import("./Instance.zig");
 const zap = @import("../../main.zig");
 
 var instances: ?std.AutoHashMap(Instance.EventEnumTarget, Instance) = null;
-var executing: ?Instance = null;
 
-const tick_time: f64 = 1 / 20;
+const tick_time: f64 = 1.0 / TICK_TARGET;
 var last_tick: f64 = 0;
 var last_update: f64 = 0;
 
@@ -26,15 +27,16 @@ pub fn init() !void {
 
     const ptr = &(instances.?);
 
-    const default_instance = Instance.init(zap.getAllocator(.gpa));
+    var default_instance = Instance.init(zap.getAllocator(.gpa));
+    default_instance.executing = true;
     ptr.put(0, default_instance) catch @panic("Failed to create default Instance. (eventloop)");
 }
 
-pub fn new(comptime id: Instance.EventEnumTarget) !Instance {
+pub fn new(comptime id: Instance.EventEnumTarget) !?*Instance {
     if (id == 0) @compileError("Id \"0\" is reserved for default instance (eventloop)!");
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
-        return;
+        return null;
     }
 
     const ptr = &(instances.?);
@@ -43,7 +45,7 @@ pub fn new(comptime id: Instance.EventEnumTarget) !Instance {
         try ptr.put(id, Instance.init(zap.getAllocator(.gpa)));
     }
 
-    return ptr.get(id).?;
+    return ptr.getPtr(id);
 }
 
 pub fn remove(comptime id: Instance.EventEnumTarget) void {
@@ -70,14 +72,24 @@ pub fn get(id: Instance.EventEnumTarget) ?Instance {
 }
 
 pub fn execute() !void {
-    const exec = executing orelse return;
+    var iterator = (instances orelse return).iterator();
+    const now = zap.libs.raylib.getTime();
 
-    exec.call(Events.update);
-    last_update = zap.libs.raylib.getTime();
+    while (iterator.next()) |entry| {
+        if (!entry.value_ptr.executing) continue;
 
-    if (last_tick <= tick_time + zap.libs.raylib.getTime()) {
-        exec.call(Events.tick);
-        last_tick = zap.libs.raylib.getTime();
+        var exec = entry.value_ptr;
+
+        try exec.call(Events.update);
+        last_update = now;
+
+        if (last_tick + tick_time <= now) {
+            try exec.call(Events.tick);
+            last_tick = now;
+        }
+    }
+    if (last_tick + tick_time <= now) {
+        last_tick = now;
     }
 }
 
@@ -88,17 +100,24 @@ pub fn setActive(id: Instance.EventEnumTarget) !void {
     }
 
     const ptr = &(instances.?);
-    const instance = ptr.get(id) orelse return;
+    const instance = ptr.getPtr(id) orelse return;
 
-    if (executing) |exec| {
-        exec.call(Events.deinit);
+    instance.executing = true;
+
+    try instance.call(Events.awake);
+    try instance.call(Events.init);
+}
+
+pub fn setInactive(id: Instance.EventEnumTarget) !void {
+    if (instances == null) {
+        std.log.warn("Eventloop wasn't initalised!", .{});
+        return;
     }
 
-    executing = instance;
-    const exec = executing orelse return;
+    const ptr = &(instances.?);
+    const instance = ptr.getPtr(id) orelse return;
 
-    exec.call(Events.awake);
-    exec.call(Events.init);
+    try instance.call(Events.deinit);
 }
 
 pub fn deinit() void {

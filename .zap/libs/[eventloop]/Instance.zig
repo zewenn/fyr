@@ -12,6 +12,7 @@ const Self = @This();
 
 alloc: Allocator,
 event_map: ?EventMapType,
+executing: bool = false,
 
 pub fn init(allocator: Allocator) Self {
     return Self{

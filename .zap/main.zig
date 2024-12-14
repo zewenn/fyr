@@ -21,17 +21,17 @@ const global_allocators = struct {
     };
 };
 
-pub const WrappedArray = engine.WrappedArray.WrappedArray;
-pub const WrappedArrayOptions = engine.WrappedArray.WrappedArrayOptions;
-pub const array = engine.WrappedArray.array;
-pub const arrayAdvanced = engine.WrappedArray.arrayAdvanced;
+pub const WrappedArray = libs.WrappedArray.WrappedArray;
+pub const WrappedArrayOptions = libs.WrappedArray.WrappedArrayOptions;
+pub const array = libs.WrappedArray.array;
+pub const arrayAdvanced = libs.WrappedArray.arrayAdvanced;
 
 pub fn init() !void {
-    try engine.eventloop.init();
+    try libs.eventloop.init();
 }
 
 pub fn deinit() void {
-    engine.eventloop.deinit();
+    libs.eventloop.deinit();
 }
 
 pub fn changeType(comptime T: type, value: anytype) ?T {
