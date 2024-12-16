@@ -26,6 +26,9 @@ pub const WrappedArrayOptions = libs.WrappedArray.WrappedArrayOptions;
 pub const array = libs.WrappedArray.array;
 pub const arrayAdvanced = libs.WrappedArray.arrayAdvanced;
 
+pub const String = libs.strings.String;
+pub const string = libs.strings.string;
+
 pub fn init() !void {
     libs.raylib.initWindow(1280, 720, ".zap");
 
@@ -46,6 +49,17 @@ pub fn loop() !void {
 pub fn deinit() void {
     libs.eventloop.deinit();
     libs.raylib.closeWindow();
+
+    if (global_allocators.gpa.interface) |*intf| {
+        const state = intf.deinit();
+        switch (state) {
+            .ok => std.log.info("GPA exited without memory leaks!", .{}),
+            .leak => std.log.warn("GPA exited with a memory leak!", .{}),
+        }
+    }
+    if (global_allocators.arena.interface) |*intf| {
+        intf.deinit();
+    }
 }
 
 pub fn changeType(comptime T: type, value: anytype) ?T {
