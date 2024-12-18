@@ -1,11 +1,15 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+const assertTitle = @import("../../main.zig").assertTitle;
+const assert = @import("../../main.zig").assert;
+
 const changeType = @import("../../main.zig").changeType;
 const cloneToOwnedSlice = @import("../../main.zig").cloneToOwnedSlice;
 
 pub const WrappedArrayOptions = struct {
     allocator: Allocator = std.heap.page_allocator,
+
     try_type_change: bool = true,
     on_type_change_fail: enum {
         ignore,
@@ -35,24 +39,22 @@ pub fn WrappedArray(comptime T: type) type {
                                 .ignore => null,
                                 .panic => @panic("Tuple had items of incorrect type in it. (With current options this causes a panic!)"),
                             },
-                            false => switch (options.on_type_change_fail) {
-                                .ignore => null,
-                                .panic => @panic("Tuple had items of incorrect type in it. (With current options this causes a panic!)"),
-                            },
+                            false => @panic("Tuple had items of incorrect type in it. (With current options this causes a panic!)"),
                         }
                     else
                         item,
                 );
+
                 if (item_value) |c| {
                     try arrlist.append(c);
                 }
             }
 
-            const slice = try arrlist.toOwnedSlice();
+            const new_slice = try arrlist.toOwnedSlice();
 
             return Self{
                 .alloc = allocator,
-                .items = slice,
+                .items = new_slice,
             };
         }
 
@@ -87,8 +89,8 @@ pub fn WrappedArray(comptime T: type) type {
             };
         }
 
-        pub fn reverse(self: Self) Self {
-            const new = self.alloc.alloc(T, self.items.len) catch @panic("Allocation failiure!");
+        pub fn reverse(self: Self) !Self {
+            const new = try self.alloc.alloc(T, self.items.len);
 
             for (0..self.items.len) |jndex| {
                 const index = self.items.len - 1 - jndex;
@@ -116,6 +118,45 @@ pub fn WrappedArray(comptime T: type) type {
             };
         }
 
+        pub fn len(self: Self) usize {
+            return self.items.len;
+        }
+
+        pub fn lastIndex(self: Self) usize {
+            return self.len() - 1;
+        }
+
+        pub fn at(self: Self, index: usize) ?T {
+            if (self.len() == 0 or index > self.lastIndex())
+                return null;
+
+            return self.items[index];
+        }
+
+        pub fn getFirst(self: Self) ?T {
+            return self.at(0);
+        }
+
+        pub fn getLast(self: Self) ?T {
+            return self.at(self.lastIndex());
+        }
+
+        /// Warning: This will allocate a new slice!
+        pub fn slice(self: Self, from: usize, to: usize) !Self {
+            const start = @min(@min(from, to), self.lastIndex());
+            const end = @min(@max(from, to), self.lastIndex());
+
+            return try Self.fromArray(self.items[start..end], self.alloc);
+        }
+
+        /// Caller owns the returned memory!
+        pub fn toOwnedSlice(self: Self) ![]T {
+            const new_slice = try self.alloc.alloc(T, self.len());
+            std.mem.copyForwards(T, new_slice, self.items);
+
+            return new_slice;
+        }
+
         pub fn deinit(self: Self) void {
             self.alloc.free(self.items);
         }
@@ -135,4 +176,44 @@ pub fn arrayAdvanced(
         tuple,
         options,
     ) catch unreachable;
+}
+
+pub fn ENG_HealthCheck() void {
+    assertTitle("WrappedArray(T) HealthCheck");
+
+    const test_arr = array(usize, .{ 10, 9, 8, 7, 6 });
+    defer test_arr.deinit();
+
+    assert("test_arr len is 5", test_arr.len() == 5);
+    assert("test_arr lastIndex is 4", test_arr.lastIndex() == 4);
+
+    assert("test_arr.getFirst() == 10", test_arr.getFirst().? == 10);
+    assert("test_arr.getLast() == 6", test_arr.getLast().? == 6);
+
+    assert("test_arr.at(2) == 8", test_arr.at(2) == 8);
+
+    const sliced = test_arr.slice(2, 4) catch {
+        assert("Allocation failiure in test_arr.slice()", false);
+        return;
+    };
+
+    defer sliced.deinit();
+
+    assert(
+        "test_arr.slice(2, 4) == [8, 7]",
+        std.mem.eql(
+            usize,
+            sliced.items,
+            @constCast(&[_]usize{ 8, 7 }),
+        ),
+    );
+
+    const ownedSlice = test_arr.toOwnedSlice() catch {
+        assert("Allocation failiure in test_arr.toOwnedSlice()", false);
+        return;
+    };
+
+    defer test_arr.alloc.free(ownedSlice);
+
+    assert("ownedSlice[0] == test_arr.at(0)", ownedSlice[0] == test_arr.at(0));
 }

@@ -36,6 +36,7 @@ pub fn main() !void {
     }.callback);
     defer res.deinit();
 
+
     try zap.init();
     defer zap.deinit();
 

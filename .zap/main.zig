@@ -30,6 +30,8 @@ pub const String = libs.strings.String;
 pub const string = libs.strings.string;
 
 pub fn init() !void {
+    libs.WrappedArray.ENG_HealthCheck();
+
     libs.raylib.initWindow(1280, 720, ".zap");
 
     try libs.eventloop.init();
@@ -169,4 +171,24 @@ pub fn getAllocator(comptime T: global_allocators.types) Allocator {
         },
         .page => global_allocators.page,
     };
+}
+
+pub fn assert(title: []const u8, statement: bool) void {
+    if (statement) {
+        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{title});
+        return;
+    }
+
+    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{title});
+    @panic("ASSERTON FAILIURE");
+}
+
+pub fn assertTitle(text: []const u8) void {
+    logTest("\n\n\n[ASSERT SECTION] {s}\n", .{text});
+}
+
+pub fn logTest(comptime text: []const u8, fmt: anytype) void {
+    const formatted = std.fmt.allocPrint(getAllocator(.gpa), text, fmt) catch "";
+    defer getAllocator(.gpa).free(formatted);
+    std.debug.print("\ntest: {s}", .{formatted});
 }
