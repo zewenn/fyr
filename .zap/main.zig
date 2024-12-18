@@ -31,6 +31,7 @@ pub const string = libs.strings.string;
 
 pub fn init() !void {
     libs.WrappedArray.ENG_HealthCheck();
+    libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
 
     libs.raylib.initWindow(1280, 720, ".zap");
 
