@@ -29,6 +29,9 @@ pub const arrayAdvanced = libs.WrappedArray.arrayAdvanced;
 pub const String = libs.strings.String;
 pub const string = libs.strings.string;
 
+pub const ecs = libs.ecs;
+pub const Store = libs.ecs.Store;
+
 pub fn init() !void {
     libs.WrappedArray.ENG_HealthCheck();
     libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");

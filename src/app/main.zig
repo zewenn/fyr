@@ -18,24 +18,23 @@ fn operate(arr: zap.WrappedArray(isize)) void {
 }
 
 pub fn main() !void {
-    operate(zap.array(isize, .{
-        88,
-        99,
-        9.9,
-        10,
-    }));
+    // operate(zap.array(isize, .{
+    //     88,
+    //     99,
+    //     9.9,
+    //     10,
+    // }));
 
-    var arr = zap.array(u8, .{ 8, 9, 10 });
-    defer arr.deinit();
+    // var arr = zap.array(u8, .{ 8, 9, 10 });
+    // defer arr.deinit();
 
-    var res = try arr.map(f64, struct {
-        pub fn callback(v: u8) !f64 {
-            std.log.debug("n: {d}", .{v});
-            return zap.changeType(f64, v).?;
-        }
-    }.callback);
-    defer res.deinit();
-
+    // var res = try arr.map(f64, struct {
+    //     pub fn callback(v: u8) !f64 {
+    //         std.log.debug("n: {d}", .{v});
+    //         return zap.changeType(f64, v).?;
+    //     }
+    // }.callback);
+    // defer res.deinit();
 
     try zap.init();
     defer zap.deinit();
@@ -62,6 +61,15 @@ pub fn main() !void {
 
     try zap.libs.eventloop.setActive(1);
     try zap.libs.eventloop.execute();
+
+    var Player = zap.Store.new();
+    defer Player.deinit();
+    {
+        try Player.addComonent(zap.Vector2, zap.Vec2(10, 22.5));
+        try Player.addComonent(zap.Vector3, zap.Vec3(10, 22.5, 0.69));
+    }
+
+    std.log.debug("{any}", .{Player.getComponent(zap.Vector3)});
 
     try zap.loop();
 }
