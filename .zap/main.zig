@@ -41,7 +41,7 @@ pub fn init() !void {
     try libs.eventloop.init();
     try engine.register();
 
-    try libs.eventloop.setActive(0);
+    try libs.eventloop.setActive("engine");
 }
 
 pub fn loop() !void {

@@ -1,7 +1,7 @@
 pub const eventloop = @import("../main.zig").libs.eventloop;
 
 pub fn register() !void {
-	var scene = eventloop.get(0) orelse return;
+	var scene = eventloop.get("engine") orelse return;
 	// display
 	try scene.on(eventloop.Events.awake, .{
 		.fn_ptr = @import("../modules/[display]/index.zig").awake,

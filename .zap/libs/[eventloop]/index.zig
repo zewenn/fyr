@@ -6,7 +6,7 @@ const TICK_TARGET: comptime_float = 20;
 const Instance = @import("./Instance.zig");
 const zap = @import("../../main.zig");
 
-var instances: ?std.AutoHashMap(Instance.EventEnumTarget, Instance) = null;
+var instances: ?std.StringHashMap(Instance) = null;
 
 const tick_time: f64 = 1.0 / TICK_TARGET;
 var last_tick: f64 = 0;
@@ -21,18 +21,18 @@ pub const Events = enum(Instance.EventEnumTarget) {
 };
 
 pub fn init() !void {
-    instances = std.AutoHashMap(Instance.EventEnumTarget, Instance).init(
+    instances = std.StringHashMap(Instance).init(
         zap.getAllocator(.gpa),
     );
 
     const ptr = &(instances.?);
 
     const default_instance = Instance.init(zap.getAllocator(.gpa));
-    ptr.put(0, default_instance) catch @panic("Failed to create default Instance. (eventloop)");
+    ptr.put("engine", default_instance) catch @panic("Failed to create default Instance. (eventloop)");
 }
 
-pub fn new(comptime id: Instance.EventEnumTarget) !?*Instance {
-    if (id == 0) @compileError("Id \"0\" is reserved for default instance (eventloop)!");
+pub fn new(comptime id: []const u8) !?*Instance {
+    if (std.mem.eql(u8, id, "engine")) @panic("Id \"engine\" is reserved for default instance (eventloop)!");
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
         return null;
@@ -47,8 +47,8 @@ pub fn new(comptime id: Instance.EventEnumTarget) !?*Instance {
     return ptr.getPtr(id);
 }
 
-pub fn remove(comptime id: Instance.EventEnumTarget) void {
-    if (id == 0) @compileError("Id \"0\" is reserved for default instance, thus it cannot be removed (eventloop)!");
+pub fn remove(comptime id: []const u8) void {
+    if (std.mem.eql(u8, id, "engine")) @panic("Id \"engine\" is reserved for default instance, thus it cannot be removed (eventloop)!");
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
         return;
@@ -59,7 +59,7 @@ pub fn remove(comptime id: Instance.EventEnumTarget) void {
     ptr.remove(id);
 }
 
-pub fn get(id: Instance.EventEnumTarget) ?*Instance {
+pub fn get(id: []const u8) ?*Instance {
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
         return null;
@@ -91,7 +91,7 @@ pub fn execute() !void {
     }
 }
 
-pub fn setActive(id: Instance.EventEnumTarget) !void {
+pub fn setActive(id: []const u8) !void {
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
         return;
@@ -106,7 +106,7 @@ pub fn setActive(id: Instance.EventEnumTarget) !void {
     try instance.call(Events.init);
 }
 
-pub fn setInactive(id: Instance.EventEnumTarget) !void {
+pub fn setInactive(id: []const u8) !void {
     if (instances == null) {
         std.log.warn("Eventloop wasn't initalised!", .{});
         return;

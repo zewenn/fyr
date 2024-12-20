@@ -312,7 +312,7 @@ pub fn build(b: *std.Build) !void {
         var writer = output_file.writer();
         writer.writeAll("") catch unreachable;
         _ = writer.write("pub const eventloop = @import(\"../main.zig\").libs.eventloop;\n\n") catch unreachable;
-        _ = writer.write("pub fn register() !void {\n\tvar scene = eventloop.get(0) orelse return;\n") catch unreachable;
+        _ = writer.write("pub fn register() !void {\n\tvar scene = eventloop.get(\"engine\") orelse return;\n") catch unreachable;
 
         const scene_directories = getEntries(
             "./.zap/modules/",

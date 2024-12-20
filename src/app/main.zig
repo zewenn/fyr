@@ -39,7 +39,7 @@ pub fn main() !void {
     try zap.init();
     defer zap.deinit();
 
-    var test_instance = (try zap.libs.eventloop.new(1)).?;
+    var test_instance = (try zap.libs.eventloop.new("test")).?;
     {
         try test_instance.on(zap.libs.eventloop.Events.awake, .{
             .fn_ptr = struct {
@@ -59,13 +59,16 @@ pub fn main() !void {
         });
     }
 
-    try zap.libs.eventloop.setActive(1);
+    try zap.libs.eventloop.setActive("test");
     try zap.libs.eventloop.execute();
 
     var Player = zap.Store.new();
     defer Player.deinit();
     {
-        try Player.addComonent(zap.Vector2, zap.Vec2(10, 22.5));
+        const heapint_ptr = try Player.allocator().create(i32);
+        heapint_ptr.* = 10;
+
+        try Player.addComonent(zap.Vector2, zap.Vec2(10, heapint_ptr.*));
         try Player.addComonent(zap.Vector3, zap.Vec3(10, 22.5, 0.69));
     }
 

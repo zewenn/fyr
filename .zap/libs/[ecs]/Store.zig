@@ -8,12 +8,15 @@ const ComponentErrors = error{ ItemCreationError, AlreadyHasComponent };
 const Self = @This();
 
 array: std.ArrayList(Entry),
-alloc: Allocator,
+original_alloc: Allocator,
+arena_alloc: ?Allocator = null,
+arena: std.heap.ArenaAllocator,
 
-pub fn init(allocator: Allocator) Self {
+pub fn init(alloc: Allocator) Self {
     return Self{
-        .array = std.ArrayList(Entry).init(allocator),
-        .alloc = allocator,
+        .arena = std.heap.ArenaAllocator.init(alloc),
+        .original_alloc = alloc,
+        .array = std.ArrayList(Entry).init(alloc),
     };
 }
 
@@ -26,6 +29,12 @@ pub fn deinit(self: *Self) void {
         item.deinit();
     }
     self.array.deinit();
+    self.arena.deinit();
+}
+
+pub inline fn allocator(self: *Self) Allocator {
+    if (self.arena_alloc == null) self.arena_alloc = self.arena.allocator();
+    return self.arena_alloc.?;
 }
 
 pub fn store(self: *Self, value: anytype) !void {
