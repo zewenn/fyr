@@ -133,6 +133,18 @@ pub fn WrappedArray(comptime T: type) type {
             return self.items[index];
         }
 
+        pub fn atPtr(self: Self, index: usize) ?*T {
+            if (self.len() == 0 or index > self.lastIndex())
+                return null;
+
+            return &(self.items[index]);
+        }
+
+        pub fn set(self: Self, index: usize, value: T) void {
+            const ptr = self.atPtr(index) orelse return;
+            ptr.* = value;
+        }
+
         pub fn getFirst(self: Self) ?T {
             return self.at(0);
         }
@@ -212,8 +224,10 @@ pub fn ENG_HealthCheck() void {
         assert("Allocation failiure in test_arr.toOwnedSlice()", false);
         return;
     };
-
     defer test_arr.alloc.free(ownedSlice);
 
     assert("ownedSlice[0] == test_arr.at(0)", ownedSlice[0] == test_arr.at(0));
+
+    test_arr.set(2, 11);
+    assert("test_arr.set(2, 11) set value to 11", test_arr.at(2) == 11);
 }

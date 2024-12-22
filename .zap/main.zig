@@ -194,5 +194,5 @@ pub fn assertTitle(text: []const u8) void {
 pub fn logTest(comptime text: []const u8, fmt: anytype) void {
     const formatted = std.fmt.allocPrint(getAllocator(.gpa), text, fmt) catch "";
     defer getAllocator(.gpa).free(formatted);
-    std.debug.print("\ntest: {s}", .{formatted});
+    std.debug.print("test: {s}\n", .{formatted});
 }
