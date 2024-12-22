@@ -463,7 +463,7 @@ pub fn build(b: *std.Build) !void {
 
     const exe = b.addExecutable(.{
         .name = ".zap",
-        .root_source_file = b.path("src/app/main.zig"),
+        .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
         .target = target,
     });
