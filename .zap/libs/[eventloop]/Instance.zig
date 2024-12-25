@@ -5,9 +5,9 @@ const zap = @import("../../main.zig");
 const Store = zap.Store;
 
 const EventActions = std.ArrayList(Action);
-const EventMapType = std.AutoHashMap(EventEnumTarget, EventActions);
+const EventMapType = std.AutoHashMap(Target, EventActions);
 const Action = @import("Action.zig");
-pub const EventEnumTarget = isize;
+pub const Target = isize;
 
 const Self = @This();
 
@@ -60,7 +60,7 @@ pub inline fn reset(self: *Self) void {
 fn makeGetEvent(self: *Self, event: anytype) !*EventActions {
     const emap: *EventMapType = &(self.event_map orelse @panic("event_map wasn't initalised! Call eventloop.init()!"));
 
-    const key = zap.changeType(EventEnumTarget, event) orelse -1;
+    const key = zap.changeType(Target, event) orelse -1;
 
     if (!emap.contains(key)) {
         try emap.put(key, EventActions.init(self.original_alloc));

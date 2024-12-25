@@ -42,7 +42,7 @@ pub fn main() !void {
 
     // std.log.debug("{any}", .{filenames});
 
-    var test_instance = (try zap.libs.eventloop.new("test")).?;
+    var test_instance = try zap.libs.eventloop.new("test");
     {
         try test_instance.on(zap.libs.eventloop.Events.awake, .{
             .fn_ptr = struct {
