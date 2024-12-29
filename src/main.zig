@@ -83,10 +83,13 @@ pub fn main() !void {
         try Player.addComonent(zap.Vector2, zap.Vec2(10, heapint_ptr.*));
         try Player.addComonent(zap.Vector3, zap.Vec3(10, 22.5, 0.69));
         try Player.addComonent(x, x.ba);
+        try Player.addComonent(x, x.ab);
         try Player.addComonent(y, y.ba);
     }
 
-    std.log.debug("{any}", .{Player.getComponent(zap.Vector3)});
+    try test_instance.addStore(&Player);
+
+    std.log.debug("{any}", .{try Player.getComponents(x)});
 
     try zap.loop();
 }

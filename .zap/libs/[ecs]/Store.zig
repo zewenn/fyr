@@ -9,6 +9,7 @@ const Self = @This();
 
 list: std.ArrayList(Entry),
 original_alloc: Allocator,
+
 arena_alloc: ?Allocator = null,
 arena: std.heap.ArenaAllocator,
 
@@ -38,7 +39,7 @@ pub inline fn allocator(self: *Self) Allocator {
 }
 
 pub fn store(self: *Self, value: anytype) !void {
-    if (self.getComponent(@TypeOf(value)) != null) return ComponentErrors.AlreadyHasComponent;
+    // if (self.getComponent(@TypeOf(value)) != null) return ComponentErrors.AlreadyHasComponent;
     try self.list.append(Entry.init(value) orelse return ComponentErrors.ItemCreationError);
 }
 
@@ -46,8 +47,8 @@ pub fn addComonent(self: *Self, comptime T: type, value: T) !void {
     try self.store(value);
 }
 
-pub fn getComponent(self: *Self, comptime T: type) ?*T {
-    const hash = Entry.calculateHash(T);
+pub fn getComponent(self: *Self, T: type) ?*T {
+    const hash = comptime Entry.calculateHash(T);
 
     for (self.list.items) |item| {
         if (item.hash != hash) continue;
@@ -56,4 +57,21 @@ pub fn getComponent(self: *Self, comptime T: type) ?*T {
     }
 
     return null;
+}
+
+pub fn getComponents(self: *Self, T: type) ![]*T {
+    const hash = comptime Entry.calculateHash(T);
+
+    var arr = std.ArrayList(*T).init(self.allocator());
+    defer arr.deinit();
+
+    for (self.list.items) |item| {
+        if (item.hash != hash) continue;
+
+        const ptr = item.castBack(T) orelse continue;
+
+        try arr.append(ptr);
+    }
+
+    return arr.toOwnedSlice();
 }

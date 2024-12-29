@@ -91,19 +91,32 @@ pub fn get(id: []const u8) ?*Instance {
 pub fn execute() !void {
     const now = zap.libs.raylib.getTime();
 
+    const do_tick = last_tick + tick_time <= now;
+    // Defer used so ticking takes instance event call times into account
+    defer if (do_tick) {
+        last_tick = now;
+    };
+
     for (executing_instances) |entry| {
         const instance = entry.* orelse continue;
+
+        if (instance.stores) |s|
+            for (s.items) |store| executeStoreBehaviour(store, do_tick);
 
         try instance.call(Events.update);
         last_update = now;
 
-        if (last_tick + tick_time <= now) {
-            try instance.call(Events.tick);
-        }
+        if (!do_tick) continue;
+        try instance.call(Events.tick);
     }
-    if (last_tick + tick_time <= now) {
-        last_tick = now;
-    }
+}
+
+fn executeStoreBehaviour(store: *zap.Store, do_tick: bool) void {
+    const behaviour = store.getComponent(zap.Behaviour) orelse return;
+    behaviour.callSafe(.update, store);
+
+    if (!do_tick) return;
+    behaviour.callSafe(.tick, store);
 }
 
 pub fn setActive(id: []const u8) !void {
@@ -114,25 +127,30 @@ pub fn setActive(id: []const u8) !void {
 
     const ptr = &(instances.?);
     const instance = ptr.get(id) orelse return;
-
-    switch (std.mem.eql(u8, id, "engine")) {
-        true => engine_instance = instance,
-        false => {
-            if (active_instance) |ai| {
-                // Dispatch the deinit event
-                try ai.call(Events.deinit);
-                // Free all allocations with ai.allocator()
-                ai.reset();
-
-                // Currently does not do anything
-                ai.executing = false;
-            }
-            active_instance = instance;
-        },
+    defer {
+        instance.call(Events.awake) catch {
+            std.log.warn("OutOfMemory when calling instance event", .{});
+        };
+        instance.call(Events.init) catch {
+            std.log.warn("OutOfMemory when calling instance event", .{});
+        };
     }
 
-    try instance.call(Events.awake);
-    try instance.call(Events.init);
+    if (std.mem.eql(u8, id, "engine")) {
+        engine_instance = instance;
+        return;
+    }
+
+    defer active_instance = instance;
+    const ai = active_instance orelse return;
+
+    // Dispatch the deinit event
+    try ai.call(Events.deinit);
+    // Free all allocations with ai.allocator()
+    ai.reset();
+
+    // Currently does not do anything
+    ai.executing = false;
 }
 
 pub fn deinit() void {

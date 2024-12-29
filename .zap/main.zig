@@ -32,6 +32,12 @@ pub const string = libs.strings.string;
 pub const ecs = libs.ecs;
 pub const Store = libs.ecs.Store;
 
+pub const Behaviour = libs.behaviour.Behaviour;
+
+pub fn Callback(comptime ARGTYPE: type, comptime RESULTTYPE: type, ERROR: type) type {
+    return *const fn (ARGTYPE) ERROR!RESULTTYPE;
+}
+
 pub fn init() !void {
     libs.WrappedArray.ENG_HealthCheck();
     libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");

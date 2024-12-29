@@ -57,6 +57,6 @@ pub fn deinit(self: Self) void {
 }
 
 pub fn castBack(self: Self, comptime T: type) ?*T {
-    if (self.hash != calculateHash(T)) return null;
+    if (self.hash != comptime calculateHash(T)) return null;
     return @ptrCast(@alignCast(self.ptr));
 }

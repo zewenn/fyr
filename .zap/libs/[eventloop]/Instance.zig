@@ -57,7 +57,7 @@ pub inline fn reset(self: *Self) void {
 
 // Event Handling
 
-fn makeGetEvent(self: *Self, event: anytype) !*EventActions {
+fn makeGetEventList(self: *Self, event: anytype) !*EventActions {
     const emap: *EventMapType = &(self.event_map orelse @panic("event_map wasn't initalised! Call eventloop.init()!"));
 
     const key = zap.changeType(Target, event) orelse -1;
@@ -70,13 +70,13 @@ fn makeGetEvent(self: *Self, event: anytype) !*EventActions {
 }
 
 pub fn on(self: *Self, event: anytype, action: Action) !void {
-    const ptr = try self.makeGetEvent(event);
+    const ptr = try self.makeGetEventList(event);
 
     try ptr.append(action);
 }
 
 pub fn call(self: *Self, event: anytype) !void {
-    const ptr = try self.makeGetEvent(event);
+    const ptr = try self.makeGetEventList(event);
 
     const items = try zap.cloneToOwnedSlice(Action, ptr.*);
     defer ptr.allocator.free(items);
@@ -111,15 +111,28 @@ pub fn newStore(self: *Self) !*Store {
     const ptr = try self.allocator().create(Store);
     ptr.* = Store.init(self.allocator());
 
-    const stores = self.makeGetStores();
-    try stores.append(ptr);
-
     return ptr;
+}
+
+pub fn addStore(self: *Self, store: *Store) !void {
+    const behaviour = store.getComponent(zap.Behaviour);
+    if (behaviour) |b| {
+        b.callSafe(.awake, store);
+        b.callSafe(.init, store);
+    }
+
+    const stores = self.makeGetStores();
+    try stores.append(store);
 }
 
 pub fn removeStore(self: *Self, store: *Store) void {
     const stores = self.makeGetStores();
     for (stores.items, 0..) |it, index| {
+        const behaviour = store.getComponent(zap.Behaviour);
+        if (behaviour) |b| {
+            b.callSafe(.deinit, store);
+        }
+
         if (@intFromPtr(store) != @intFromPtr(it)) continue;
         _ = stores.swapRemove(index);
     }
