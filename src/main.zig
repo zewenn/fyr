@@ -1,6 +1,8 @@
 const std = @import("std");
 const zap = @import(".zap");
 
+const MovementBehaviour = @import("./components/MoveBehaviour.zig").MovementBehaviour;
+
 // const registerScripts = @import("../.temp/script_run.zig").register;
 // const filenames = @import("../.temp/filenames.zig").Filenames;
 
@@ -60,36 +62,40 @@ pub fn main() !void {
             }.callback,
             .on_fail = .ignore,
         });
+        try test_instance.on(zap.libs.eventloop.Events.tick, .{
+            .fn_ptr = struct {
+                pub fn callback() !void {
+                    std.log.debug("tick", .{});
+                }
+            }.callback,
+            .on_fail = .ignore,
+        });
+    }
+
+    var test_2_instance = try zap.libs.eventloop.new("test2");
+    {
+        try test_2_instance.on(zap.libs.eventloop.Events.tick, .{
+            .fn_ptr = struct {
+                pub fn callback() !void {
+                    std.log.debug("tick2", .{});
+                }
+            }.callback,
+            .on_fail = .ignore,
+        });
     }
 
     try zap.libs.eventloop.setActive("test");
     try zap.libs.eventloop.execute();
 
-    const x = enum(i32) {
-        ab = 0,
-        ba = 1,
-    };
-    const y = enum(i32) {
-        ab = 2,
-        ba = 0,
-    };
-
-    var Player = zap.Store.new();
-    defer Player.deinit();
+    var Player = try zap.instance().newStore("Player");
     {
-        const heapint_ptr = try Player.allocator().create(i32);
-        heapint_ptr.* = 10;
-
-        try Player.addComonent(zap.Vector2, zap.Vec2(10, heapint_ptr.*));
-        try Player.addComonent(zap.Vector3, zap.Vec3(10, 22.5, 0.69));
-        try Player.addComonent(x, x.ba);
-        try Player.addComonent(x, x.ab);
-        try Player.addComonent(y, y.ba);
+        try Player.addComonent(zap.Transform, zap.Transform{});
+        try Player.addComonent(zap.Behaviour, MovementBehaviour());
     }
+    try zap.instance().addStore(Player);
 
-    try test_instance.addStore(&Player);
+    const Pref: ?*zap.Store = zap.instance().getStoreById("Player");
+    zap.assert("Pref is not null", Pref != null);
 
-    std.log.debug("{any}", .{try Player.getComponents(x)});
-
-    try zap.loop();
+    zap.loop();
 }

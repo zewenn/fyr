@@ -7,22 +7,24 @@ const zap = @import("../../main.zig");
 const ComponentErrors = error{ ItemCreationError, AlreadyHasComponent };
 const Self = @This();
 
+id: []const u8,
 list: std.ArrayList(Entry),
 original_alloc: Allocator,
 
 arena_alloc: ?Allocator = null,
 arena: std.heap.ArenaAllocator,
 
-pub fn init(alloc: Allocator) Self {
+pub fn init(alloc: Allocator, id: []const u8) Self {
     return Self{
+        .id = id,
         .arena = std.heap.ArenaAllocator.init(alloc),
         .original_alloc = alloc,
         .list = std.ArrayList(Entry).init(alloc),
     };
 }
 
-pub fn new() Self {
-    return Self.init(zap.getAllocator(.gpa));
+pub fn new(id: []const u8) Self {
+    return Self.init(zap.getAllocator(.gpa), id);
 }
 
 pub fn deinit(self: *Self) void {

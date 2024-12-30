@@ -9,15 +9,26 @@ pub const Vector3 = libs.raylib.Vector3;
 pub const Vector4 = libs.raylib.Vector4;
 pub const Rectangle = libs.raylib.Rectangle;
 
+pub const Transform = libs.ecs.components.Transform;
+
+pub const Instance = libs.eventloop.Instance;
+
 const global_allocators = struct {
     pub var gpa: AllocatorInstance(std.heap.GeneralPurposeAllocator(.{})) = .{};
     pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
     pub var page: Allocator = std.heap.page_allocator;
 
     pub const types = enum {
+        /// Generic allocator, warns at program exit if a memory leak happened.
         gpa,
+        /// Global arena allocator, everything allocated will be freed at program end.
         arena,
+        /// Shorthand for `std.heap.page_allocator`.
         page,
+        /// If `eventloop` has an instance loaded, this is a shorthand for
+        /// `zap.libs.eventloop.active_instance.allocator()`, otherwise this is the
+        /// same as arena.
+        instance,
     };
 };
 
@@ -34,10 +45,6 @@ pub const Store = libs.ecs.Store;
 
 pub const Behaviour = libs.behaviour.Behaviour;
 
-pub fn Callback(comptime ARGTYPE: type, comptime RESULTTYPE: type, ERROR: type) type {
-    return *const fn (ARGTYPE) ERROR!RESULTTYPE;
-}
-
 pub fn init() !void {
     libs.WrappedArray.ENG_HealthCheck();
     libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
@@ -50,7 +57,7 @@ pub fn init() !void {
     try libs.eventloop.setActive("engine");
 }
 
-pub fn loop() !void {
+pub fn loop() void {
     while (!libs.raylib.windowShouldClose()) {
         libs.eventloop.execute() catch {
             std.log.warn("eventloop.execute() failed!", .{});
@@ -180,6 +187,10 @@ pub fn getAllocator(comptime T: global_allocators.types) Allocator {
             break :Blk global_allocators.arena.allocator.?;
         },
         .page => global_allocators.page,
+        .instance => Blk: {
+            const active_instance = libs.eventloop.active_instance orelse break :Blk getAllocator(.arena);
+            break :Blk active_instance.allocator();
+        },
     };
 }
 
@@ -202,3 +213,9 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
     defer getAllocator(.gpa).free(formatted);
     std.debug.print("test: {s}\n", .{formatted});
 }
+
+pub fn instance() *Instance {
+    return libs.eventloop.active_instance orelse libs.eventloop.get("engine").?;
+}
+
+pub const CacheCast = Behaviour.CacheCast;

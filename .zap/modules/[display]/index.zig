@@ -17,5 +17,5 @@ pub fn update() !void {
 }
 
 pub fn tick() !void {
-    std.log.debug("Ticking display!", .{});
+    // std.log.debug("Ticking display!", .{});
 }

@@ -3,12 +3,15 @@ const Allocator = @import("std").mem.Allocator;
 
 const TICK_TARGET: comptime_float = 20;
 
-const Instance = @import("./Instance.zig");
+pub const Instance = @import("./Instance.zig");
 const zap = @import("../../main.zig");
 
 var instances: ?std.StringHashMap(*Instance) = null;
-var active_instance: ?*Instance = null;
+pub var active_instance: ?*Instance = null;
+var next_instance: ?*Instance = null;
 var engine_instance: ?*Instance = null;
+
+var _unload = false;
 
 const executing_instances = [2]*?*Instance{ &active_instance, &engine_instance };
 
@@ -109,14 +112,29 @@ pub fn execute() !void {
         if (!do_tick) continue;
         try instance.call(Events.tick);
     }
+
+    if (!_unload) return;
+    _unload = false;
+    defer active_instance = next_instance;
+    const ai = active_instance orelse return;
+
+    // Dispatch the deinit event
+    try ai.call(Events.deinit);
+    // Free all allocations with ai.allocator()
+    ai.reset();
+
+    // Currently does not do anything
+    ai.executing = false;
 }
 
 fn executeStoreBehaviour(store: *zap.Store, do_tick: bool) void {
-    const behaviour = store.getComponent(zap.Behaviour) orelse return;
-    behaviour.callSafe(.update, store);
+    const behaviours = store.getComponents(zap.Behaviour) catch &[_]*zap.Behaviour{};
+    for (behaviours) |b| {
+        b.callSafe(.update, store);
 
-    if (!do_tick) return;
-    behaviour.callSafe(.tick, store);
+        if (!do_tick) continue;
+        b.callSafe(.tick, store);
+    }
 }
 
 pub fn setActive(id: []const u8) !void {
@@ -141,16 +159,8 @@ pub fn setActive(id: []const u8) !void {
         return;
     }
 
-    defer active_instance = instance;
-    const ai = active_instance orelse return;
-
-    // Dispatch the deinit event
-    try ai.call(Events.deinit);
-    // Free all allocations with ai.allocator()
-    ai.reset();
-
-    // Currently does not do anything
-    ai.executing = false;
+    next_instance = instance;
+    unload();
 }
 
 pub fn deinit() void {
@@ -162,4 +172,8 @@ pub fn deinit() void {
         entry.value_ptr.*.deinit();
         zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
     }
+}
+
+pub fn unload() void {
+    _unload = true;
 }

@@ -20,7 +20,7 @@ original_alloc: Allocator,
 event_map: ?EventMapType,
 executing: bool = false,
 
-// Creation -- Deletion
+// Creation -- Destruction
 
 pub fn init(alloc: Allocator) Self {
     return Self{
@@ -39,6 +39,7 @@ pub fn deinit(self: *Self) void {
     }
 
     emap.deinit();
+    self.reset();
     self.arena.deinit();
 }
 
@@ -52,7 +53,12 @@ pub inline fn allocator(self: *Self) Allocator {
 }
 
 pub inline fn reset(self: *Self) void {
-    _ = self.arena.reset(.free_all);
+    defer _ = self.arena.reset(.free_all);
+
+    const stores = self.stores orelse return;
+    for (stores.items) |store| {
+        self.removeStore(store);
+    }
 }
 
 // Event Handling
@@ -107,16 +113,16 @@ fn makeGetStores(self: *Self) *std.ArrayList(*Store) {
     return &(self.stores.?);
 }
 
-pub fn newStore(self: *Self) !*Store {
+pub fn newStore(self: *Self, id: []const u8) !*Store {
     const ptr = try self.allocator().create(Store);
-    ptr.* = Store.init(self.allocator());
+    ptr.* = Store.init(self.allocator(), id);
 
     return ptr;
 }
 
 pub fn addStore(self: *Self, store: *Store) !void {
-    const behaviour = store.getComponent(zap.Behaviour);
-    if (behaviour) |b| {
+    const behaviours = try store.getComponents(zap.Behaviour);
+    for (behaviours) |b| {
         b.callSafe(.awake, store);
         b.callSafe(.init, store);
     }
@@ -128,12 +134,22 @@ pub fn addStore(self: *Self, store: *Store) !void {
 pub fn removeStore(self: *Self, store: *Store) void {
     const stores = self.makeGetStores();
     for (stores.items, 0..) |it, index| {
-        const behaviour = store.getComponent(zap.Behaviour);
-        if (behaviour) |b| {
+        const behaviours = store.getComponents(zap.Behaviour) catch &[_]*zap.Behaviour{};
+        for (behaviours) |b| {
             b.callSafe(.deinit, store);
         }
 
         if (@intFromPtr(store) != @intFromPtr(it)) continue;
         _ = stores.swapRemove(index);
     }
+}
+
+pub fn getStoreById(self: *Self, id: []const u8) ?*Store {
+    const stores = self.stores orelse return null;
+    for (stores.items) |store| {
+        if (!std.mem.eql(u8, store.id, id)) continue;
+        return store;
+    }
+
+    return null;
 }
