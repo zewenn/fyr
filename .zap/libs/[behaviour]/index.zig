@@ -65,7 +65,7 @@ pub const Behaviour = struct {
         };
     }
 
-    pub fn CacheCast(comptime T: type, ptr: *anyopaque) *T {
+    pub inline fn CacheCast(comptime T: type, ptr: *anyopaque) *T {
         return @ptrCast(@alignCast(ptr));
     }
 };
