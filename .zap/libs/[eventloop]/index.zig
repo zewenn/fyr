@@ -91,7 +91,25 @@ pub fn get(id: []const u8) ?*Instance {
     return ptr.get(id);
 }
 
+/// Executes the main event loop, handling instance updates and ticks.
+///
+/// This function performs the following tasks:
+/// - Retrieves the current time using `zap.libs.raylib.getTime()`.
+/// - Determines if a tick should occur based on the elapsed time since the last tick.
+/// - Iterates over all executing instances and performs the following:
+///   - Executes store behaviour if the instance has stores.
+///   - Calls the `update` event on the instance.
+///   - Calls the `tick` event on the instance if a tick is due.
+/// - Handles unloading of instances if `_unload` is set to true:
+///   - Dispatches the `deinit` event to the active instance.
+///   - Frees all allocations associated with the active instance.
+///   - Resets the active instance.
 pub fn execute() !void {
+    // Note:
+    // - The `defer` statement is used to ensure that `last_tick` is updated after ticking.
+    // - The function uses `orelse continue` to skip over `null` entries in the `executing_instances` array.
+    // - The `active_instance` is set to `next_instance` after unloading.
+
     const now = zap.libs.raylib.getTime();
 
     const do_tick = last_tick + tick_time <= now;

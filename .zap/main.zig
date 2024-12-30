@@ -4,6 +4,9 @@ const Allocator = @import("std").mem.Allocator;
 pub const libs = @import("./.codegen/libs.zig");
 const engine = @import("./.codegen/modules.zig");
 
+pub const rl = libs.raylib;
+pub const uuid = libs.uuid;
+
 pub const Vector2 = libs.raylib.Vector2;
 pub const Vector3 = libs.raylib.Vector3;
 pub const Vector4 = libs.raylib.Vector4;
@@ -218,4 +221,21 @@ pub fn instance() *Instance {
     return libs.eventloop.active_instance orelse libs.eventloop.get("engine").?;
 }
 
+/// Creates a new store with the given identifier and component tuple.
+///
+/// This function calls the `newStore` method on the singleton instance and returns a pointer to the newly created store.
+///
+/// - Parameters:
+///   - id: A constant byte slice representing the identifier for the new store.
+///   - component_tuple: A tuple containing the components for the new store.
+/// - Returns: A pointer to the newly created `Store` instance.
+/// - Throws: An error if the store creation fails.
+pub fn newStore(id: []const u8, component_tuple: anytype) !*Store {
+    return try instance().newStore(id, component_tuple);
+}
+
 pub const CacheCast = Behaviour.CacheCast;
+
+pub fn UUIDV7() u128 {
+    return uuid.v7.new();
+}

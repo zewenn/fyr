@@ -8,6 +8,7 @@ const ComponentErrors = error{ ItemCreationError, AlreadyHasComponent };
 const Self = @This();
 
 id: []const u8,
+uuid: u128,
 list: std.ArrayList(Entry),
 original_alloc: Allocator,
 
@@ -17,6 +18,7 @@ arena: std.heap.ArenaAllocator,
 pub fn init(alloc: Allocator, id: []const u8) Self {
     return Self{
         .id = id,
+        .uuid = zap.UUIDV7(),
         .arena = std.heap.ArenaAllocator.init(alloc),
         .original_alloc = alloc,
         .list = std.ArrayList(Entry).init(alloc),
@@ -40,13 +42,20 @@ pub inline fn allocator(self: *Self) Allocator {
     return self.arena_alloc.?;
 }
 
-pub fn store(self: *Self, value: anytype) !void {
-    // if (self.getComponent(@TypeOf(value)) != null) return ComponentErrors.AlreadyHasComponent;
+/// Adds a component to the store.
+///
+/// This function takes a value of any type and attempts to add it to the store's list.
+/// If the addition fails, it returns a `ComponentErrors.ItemCreationError`.
+///
+/// Parameters:
+/// - `self`: A pointer to the store instance.
+/// - `value`: The component value to be added.
+///
+/// Returns:
+/// - `void`: If the component is successfully added.
+/// - `ComponentErrors.ItemCreationError`: If the component creation fails.
+pub fn addComonent(self: *Self, value: anytype) !void {
     try self.list.append(Entry.init(value) orelse return ComponentErrors.ItemCreationError);
-}
-
-pub fn addComonent(self: *Self, comptime T: type, value: T) !void {
-    try self.store(value);
 }
 
 pub fn getComponent(self: *Self, T: type) ?*T {

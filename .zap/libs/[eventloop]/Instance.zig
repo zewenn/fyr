@@ -113,9 +113,13 @@ fn makeGetStores(self: *Self) *std.ArrayList(*Store) {
     return &(self.stores.?);
 }
 
-pub fn newStore(self: *Self, id: []const u8) !*Store {
+pub fn newStore(self: *Self, id: []const u8, components: anytype) !*Store {
     const ptr = try self.allocator().create(Store);
     ptr.* = Store.init(self.allocator(), id);
+
+    inline for (components) |component| {
+        try ptr.addComonent(component);
+    }
 
     return ptr;
 }

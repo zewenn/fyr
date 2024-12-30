@@ -5,3 +5,4 @@ pub const WrappedArray = @import("../libs/[WrappedArray]/index.zig");
 pub const strings = @import("../libs/[strings]/index.zig");
 pub const raylib = @import("../libs/[raylib]/index.zig");
 pub const ecs = @import("../libs/[ecs]/index.zig");
+pub const uuid = @import("../libs/[uuid]/index.zig");
