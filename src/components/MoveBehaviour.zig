@@ -39,6 +39,8 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
             zap.Vec2(cache.speed, cache.speed),
         ),
     );
+
+    std.log.info("x: {d:.5} | y: {d:.5}", .{ transform.position.x, transform.position.y });
 }
 
 pub fn MovementBehaviour() zap.Behaviour {

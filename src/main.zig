@@ -2,6 +2,7 @@ const std = @import("std");
 const zap = @import(".zap");
 
 const MovementBehaviour = @import("./components/MoveBehaviour.zig").MovementBehaviour;
+const Player = @import("./prefabs/Player.zig").Player;
 
 // const registerScripts = @import("../.temp/script_run.zig").register;
 // const filenames = @import("../.temp/filenames.zig").Filenames;
@@ -87,12 +88,7 @@ pub fn main() !void {
     try zap.libs.eventloop.setActive("test");
     try zap.libs.eventloop.execute();
 
-    var Player = try zap.instance().newStore("Player");
-    {
-        try Player.addComonent(zap.Transform, zap.Transform{});
-        try Player.addComonent(zap.Behaviour, MovementBehaviour());
-    }
-    try zap.instance().addStore(Player);
+    try zap.instance().addStore(try Player());
 
     const Pref: ?*zap.Store = zap.instance().getStoreById("Player");
     zap.assert("Pref is not null", Pref != null);
