@@ -43,8 +43,10 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
     std.log.info("x: {d:.5} | y: {d:.5}", .{ transform.position.x, transform.position.y });
 }
 
-pub fn MovementBehaviour() zap.Behaviour {
-    var b = zap.Behaviour.init(Cache);
+pub fn MovementBehaviour() !zap.Behaviour {
+    var b = try zap.Behaviour.initWithDefaultValue(Cache{
+        .speed = 0.2,
+    });
     b.add(.awake, awake);
     b.add(.update, update);
 

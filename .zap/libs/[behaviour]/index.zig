@@ -3,6 +3,7 @@ const zap = @import("../../main.zig");
 
 const FnType = ?(*const fn (*zap.Store, *anyopaque) anyerror!void);
 const Events = enum { awake, init, update, tick, deinit };
+const AllocationError = error.OutOfMemory;
 
 pub const Behaviour = struct {
     const Self = @This();
@@ -14,8 +15,8 @@ pub const Behaviour = struct {
     tick: FnType = null,
     deinit: FnType = null,
 
-    pub fn init(comptime T: type) Self {
-        const c_ptr: *anyopaque = std.c.malloc(@sizeOf(T)) orelse @panic("C allocation failed!");
+    pub fn init(comptime T: type) !Self {
+        const c_ptr = std.c.malloc(@sizeOf(T)) orelse return AllocationError;
         const ptr: *T = @ptrCast(@alignCast(c_ptr));
         ptr.* = T{};
 
@@ -24,8 +25,10 @@ pub const Behaviour = struct {
         };
     }
 
-    pub fn initWithDefaultValue(comptime T: type, value: T) Self {
-        const c_ptr: *anyopaque = std.c.malloc(@sizeOf(T)) orelse @panic("C allocation failed!");
+    pub fn initWithDefaultValue(value: anytype) !Self {
+        const T: type = @TypeOf(value);
+
+        const c_ptr = std.c.malloc(@sizeOf(T)) orelse return AllocationError;
         const ptr: *T = @ptrCast(@alignCast(c_ptr));
         ptr.* = value;
 

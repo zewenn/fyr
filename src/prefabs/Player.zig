@@ -5,6 +5,6 @@ const MovementBehaviour = @import("../components/MoveBehaviour.zig").MovementBeh
 pub fn Player() !*zap.Store {
     return zap.newStore("Player", .{
         zap.Transform{},
-        MovementBehaviour(),
+        try MovementBehaviour(),
     });
 }
