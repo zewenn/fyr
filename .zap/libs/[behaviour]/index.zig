@@ -16,17 +16,11 @@ pub const Behaviour = struct {
     deinit: FnType = null,
 
     pub fn init(comptime T: type) !Self {
-        const c_ptr = std.c.malloc(@sizeOf(T)) orelse return AllocationError;
-        const ptr: *T = @ptrCast(@alignCast(c_ptr));
-        ptr.* = T{};
-
-        return Self{
-            .cache = @ptrCast(@alignCast(ptr)),
-        };
+        return initWithDefaultValue(T{});
     }
 
     pub fn initWithDefaultValue(value: anytype) !Self {
-        const T: type = @TypeOf(value);
+        const T: type = comptime @TypeOf(value);
 
         const c_ptr = std.c.malloc(@sizeOf(T)) orelse return AllocationError;
         const ptr: *T = @ptrCast(@alignCast(c_ptr));
