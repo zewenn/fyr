@@ -1,6 +1,11 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+pub const builtin = @import("builtin");
+pub const os = std.os;
+pub const target = builtin.target;
+pub const BUILD_MODE = builtin.mode;
+
 pub const libs = @import("./.codegen/libs.zig");
 const engine = @import("./.codegen/modules.zig");
 
@@ -35,6 +40,13 @@ const global_allocators = struct {
     };
 };
 
+pub const SharedPointer = libs.SharedPointer.SharedPointer;
+pub fn SharetPtr(value: anytype) !*SharedPointer(@TypeOf(value)) {
+    const ptr = try getAllocator(.gpa).create(SharedPointer(@TypeOf(value)));
+    ptr.* = try SharedPointer(@TypeOf(value)).init(getAllocator(.gpa), value);
+    return ptr;
+}
+
 pub const WrappedArray = libs.WrappedArray.WrappedArray;
 pub const WrappedArrayOptions = libs.WrappedArray.WrappedArrayOptions;
 pub const array = libs.WrappedArray.array;
@@ -45,7 +57,6 @@ pub const string = libs.strings.string;
 
 pub const ecs = libs.ecs;
 pub const Store = libs.ecs.Store;
-
 pub const Behaviour = libs.behaviour.Behaviour;
 
 pub fn init() !void {
@@ -61,7 +72,7 @@ pub fn init() !void {
 }
 
 pub fn loop() void {
-    while (!libs.raylib.windowShouldClose()) {
+    while (!rl.windowShouldClose()) {
         libs.eventloop.execute() catch {
             std.log.warn("eventloop.execute() failed!", .{});
         };
@@ -70,7 +81,7 @@ pub fn loop() void {
 
 pub fn deinit() void {
     libs.eventloop.deinit();
-    libs.raylib.closeWindow();
+    rl.closeWindow();
 
     if (global_allocators.gpa.interface) |*intf| {
         const state = intf.deinit();
@@ -230,7 +241,7 @@ pub fn instance() *Instance {
 ///   - component_tuple: A tuple containing the components for the new store.
 /// - Returns: A pointer to the newly created `Store` instance.
 /// - Throws: An error if the store creation fails.
-pub fn newStore(id: []const u8, component_tuple: anytype) !*Store {
+pub inline fn newStore(id: []const u8, component_tuple: anytype) !*Store {
     return try instance().newStore(id, component_tuple);
 }
 

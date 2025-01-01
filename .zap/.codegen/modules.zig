@@ -18,6 +18,17 @@ pub fn register() !void {
 		.on_fail = .panic,
 	});
 
+	try scene.on(eventloop.Events.deinit, .{
+		.fn_ptr = @import("../modules/[display]/index.zig").deinit,
+		.on_fail = .panic,
+	});
+
+	// assets
+	try scene.on(eventloop.Events.deinit, .{
+		.fn_ptr = @import("../modules/[assets]/index.zig").deinit,
+		.on_fail = .panic,
+	});
+
 	// types
 
 }

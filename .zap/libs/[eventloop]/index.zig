@@ -185,6 +185,10 @@ pub fn deinit() void {
     const ptr = &(instances orelse return);
     defer ptr.deinit();
 
+    unload();
+    execute() catch {};
+    engine_instance.?.call(Events.deinit) catch {};
+
     var iterator = ptr.iterator();
     while (iterator.next()) |entry| {
         entry.value_ptr.*.deinit();
