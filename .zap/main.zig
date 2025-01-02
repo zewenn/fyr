@@ -139,6 +139,10 @@ pub fn tof32(value: anytype) f32 {
     return changeType(f32, value) orelse 0;
 }
 
+pub fn toi32(value: anytype) i32 {
+    return changeType(i32, value) orelse 0;
+}
+
 pub fn Vec2(x: anytype, y: anytype) Vector2 {
     return Vector2{
         .x = tof32(x),
@@ -249,4 +253,9 @@ pub const CacheCast = Behaviour.CacheCast;
 
 pub fn UUIDV7() u128 {
     return uuid.v7.new();
+}
+
+pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
+    std.debug.print(fmt ++ "\n", args);
+    @panic("ENGINE PANIC!");
 }

@@ -3,5 +3,4 @@ const std = @import("std");
 
 pub fn deinit() !void {
     assets.deinit();
-    std.log.debug("asdasdasdasdas", .{});
 }

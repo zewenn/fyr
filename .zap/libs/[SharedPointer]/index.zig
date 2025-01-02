@@ -7,7 +7,7 @@ pub fn SharedPointer(comptime T: type) type {
 
         alloc: Allocator,
         ref_count: usize = 0,
-        ptr: ?*T,
+        _ptr: ?*T,
 
         pub fn init(alloc: Allocator, value: T) !Self {
             const p = try alloc.create(T);
@@ -15,13 +15,18 @@ pub fn SharedPointer(comptime T: type) type {
 
             return Self{
                 .alloc = alloc,
-                .ptr = p,
+                ._ptr = p,
             };
         }
 
-        pub fn incr(self: *Self) void {
-            if (self.ptr != null)
+        pub fn ptr(self: *Self) ?*T {
+            if (self._ptr != null)
                 self.ref_count += 1;
+            return self._ptr;
+        }
+
+        pub fn isAlive(self: *Self) bool {
+            return self._ptr != null;
         }
 
         pub fn rmref(self: *Self) void {
@@ -32,9 +37,9 @@ pub fn SharedPointer(comptime T: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            const p = self.ptr orelse return;
+            const p = self._ptr orelse return;
             self.alloc.destroy(p);
-            self.ptr = null;
+            self._ptr = null;
         }
     };
 }
