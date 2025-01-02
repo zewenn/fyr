@@ -40,6 +40,8 @@ const global_allocators = struct {
         /// `zap.libs.eventloop.active_instance.allocator()`, otherwise this is the
         /// same as arena.
         instance,
+        c,
+        raw_c,
     };
 };
 
@@ -210,7 +212,7 @@ pub fn AllocatorInstance(comptime T: type) type {
     };
 }
 
-pub fn getAllocator(comptime T: global_allocators.types) Allocator {
+pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     return switch (T) {
         .gpa => global_allocators.gpa.allocator orelse Blk: {
             global_allocators.gpa.interface = std.heap.GeneralPurposeAllocator(.{}){};
@@ -229,6 +231,8 @@ pub fn getAllocator(comptime T: global_allocators.types) Allocator {
             const active_instance = libs.eventloop.active_instance orelse break :Blk getAllocator(.arena);
             break :Blk active_instance.allocator();
         },
+        .c => std.heap.c_allocator,
+        .raw_c => std.heap.raw_c_allocator,
     };
 }
 
@@ -252,7 +256,11 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
     std.debug.print("test: {s}\n", .{formatted});
 }
 
-pub fn instance() *Instance {
+pub fn useInstance(id: []const u8) !void {
+    try libs.eventloop.setActive(id);
+}
+
+pub fn activeInstance() *Instance {
     return libs.eventloop.active_instance orelse panic("No Instance is loaded!", .{});
 }
 
@@ -266,7 +274,7 @@ pub fn instance() *Instance {
 /// - Returns: A pointer to the newly created `Store` instance.
 /// - Throws: An error if the store creation fails.
 pub inline fn newStore(id: []const u8, component_tuple: anytype) !*Store {
-    return try instance().newStore(id, component_tuple);
+    return try activeInstance().newStore(id, component_tuple);
 }
 
 pub const CacheCast = Behaviour.CacheCast;
@@ -278,8 +286,4 @@ pub fn UUIDV7() u128 {
 pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
     std.debug.print(fmt ++ "\n", args);
     @panic("ENGINE PANIC!");
-}
-
-pub fn useInstance(id: []const u8) !void {
-    try libs.eventloop.setActive(id);
 }

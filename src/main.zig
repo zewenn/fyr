@@ -49,9 +49,10 @@ pub fn main() !void {
 
     try zap.useInstance("test");
 
-    try zap.instance().addStore(try Player());
+    const activeInstance = zap.activeInstance();
+    try activeInstance.addStore(try Player());
 
-    const Pref: ?*zap.Store = zap.instance().getStoreById("Player");
+    const Pref: ?*zap.Store = activeInstance.getStoreById("Player");
     zap.assert("Pref is not null", Pref != null);
 
     zap.loop();
