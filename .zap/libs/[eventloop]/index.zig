@@ -177,7 +177,7 @@ pub fn setActive(id: []const u8) !void {
         return;
     }
 
-    if (!zap.loop_running) {
+    if (!zap.isLoopRunning()) {
         active_instance = instance;
         return;
     }

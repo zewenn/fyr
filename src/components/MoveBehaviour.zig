@@ -37,13 +37,19 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
     transform.position = transform.position.add(
         move_vec.multiply(
             zap.Vec3(cache.speed, cache.speed, 0),
+        ).multiply(
+            zap.Vec3(
+                zap.libs.time.deltaTime(),
+                zap.libs.time.deltaTime(),
+                0,
+            ),
         ),
     );
 }
 
 pub fn MovementBehaviour() !zap.Behaviour {
     var b = try zap.Behaviour.initWithDefaultValue(Cache{
-        .speed = 0.2,
+        .speed = 300,
     });
     b.add(.awake, awake);
     b.add(.update, update);
