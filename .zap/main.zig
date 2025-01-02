@@ -62,6 +62,8 @@ pub const ecs = libs.ecs;
 pub const Store = libs.ecs.Store;
 pub const Behaviour = libs.behaviour.Behaviour;
 
+pub var loop_running = false;
+
 pub fn init() !void {
     libs.WrappedArray.ENG_HealthCheck();
     libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
@@ -78,6 +80,9 @@ pub fn init() !void {
 
 pub fn loop() void {
     while (!rl.windowShouldClose()) {
+        if (!loop_running)
+            loop_running = true;
+
         libs.display.reset();
 
         libs.eventloop.execute() catch {
@@ -248,7 +253,7 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
 }
 
 pub fn instance() *Instance {
-    return libs.eventloop.active_instance orelse libs.eventloop.get("engine").?;
+    return libs.eventloop.active_instance orelse panic("No Instance is loaded!", .{});
 }
 
 /// Creates a new store with the given identifier and component tuple.
@@ -273,4 +278,8 @@ pub fn UUIDV7() u128 {
 pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
     std.debug.print(fmt ++ "\n", args);
     @panic("ENGINE PANIC!");
+}
+
+pub fn useInstance(id: []const u8) !void {
+    try libs.eventloop.setActive(id);
 }

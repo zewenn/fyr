@@ -45,48 +45,9 @@ pub fn main() !void {
 
     // std.log.debug("{any}", .{filenames});
 
-    var test_instance = try zap.libs.eventloop.new("test");
-    {
-        try test_instance.on(zap.libs.eventloop.Events.awake, .{
-            .fn_ptr = struct {
-                pub fn callback() !void {
-                    std.log.debug("Awoken", .{});
-                }
-            }.callback,
-            .on_fail = .ignore,
-        });
-        try test_instance.on(zap.libs.eventloop.Events.init, .{
-            .fn_ptr = struct {
-                pub fn callback() !void {
-                    std.log.debug("Inited", .{});
-                }
-            }.callback,
-            .on_fail = .ignore,
-        });
-        try test_instance.on(zap.libs.eventloop.Events.tick, .{
-            .fn_ptr = struct {
-                pub fn callback() !void {
-                    std.log.debug("tick", .{});
-                }
-            }.callback,
-            .on_fail = .ignore,
-        });
-    }
+    _ = try zap.libs.eventloop.new("test");
 
-    var test_2_instance = try zap.libs.eventloop.new("test2");
-    {
-        try test_2_instance.on(zap.libs.eventloop.Events.tick, .{
-            .fn_ptr = struct {
-                pub fn callback() !void {
-                    std.log.debug("tick2", .{});
-                }
-            }.callback,
-            .on_fail = .ignore,
-        });
-    }
-
-    try zap.libs.eventloop.setActive("test");
-    try zap.libs.eventloop.execute();
+    try zap.useInstance("test");
 
     try zap.instance().addStore(try Player());
 
