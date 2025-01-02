@@ -19,16 +19,16 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
 
     var move_vec = zap.Vec3(0, 0, 0);
 
-    if (zap.libs.raylib.isKeyDown(.w)) {
+    if (zap.rl.isKeyDown(.w)) {
         move_vec.y -= 1;
     }
-    if (zap.libs.raylib.isKeyDown(.s)) {
+    if (zap.rl.isKeyDown(.s)) {
         move_vec.y += 1;
     }
-    if (zap.libs.raylib.isKeyDown(.a)) {
+    if (zap.rl.isKeyDown(.a)) {
         move_vec.x -= 1;
     }
-    if (zap.libs.raylib.isKeyDown(.d)) {
+    if (zap.rl.isKeyDown(.d)) {
         move_vec.x += 1;
     }
 

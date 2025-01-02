@@ -11,10 +11,10 @@ pub const libs = @import("./.codegen/libs.zig");
 pub const rl = libs.raylib;
 pub const uuid = libs.uuid;
 
-pub const Vector2 = libs.raylib.Vector2;
-pub const Vector3 = libs.raylib.Vector3;
-pub const Vector4 = libs.raylib.Vector4;
-pub const Rectangle = libs.raylib.Rectangle;
+pub const Vector2 = rl.Vector2;
+pub const Vector3 = rl.Vector3;
+pub const Vector4 = rl.Vector4;
+pub const Rectangle = rl.Rectangle;
 
 pub const Transform = libs.ecs.components.Transform;
 pub const Display = libs.ecs.components.Display;
@@ -63,6 +63,8 @@ pub const ecs = libs.ecs;
 pub const Store = libs.ecs.Store;
 pub const Behaviour = libs.behaviour.Behaviour;
 
+pub const time = libs.time;
+
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
     return loop_running;
@@ -74,7 +76,7 @@ pub fn init() !void {
         libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
     }
 
-    libs.raylib.initWindow(1280, 720, ".zap");
+    rl.initWindow(1280, 720, ".zap");
 
     libs.time.init();
     try libs.eventloop.init();

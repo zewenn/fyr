@@ -1,6 +1,6 @@
 const std = @import("std");
 const zap = @import("../../main.zig");
-const rl = zap.libs.raylib;
+const rl = zap.rl;
 
 var count_game_time = true;
 var game_time: f32 = 0;
