@@ -132,14 +132,11 @@ pub const DisplayBehaviour = struct {
         }
 
         const texture = display_cache.texture orelse return;
-        rl.drawTexturePro(
-            texture.*,
-            zap.Rect(0, 0, transform.scale.x, transform.scale.y),
-            zap.Rect(transform.position.x, transform.position.y, transform.scale.x, transform.scale.y),
-            zap.Vec2(0, 0),
-            transform.rotation,
-            display.tint,
-        );
+        try zap.libs.display.add(.{
+            .texture = texture.*,
+            .transform = transform.*,
+            .display = display.*,
+        });
         // rl.drawTexture(texture.*, 0, 0, rl.Color.white);
     }
 

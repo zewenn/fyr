@@ -71,24 +71,31 @@ pub fn init() !void {
     try libs.eventloop.init();
     try engine.register();
 
+    libs.display.init();
+
     try libs.eventloop.setActive("engine");
 }
 
 pub fn loop() void {
     while (!rl.windowShouldClose()) {
+        libs.display.reset();
+
+        libs.eventloop.execute() catch {
+            std.log.warn("eventloop.execute() failed!", .{});
+        };
+
         rl.beginDrawing();
         defer rl.endDrawing();
 
         rl.clearBackground(rl.Color.white);
 
-        libs.eventloop.execute() catch {
-            std.log.warn("eventloop.execute() failed!", .{});
-        };
+        libs.display.render();
     }
 }
 
 pub fn deinit() void {
     libs.eventloop.deinit();
+    libs.display.deinit();
     rl.closeWindow();
 
     if (global_allocators.gpa.interface) |*intf| {
