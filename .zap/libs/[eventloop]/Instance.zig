@@ -138,12 +138,12 @@ pub fn addStore(self: *Self, store: *Store) !void {
 pub fn removeStore(self: *Self, store: *Store) void {
     const stores = self.makeGetStores();
     for (stores.items, 0..) |it, index| {
+        if (@intFromPtr(store) != @intFromPtr(it)) continue;
+
         const behaviours = store.getComponents(zap.Behaviour) catch &[_]*zap.Behaviour{};
         for (behaviours) |b| {
             b.callSafe(.deinit, store);
         }
-
-        if (@intFromPtr(store) != @intFromPtr(it)) continue;
         _ = stores.swapRemove(index);
     }
 }

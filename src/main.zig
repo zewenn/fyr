@@ -3,6 +3,7 @@ const zap = @import(".zap");
 
 const MovementBehaviour = @import("./components/MoveBehaviour.zig").MovementBehaviour;
 const Player = @import("./prefabs/Player.zig").Player;
+const Box = @import("./prefabs/Box.zig").Box;
 
 // const registerScripts = @import("../.temp/script_run.zig").register;
 // const filenames = @import("../.temp/filenames.zig").Filenames;
@@ -51,6 +52,7 @@ pub fn main() !void {
 
     const activeInstance = zap.activeInstance();
     try activeInstance.addStore(try Player());
+    try activeInstance.addStore(try Box());
 
     const Pref: ?*zap.Store = activeInstance.getStoreById("Player");
     zap.assert("Pref is not null", Pref != null);

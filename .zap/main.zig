@@ -19,7 +19,9 @@ pub const Rectangle = rl.Rectangle;
 pub const Transform = libs.ecs.components.Transform;
 pub const Display = libs.ecs.components.Display;
 pub const DisplayCache = libs.ecs.components.DisplayCache;
-pub const DisplayBehaviour = libs.ecs.components.DisplayBehaviour;
+pub const Renderer = libs.ecs.components.Renderer;
+pub const Collider = libs.ecs.components.Collider;
+pub const ColliderBehaviour = libs.ecs.components.ColliderBehaviour;
 
 pub const Instance = libs.eventloop.Instance;
 
