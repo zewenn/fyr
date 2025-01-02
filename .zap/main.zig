@@ -8,8 +8,8 @@ pub const BUILD_MODE = builtin.mode;
 
 pub const libs = @import("./.codegen/libs.zig");
 
-pub const rl = libs.raylib;
-pub const uuid = libs.uuid;
+pub const rl = libs.foreign.rl;
+pub const uuid = libs.foreign.uuid;
 
 pub const Vector2 = rl.Vector2;
 pub const Vector3 = rl.Vector3;
@@ -39,7 +39,9 @@ const global_allocators = struct {
         /// `zap.libs.eventloop.active_instance.allocator()`, otherwise this is the
         /// same as arena.
         instance,
+        /// Shorthand for `std.heap.c_allocator`
         c,
+        /// Shorthand for `std.heap.raw_c_allocator`
         raw_c,
     };
 };
@@ -272,7 +274,7 @@ pub fn useInstance(id: []const u8) !void {
     try libs.eventloop.setActive(id);
 }
 
-pub fn activeInstance() *Instance {
+pub inline fn activeInstance() *Instance {
     return libs.eventloop.active_instance orelse panic("No Instance is loaded!", .{});
 }
 
