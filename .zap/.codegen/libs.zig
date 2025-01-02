@@ -1,6 +1,7 @@
 pub const string = @import("../libs/[string]/index.zig");
 pub const SharedPointer = @import("../libs/[SharedPointer]/index.zig");
 pub const eventloop = @import("../libs/[eventloop]/index.zig");
+pub const time = @import("../libs/[time]/index.zig");
 pub const behaviour = @import("../libs/[behaviour]/index.zig");
 pub const display = @import("../libs/[display]/index.zig");
 pub const WrappedArray = @import("../libs/[WrappedArray]/index.zig");

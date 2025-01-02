@@ -7,7 +7,6 @@ pub const target = builtin.target;
 pub const BUILD_MODE = builtin.mode;
 
 pub const libs = @import("./.codegen/libs.zig");
-const engine = @import("./.codegen/modules.zig");
 
 pub const rl = libs.raylib;
 pub const uuid = libs.uuid;
@@ -64,16 +63,21 @@ pub const ecs = libs.ecs;
 pub const Store = libs.ecs.Store;
 pub const Behaviour = libs.behaviour.Behaviour;
 
-pub var loop_running = false;
+var loop_running = false;
+pub inline fn isLoopRunning() bool {
+    return loop_running;
+}
 
 pub fn init() !void {
-    libs.WrappedArray.ENG_HealthCheck();
-    libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
+    if (BUILD_MODE == .Debug) {
+        libs.WrappedArray.ENG_HealthCheck();
+        libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
+    }
 
     libs.raylib.initWindow(1280, 720, ".zap");
 
+    libs.time.init();
     try libs.eventloop.init();
-    try engine.register();
 
     libs.display.init();
 
@@ -84,6 +88,8 @@ pub fn loop() void {
     while (!rl.windowShouldClose()) {
         if (!loop_running)
             loop_running = true;
+
+        libs.time.update();
 
         libs.display.reset();
 
@@ -101,46 +107,50 @@ pub fn loop() void {
 }
 
 pub fn deinit() void {
-    libs.eventloop.deinit();
-    libs.display.deinit();
-    rl.closeWindow();
-
-    if (global_allocators.gpa.interface) |*intf| {
+    defer if (global_allocators.gpa.interface) |*intf| {
         const state = intf.deinit();
         switch (state) {
             .ok => std.log.info("GPA exited without memory leaks!", .{}),
             .leak => std.log.warn("GPA exited with a memory leak!", .{}),
         }
-    }
-    if (global_allocators.arena.interface) |*intf| {
+    };
+
+    defer if (global_allocators.arena.interface) |*intf| {
         intf.deinit();
-    }
+    };
+
+    libs.eventloop.deinit();
+    libs.display.deinit();
+    rl.closeWindow();
+
+    libs.assets.deinit();
 }
 
-pub fn changeType(comptime T: type, value: anytype) ?T {
+pub inline fn changeType(comptime T: type, value: anytype) ?T {
+    const value_info = @typeInfo(@TypeOf(value));
     return switch (@typeInfo(T)) {
-        .Int, .ComptimeInt => switch (@typeInfo(@TypeOf(value))) {
+        .Int, .ComptimeInt => switch (value_info) {
             .Int, .ComptimeInt => @as(T, @intCast(value)),
             .Float, .ComptimeFloat => @as(T, @intFromFloat(@round(value))),
             .Bool => @as(T, @intFromBool(value)),
             .Enum => @as(T, @intFromEnum(value)),
             else => null,
         },
-        .Float, .ComptimeFloat => switch (@typeInfo(@TypeOf(value))) {
+        .Float, .ComptimeFloat => switch (value_info) {
             .Int, .ComptimeInt => @as(T, @floatFromInt(value)),
             .Float, .ComptimeFloat => @as(T, @floatCast(value)),
             .Bool => @as(T, @floatFromInt(@intFromBool(value))),
             .Enum => @as(T, @floatFromInt(@intFromEnum(value))),
             else => null,
         },
-        .Bool => switch (@typeInfo(@TypeOf(value))) {
+        .Bool => switch (value_info) {
             .Int, .ComptimeInt => value != 0,
             .Float, .ComptimeFloat => @as(isize, @intFromFloat(@round(value))) != 0,
             .Bool => value,
             .Enum => @as(isize, @intFromEnum(value)) != 0,
             else => null,
         },
-        .Enum => switch (@typeInfo(@TypeOf(value))) {
+        .Enum => switch (value_info) {
             .Int, .ComptimeInt => @enumFromInt(value),
             .Float, .ComptimeFloat => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
             .Bool => @enumFromInt(@intFromBool(value)),
@@ -157,7 +167,7 @@ pub fn changeType(comptime T: type, value: anytype) ?T {
     };
 }
 
-pub fn tof32(value: anytype) f32 {
+pub inline fn tof32(value: anytype) f32 {
     return changeType(f32, value) orelse 0;
 }
 
