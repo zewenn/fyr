@@ -18,6 +18,9 @@ pub const Vector4 = libs.raylib.Vector4;
 pub const Rectangle = libs.raylib.Rectangle;
 
 pub const Transform = libs.ecs.components.Transform;
+pub const Display = libs.ecs.components.Display;
+pub const DisplayCache = libs.ecs.components.DisplayCache;
+pub const DisplayBehaviour = libs.ecs.components.DisplayBehaviour;
 
 pub const Instance = libs.eventloop.Instance;
 
@@ -73,6 +76,11 @@ pub fn init() !void {
 
 pub fn loop() void {
     while (!rl.windowShouldClose()) {
+        rl.beginDrawing();
+        defer rl.endDrawing();
+
+        rl.clearBackground(rl.Color.white);
+
         libs.eventloop.execute() catch {
             std.log.warn("eventloop.execute() failed!", .{});
         };

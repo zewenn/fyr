@@ -17,7 +17,7 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
     const cache = zap.CacheCast(Cache, cache_ptr);
     const transform = cache.transform orelse return;
 
-    var move_vec = zap.Vec2(0, 0);
+    var move_vec = zap.Vec3(0, 0, 0);
 
     if (zap.libs.raylib.isKeyDown(.key_w)) {
         move_vec.y -= 1;
@@ -36,7 +36,7 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
 
     transform.position = transform.position.add(
         move_vec.multiply(
-            zap.Vec2(cache.speed, cache.speed),
+            zap.Vec3(cache.speed, cache.speed, 0),
         ),
     );
 

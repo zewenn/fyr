@@ -11,27 +11,27 @@ pub fn awake() !void {
     std.log.debug("Hello from display!", .{});
 }
 
-pub fn update() !void {
-    rl.beginDrawing();
-    defer rl.endDrawing();
+// pub fn update() !void {
+//     rl.beginDrawing();
+//     defer rl.endDrawing();
 
-    rl.clearBackground(rl.Color.white);
+//     rl.clearBackground(rl.Color.white);
 
-    if (img_ptr == null and rl.isKeyPressed(.key_a)) img_ptr = try assets.get.image(
-        "small.png",
-        zap.Vec2(512, 512),
-        45,
-    );
+//     if (img_ptr == null and rl.isKeyPressed(.key_a)) img_ptr = try assets.get.image(
+//         "small.png",
+//         zap.Vec2(512, 512),
+//         45,
+//     );
 
-    if (img_ptr) |iptr| Blk: {
-        if (texture != null) break :Blk;
+//     if (img_ptr) |iptr| Blk: {
+//         if (texture != null) break :Blk;
 
-        texture = try assets.get.texture("small.png", iptr.*);
-    }
+//         texture = try assets.get.texture("small.png", iptr.*);
+//     }
 
-    if (texture) |t|
-        rl.drawTexture(t.*, 0, 0, rl.Color.white);
-}
+//     if (texture) |t|
+//         rl.drawTexture(t.*, 0, 0, rl.Color.white);
+// }
 
 pub fn tick() !void {}
 

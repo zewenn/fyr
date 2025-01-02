@@ -40,9 +40,9 @@ pub fn deinit() void {
     }
 }
 
-inline fn calculateHash(comptime rel_path: []const u8, size: zap.Vector2, rotation: f32) usize {
+inline fn calculateHash(rel_path: []const u8, size: zap.Vector2, rotation: f32) usize {
     var res: usize = 0;
-    inline for (rel_path, 0..) |char, index| {
+    for (rel_path, 0..) |char, index| {
         res += char * index;
     }
 
@@ -52,16 +52,25 @@ inline fn calculateHash(comptime rel_path: []const u8, size: zap.Vector2, rotati
     return res;
 }
 
-fn loadFromFile(comptime rel_path: []const u8) ![]const u8 {
+fn loadFromFile(rel_path: []const u8) ![]const u8 {
     const file = switch (zap.BUILD_MODE) {
-        .Debug => fs.cwd().openFile("./src/assets/" ++ rel_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path}),
+        .Debug => Blk: {
+            const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
+                "./src/assets/",
+                rel_path,
+            });
+            defer zap.getAllocator(.gpa).free(full_path);
+
+            break :Blk fs.cwd().openFile(full_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path});
+        },
         else => Blk: {
             const base_path = try fs.selfExeDirPathAlloc(zap.getAllocator(.gpa));
             defer zap.getAllocator(.gpa).free(base_path);
 
-            const full_path = try fs.path.join(zap.getAllocator(.gpa), [_][]const u8{
+            const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
                 base_path,
-                "assets/" ++ rel_path,
+                "assets/",
+                rel_path,
             });
             defer zap.getAllocator(.gpa).free(full_path);
 
@@ -74,7 +83,7 @@ fn loadFromFile(comptime rel_path: []const u8) ![]const u8 {
 }
 
 pub const get = struct {
-    pub fn image(comptime rel_path: []const u8, size: zap.Vector2, rotation: f32) !?*zap.rl.Image {
+    pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) !?*zap.rl.Image {
         const ic = &(image_cache orelse Blk: {
             image_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Image)).init(zap.getAllocator(.gpa));
             break :Blk image_cache.?;
@@ -103,7 +112,7 @@ pub const get = struct {
         return stored.ptr();
     }
 
-    pub fn texture(comptime rel_path: []const u8, img: zap.rl.Image) !?*zap.rl.Texture {
+    pub fn texture(rel_path: []const u8, img: zap.rl.Image) !?*zap.rl.Texture {
         const tc = &(texture_cache orelse Blk: {
             texture_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture)).init(zap.getAllocator(.gpa));
             break :Blk texture_cache.?;
@@ -122,7 +131,7 @@ pub const get = struct {
 };
 
 pub const rmref = struct {
-    pub fn image(comptime rel_path: []const u8, size: zap.Vector2, rotation: f32) void {
+    pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) void {
         const ic = &(image_cache orelse return);
         const hash = calculateHash(rel_path, size, rotation);
         const sptr = ic.get(hash) orelse return;
@@ -138,7 +147,7 @@ pub const rmref = struct {
         sptr.rmref();
     }
 
-    pub fn texture(comptime rel_path: []const u8, img: zap.rl.Image) void {
+    pub fn texture(rel_path: []const u8, img: zap.rl.Image) void {
         const tc = &(texture_cache orelse return);
         const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), 0);
         const sptr = tc.get(hash) orelse return;

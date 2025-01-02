@@ -8,11 +8,6 @@ pub fn register() !void {
 		.on_fail = .panic,
 	});
 
-	try scene.on(eventloop.Events.update, .{
-		.fn_ptr = @import("../modules/[display]/index.zig").update,
-		.on_fail = .panic,
-	});
-
 	try scene.on(eventloop.Events.tick, .{
 		.fn_ptr = @import("../modules/[display]/index.zig").tick,
 		.on_fail = .panic,
