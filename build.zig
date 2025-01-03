@@ -16,10 +16,32 @@ pub fn build(b: *std.Build) !void {
     const allocator = arena.allocator();
 
     // Making the src/.temp directory
-    std.fs.cwd().makeDir("./src/.codegen/") catch {};
-    std.fs.cwd().makeDir("./.zap/.codegen/") catch {};
+    fs.cwd().makeDir("./src/.codegen/") catch {};
+    fs.cwd().makeDir("./.zap/.codegen/") catch {};
 
     // Handling Scenes & Scripts
+
+    Blk: {
+        fs.cwd().makeDir("./src/app/[default]/") catch |err| switch (err) {
+            error.PathAlreadyExists => {},
+            else => @panic("Default instance dir couldn't be created!"),
+        };
+
+        var default = fs.cwd().openDir("./src/app/[default]/", .{ .iterate = true }) catch break :Blk;
+        defer default.close();
+        errdefer default.close();
+
+        var it = default.iterate();
+        while (it.next() catch break :Blk) |entry| {
+            if (entry.kind == .file) break :Blk;
+        }
+
+        var file = default.createFile("index.zig", .{}) catch @panic("Couldn't create file in [default]");
+        defer file.close();
+
+        _ = file.write("const std = @import(\"std\");\nconst zap = @import(\".zap\");") catch {};
+    }
+
     generateInstanceRegister(
         allocator,
         "./src/app/",
@@ -223,7 +245,7 @@ fn generateInstanceRegister(
     _ = try writer.write("const el = zap.libs.eventloop;\n\n");
 
     _ = try writer.write("pub fn register() !void {");
-    defer _ = writer.write("}") catch {
+    defer _ = writer.write("\n}") catch {
         std.log.err("Write failiure", .{});
         unreachable;
     };
@@ -242,7 +264,7 @@ fn generateInstanceRegister(
     }
 
     for (inner_directories) |shallow_entry_path| {
-        const scene_name = shallow_entry_path[1 .. shallow_entry_path.len - 1];
+        const instance_name = shallow_entry_path[1 .. shallow_entry_path.len - 1];
 
         var shallow_entry_string = try String.init_with_contents(
             allocator,
@@ -289,16 +311,18 @@ fn generateInstanceRegister(
             const contents = try file.readToEndAlloc(allocator, BUF_128MB);
             defer allocator.free(contents);
 
-            try writer.print("\n\n\t// ----- [{s}] -----\n", .{scene_name});
+            try writer.print("\n\n\t// ----- [{s}] -----\n", .{instance_name});
             try writer.print(
                 "\n\tconst {s}_instance = try el.new(\"{s}\");\n",
-                .{ scene_name, scene_name },
+                .{ instance_name, instance_name },
             );
             _ = try writer.write("\t{\n");
-            defer _ = writer.write("\n\t}\n") catch {
+            defer _ = writer.write("\n\t}") catch {
                 std.log.err("Filer write error", .{});
                 unreachable;
             };
+
+            var added = false;
 
             if (std.mem.containsAtLeast(
                 u8,
@@ -306,10 +330,11 @@ fn generateInstanceRegister(
                 1,
                 "\npub fn awake(",
             )) {
+                added = true;
                 try printEventImport(
                     writer,
                     "awake",
-                    scene_name,
+                    instance_name,
                     path,
                 );
             }
@@ -319,10 +344,11 @@ fn generateInstanceRegister(
                 1,
                 "\npub fn init(",
             )) {
+                added = true;
                 try printEventImport(
                     writer,
                     "init",
-                    scene_name,
+                    instance_name,
                     path,
                 );
             }
@@ -332,10 +358,11 @@ fn generateInstanceRegister(
                 1,
                 "\npub fn update(",
             )) {
+                added = true;
                 try printEventImport(
                     writer,
                     "update",
-                    scene_name,
+                    instance_name,
                     path,
                 );
             }
@@ -345,10 +372,11 @@ fn generateInstanceRegister(
                 1,
                 "\npub fn tick(",
             )) {
+                added = true;
                 try printEventImport(
                     writer,
                     "tick",
-                    scene_name,
+                    instance_name,
                     path,
                 );
             }
@@ -358,13 +386,17 @@ fn generateInstanceRegister(
                 1,
                 "\npub fn deinit(",
             )) {
+                added = true;
                 try printEventImport(
                     writer,
                     "deinit",
-                    scene_name,
+                    instance_name,
                     path,
                 );
             }
+
+            if (!added)
+                try writer.print("\t\t_ = {s}_instance;", .{instance_name});
         }
     }
 }
