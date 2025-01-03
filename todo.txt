@@ -6,7 +6,7 @@ x 2025-01-03 proper Instance generation from file structure
 x 2025-01-03 export assets dir to zig-out/ 
 
 
-+v0.0.2-dev.2 @files-update
+x 2025-01-03 +v0.0.2-dev.2 @files-update
 
 x 2025-01-03 auto generate "default" instance
 x 2025-01-03 automatically create a script in [default] if non-existent
@@ -16,7 +16,7 @@ x 2025-01-03 update gitignore
     x 2025-01-03 add ./src/.codegen to gitignore
     x 2025-01-03 add ./.zap/.codegen to gitignore
 
-bump version + create release
+x 2025-01-03 bump version + create release
 
 
 +v0.0.3 @engine-work

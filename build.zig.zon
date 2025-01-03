@@ -1,6 +1,6 @@
 .{
     .name = "zap-framework",
-    .version = "0.0.2-dev.1",
+    .version = "0.0.2-dev.2",
     .dependencies = .{
         .@"raylib-zig" = .{
             .url = "git+https://github.com/Not-Nik/raylib-zig.git#845af357e4bc5ed8d008a8bb64bd7c4b4906851d",
