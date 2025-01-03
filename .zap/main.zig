@@ -91,6 +91,10 @@ pub fn init() !void {
 }
 
 pub fn loop() void {
+    if (libs.eventloop.active_instance == null) {
+        try useInstance("default");
+    }
+
     while (!rl.windowShouldClose()) {
         if (!loop_running)
             loop_running = true;

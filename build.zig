@@ -7,211 +7,23 @@ const String = @import("./.zap/libs/[string]/index.zig");
 const BUF_128MB = 1024000000;
 
 pub fn build(b: *std.Build) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
+    defer arena.deinit();
 
-    var allocator = gpa.allocator();
+    const allocator = arena.allocator();
 
     // Making the src/.temp directory
-    std.fs.cwd().makeDir("./src/.temp/") catch {};
-
-    Filenames: {
-        // const files_dir = "./src/assets/";
-        const output_file = std.fs.cwd().createFile(
-            "src/.temp/filenames.zig",
-            .{
-                .truncate = true,
-                .exclusive = false,
-            },
-        ) catch @panic("Couldn't open outfile!");
-        defer output_file.close();
-
-        const res = getEntries(
-            "./src/assets/",
-            allocator,
-            false,
-            false,
-        );
-        defer {
-            for (res) |item| {
-                allocator.free(item);
-            }
-            allocator.free(res);
-        }
-
-        var writer = output_file.writer();
-        writer.writeAll("") catch break :Filenames;
-        _ = writer.write("pub const Filenames = [_][]const u8{\n") catch break :Filenames;
-
-        for (res, 0..) |filepath, i| {
-            if (i == 0) {
-                _ = writer.write("\t\"") catch break :Filenames;
-            } else {
-                _ = writer.write("\",\n\t\"") catch break :Filenames;
-            }
-
-            switch (builtin.os.tag) {
-                .windows => {
-                    const str = try allocator.alloc(u8, filepath.len);
-                    defer allocator.free(str);
-
-                    std.mem.copyForwards(u8, str, filepath);
-
-                    const owned = std.mem.replaceOwned(u8, allocator, filepath, "\\", "/") catch break :Filenames;
-                    defer allocator.free(owned);
-
-                    writer.print("{s}", .{owned}) catch break :Filenames;
-                },
-                else => {
-                    writer.print("{s}", .{filepath}) catch break :Filenames;
-                },
-            }
-
-            if (i == res.len - 1) {
-                _ = writer.write("\"") catch unreachable;
-            }
-        }
-        _ = writer.write("\n};") catch unreachable;
-
-        break :Filenames;
-    }
+    std.fs.cwd().makeDir("./src/.codegen/") catch {};
+    std.fs.cwd().makeDir("./.zap/.codegen/") catch {};
 
     // Handling Scenes & Scripts
-    Scenes: {
-        const output_file = std.fs.cwd().createFile(
-            "src/.temp/script_run.zig",
-            .{
-                .truncate = true,
-                .exclusive = false,
-            },
-        ) catch unreachable;
-
-        var writer = output_file.writer();
-        writer.writeAll("") catch unreachable;
-        _ = writer.write("const sc = @import(\"../engine/scenes.m.zig\");\n\n") catch unreachable;
-        _ = writer.write("pub fn register() !void {\n") catch unreachable;
-
-        const scene_directories = getEntries(
-            "./src/app/",
-            allocator,
-            true,
-            true,
-        );
-        defer {
-            for (scene_directories) |item| {
-                allocator.free(item);
-            }
-            allocator.free(scene_directories);
-        }
-
-        for (scene_directories) |shallow_entry_path| {
-            const scene_name = shallow_entry_path[1 .. shallow_entry_path.len - 1];
-
-            var shallow_entry_string = String.init_with_contents(
-                allocator,
-                shallow_entry_path,
-            ) catch @panic("Couldn't create shallow string");
-            defer shallow_entry_string.deinit();
-
-            if (!shallow_entry_string.startsWith("[") or !shallow_entry_string.endsWith("]")) continue;
-
-            var sub_path_string = String.init_with_contents(allocator, "./src/app/") catch unreachable;
-            defer sub_path_string.deinit();
-
-            sub_path_string.concat(shallow_entry_path) catch @panic("Failed to concat wtf");
-
-            const sub_path = (sub_path_string.toOwned() catch unreachable).?;
-            defer allocator.free(sub_path);
-
-            const script_paths = getEntries(
-                sub_path,
-                allocator,
-                false,
-                false,
-            );
-            defer {
-                for (script_paths) |item| {
-                    allocator.free(item);
-                }
-                allocator.free(script_paths);
-            }
-
-            for (script_paths) |path| {
-                var string_path_from_cwd = sub_path_string.clone() catch @panic("Failed to initalise string");
-                defer string_path_from_cwd.deinit();
-
-                string_path_from_cwd.concat("/") catch @panic("Couldn't concat!");
-                string_path_from_cwd.concat(path) catch @panic("Couldn't concat!");
-
-                const path_from_cwd = (string_path_from_cwd.toOwned() catch
-                    @panic("Couldn't make into owned slice")).?;
-                defer allocator.free(path_from_cwd);
-
-                const file = std.fs.cwd().openFile(path_from_cwd, .{}) catch @panic("Failed to open file");
-                defer file.close();
-
-                const contents = file.readToEndAlloc(allocator, BUF_128MB) catch |err| switch (err) {
-                    error.FileTooBig => @panic("Maximum file size exceeded"),
-                    else => @panic("Failed to read file"),
-                };
-                defer allocator.free(contents);
-
-                writer.print("\ttry sc.register(\"{s}\", sc.Script", .{scene_name}) catch unreachable;
-                _ = writer.write("{\n") catch unreachable;
-
-                if (std.mem.containsAtLeast(
-                    u8,
-                    contents,
-                    1,
-                    "\npub fn awake(",
-                )) {
-                    writer.print(
-                        "\t\t.eAwake = @import(\"../app/{s}/{s}\").awake,\n",
-                        .{ shallow_entry_path, path },
-                    ) catch unreachable;
-                }
-                if (std.mem.containsAtLeast(
-                    u8,
-                    contents,
-                    1,
-                    "\npub fn init(",
-                )) {
-                    writer.print(
-                        "\t\t.eInit = @import(\"../app/{s}/{s}\").init,\n",
-                        .{ shallow_entry_path, path },
-                    ) catch unreachable;
-                }
-                if (std.mem.containsAtLeast(
-                    u8,
-                    contents,
-                    1,
-                    "\npub fn update(",
-                )) {
-                    writer.print(
-                        "\t\t.eUpdate = @import(\"../app/{s}/{s}\").update,\n",
-                        .{ shallow_entry_path, path },
-                    ) catch unreachable;
-                }
-                if (std.mem.containsAtLeast(
-                    u8,
-                    contents,
-                    1,
-                    "\npub fn deinit(",
-                )) {
-                    writer.print(
-                        "\t\t.eDeinit = @import(\"../app/{s}/{s}\").deinit,\n",
-                        .{ shallow_entry_path, path },
-                    ) catch unreachable;
-                }
-
-                _ = writer.write("\t});") catch unreachable;
-            }
-        }
-        _ = writer.write("\n}") catch unreachable;
-        break :Scenes;
-    }
-
-    std.fs.cwd().makeDir("./.zap/.codegen/") catch {};
+    generateInstanceRegister(
+        allocator,
+        "./src/app/",
+        "./src/.codegen/instances.zig",
+    ) catch {
+        std.log.err("failed to generate instance data from file structure!", .{});
+    };
 
     Libs: {
         const output_file = std.fs.cwd().createFile(
@@ -230,7 +42,7 @@ pub fn build(b: *std.Build) !void {
             allocator,
             true,
             true,
-        );
+        ) catch unreachable;
         defer {
             for (scene_directories) |item| {
                 allocator.free(item);
@@ -249,56 +61,10 @@ pub fn build(b: *std.Build) !void {
 
             if (!shallow_entry_string.startsWith("[") or !shallow_entry_string.endsWith("]")) continue;
 
-            var sub_path_string = String.init_with_contents(allocator, "./src/app/") catch unreachable;
-            defer sub_path_string.deinit();
-
-            sub_path_string.concat(shallow_entry_path) catch @panic("Failed to concat wtf");
-
-            const sub_path = (sub_path_string.toOwned() catch unreachable).?;
-            defer allocator.free(sub_path);
-
-            const script_paths = getEntries(
-                sub_path,
-                allocator,
-                false,
-                false,
-            );
-            defer {
-                for (script_paths) |item| {
-                    allocator.free(item);
-                }
-                // allocator.free(script_paths);
-            }
-
-            for (script_paths) |path| {
-                var string_path_from_cwd = sub_path_string.clone() catch @panic("Failed to initalise string");
-                defer string_path_from_cwd.deinit();
-
-                string_path_from_cwd.concat("/") catch @panic("Couldn't concat!");
-                string_path_from_cwd.concat(path) catch @panic("Couldn't concat!");
-
-                const path_from_cwd = (string_path_from_cwd.toOwned() catch
-                    @panic("Couldn't make into owned slice")).?;
-                defer allocator.free(path_from_cwd);
-
-                // pub const {s} = @import("../libs/{s}/index.zig"); \n
-
-                writer.print("pub const {s} = @import(\"../libs/[{s}]/index.zig\");\n", .{ libname, libname }) catch unreachable;
-            }
+            writer.print("pub const {s} = @import(\"../libs/[{s}]/index.zig\");\n", .{ libname, libname }) catch unreachable;
         }
         break :Libs;
     }
-
-    // pub const eventloop = @import("../main.zig").libs.eventloop;
-    //
-    // pub fn register() !void {
-    //     var scene = eventloop.get(0) orelse return;
-
-    //     try scene.on(eventloop.Events.awake, .{
-    //         .fn_ptr = @import("../modules/[display]/index.zig").awake,
-    //         .on_fail = .panic,
-    //     });
-    // }
 
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -386,49 +152,273 @@ const Segment = struct {
 
 /// Caller owns the returned memory.
 /// Returns the path of the entires.
-fn getEntries(files_dir: []const u8, allocator: Allocator, shallow: bool, include_dirs: bool) [][]const u8 {
-    var dir = std.fs.cwd().openDir(files_dir, .{ .iterate = true }) catch return @constCast(&[_][]const u8{""});
+fn getEntries(files_dir: []const u8, allocator: Allocator, shallow: bool, include_dirs: bool) ![][]const u8 {
+    var dir = try std.fs.cwd().openDir(files_dir, .{ .iterate = true });
     defer dir.close();
 
     var result = std.ArrayList([]const u8).init(allocator);
 
     if (!shallow) {
-        var walker =
-            dir.walk(allocator) catch
-            @panic("Couldn't walk");
+        var walker = try dir.walk(allocator);
 
         defer walker.deinit();
 
-        while (walker.next() catch @panic("Failed to iterate directory")) |*entry| {
+        while (try walker.next()) |*entry| {
             if (!include_dirs and entry.kind == .directory) continue;
             if (std.mem.eql(u8, entry.basename, ".DS_Store")) continue;
 
-            const copied = allocator.alloc(u8, std.mem.replacementSize(u8, entry.path, "\\", "/")) catch
-                @panic("Failed to allocate memory for slice");
+            const copied = try allocator.alloc(u8, std.mem.replacementSize(u8, entry.path, "\\", "/"));
 
             _ = std.mem.replace(u8, entry.path, "\\", "/", copied);
 
-            result.append(copied) catch @panic("Failed to append slice to result");
+            try result.append(copied);
         }
 
-        return result.toOwnedSlice() catch @panic("Failed too convert to owned slice");
-    } else {
-        var iterator: std.fs.Dir.Iterator = dir.iterate();
-
-        while (iterator.next() catch @panic("Failed to iterate directory")) |*entry| {
-            if (!include_dirs and entry.kind == .directory) continue;
-
-            if (std.mem.eql(u8, entry.name, ".DS_Store")) continue;
-
-            const copied = allocator.alloc(u8, entry.name.len) catch
-                @panic("Failed to allocate memory for slice");
-
-            for (copied, entry.name) |*l, l2| {
-                l.* = l2;
-            }
-            result.append(copied) catch @panic("Failed to append slice to result");
-        }
+        return try result.toOwnedSlice();
     }
 
-    return result.toOwnedSlice() catch @panic("Failed to convert to owned slice");
+    var iterator: std.fs.Dir.Iterator = dir.iterate();
+
+    while (try iterator.next()) |*entry| {
+        if (!include_dirs and entry.kind == .directory) continue;
+
+        if (std.mem.eql(u8, entry.name, ".DS_Store")) continue;
+
+        const copied = try allocator.alloc(u8, entry.name.len);
+
+        for (copied, entry.name) |*l, l2| {
+            l.* = l2;
+        }
+        try result.append(copied);
+    }
+
+    return try result.toOwnedSlice();
+}
+
+// const zap = @import(".zap");
+// const el = zap.libs.eventloop;
+
+// pub fn register() !void {
+//     const default_instance = try el.new("default");
+//     {
+//         try default_instance.on(
+//             el.Events.awake,
+//             @import("../app/[default]/index.zig").awake,
+//         );
+//     }
+// }
+
+fn generateInstanceRegister(
+    allocator: Allocator,
+    instances_dir_path: []const u8,
+    out_file_path: []const u8,
+) !void {
+    const output_file = try std.fs.cwd().createFile(
+        out_file_path,
+        .{
+            .truncate = true,
+            .exclusive = false,
+        },
+    );
+    defer output_file.close();
+
+    var writer = output_file.writer();
+    try writer.writeAll("");
+
+    _ = try writer.write("const zap = @import(\".zap\");\n");
+    _ = try writer.write("const el = zap.libs.eventloop;\n\n");
+
+    _ = try writer.write("pub fn register() !void {");
+    defer _ = writer.write("}") catch {
+        std.log.err("Write failiure", .{});
+        unreachable;
+    };
+
+    const inner_directories = try getEntries(
+        instances_dir_path,
+        allocator,
+        true,
+        true,
+    );
+    defer {
+        for (inner_directories) |item| {
+            allocator.free(item);
+        }
+        allocator.free(inner_directories);
+    }
+
+    for (inner_directories) |shallow_entry_path| {
+        const scene_name = shallow_entry_path[1 .. shallow_entry_path.len - 1];
+
+        var shallow_entry_string = try String.init_with_contents(
+            allocator,
+            shallow_entry_path,
+        );
+        defer shallow_entry_string.deinit();
+
+        if (!shallow_entry_string.startsWith("[") or !shallow_entry_string.endsWith("]")) continue;
+
+        var sub_path_string = try String.init_with_contents(allocator, "./src/app/");
+        defer sub_path_string.deinit();
+
+        try sub_path_string.concat(shallow_entry_path);
+
+        const sub_path = (try sub_path_string.toOwned()) orelse return error.InvalidString;
+        defer allocator.free(sub_path);
+
+        const script_paths = try getEntries(
+            sub_path,
+            allocator,
+            false,
+            false,
+        );
+        defer {
+            for (script_paths) |item| {
+                allocator.free(item);
+            }
+            allocator.free(script_paths);
+        }
+
+        for (script_paths) |path| {
+            var string_path_from_cwd = try sub_path_string.clone();
+            defer string_path_from_cwd.deinit();
+
+            try string_path_from_cwd.concat("/");
+            try string_path_from_cwd.concat(path);
+
+            const path_from_cwd = (try string_path_from_cwd.toOwned()) orelse return error.InvalidString;
+            defer allocator.free(path_from_cwd);
+
+            const file = try std.fs.cwd().openFile(path_from_cwd, .{});
+            defer file.close();
+
+            const contents = try file.readToEndAlloc(allocator, BUF_128MB);
+            defer allocator.free(contents);
+
+            //     const default_instance = try el.new("default");
+            //     {
+            //         try default_instance.on(
+            //             el.Events.awake,
+            //             @import("../app/[default]/index.zig").awake,
+            //         );
+            //     }
+
+            try writer.print("\n\n\t// ----- [{s}] -----\n", .{scene_name});
+            try writer.print(
+                "\n\tconst {s}_instance = try el.new(\"{s}\");\n",
+                .{ scene_name, scene_name },
+            );
+            _ = try writer.write("\t{\n");
+            defer _ = writer.write("\n\t}\n") catch {
+                std.log.err("Filer write error", .{});
+                unreachable;
+            };
+
+            // {
+            //     try writer.print("\t\ttry {s}_instance.on(", .{scene_name});
+            //     defer _ = writer.write(");") catch {
+            //         std.log.err("Filer write error", .{});
+            //         unreachable;
+            //     };
+
+            //     try writer.print("\t\t\tel.Events.awake,", .{});
+            //     try writer.print(
+            //         "\t\t\t@import(\"../app/{s}/{s}\").awake,",
+            //         .{ shallow_entry_path, path },
+            //     );
+            // }
+
+            if (std.mem.containsAtLeast(
+                u8,
+                contents,
+                1,
+                "\npub fn awake(",
+            )) {
+                try printEventImport(
+                    writer,
+                    "awake",
+                    scene_name,
+                    path,
+                );
+            }
+            if (std.mem.containsAtLeast(
+                u8,
+                contents,
+                1,
+                "\npub fn init(",
+            )) {
+                try printEventImport(
+                    writer,
+                    "init",
+                    scene_name,
+                    path,
+                );
+            }
+            if (std.mem.containsAtLeast(
+                u8,
+                contents,
+                1,
+                "\npub fn update(",
+            )) {
+                try printEventImport(
+                    writer,
+                    "update",
+                    scene_name,
+                    path,
+                );
+            }
+            if (std.mem.containsAtLeast(
+                u8,
+                contents,
+                1,
+                "\npub fn tick(",
+            )) {
+                try printEventImport(
+                    writer,
+                    "tick",
+                    scene_name,
+                    path,
+                );
+            }
+            if (std.mem.containsAtLeast(
+                u8,
+                contents,
+                1,
+                "\npub fn deinit(",
+            )) {
+                try printEventImport(
+                    writer,
+                    "deinit",
+                    scene_name,
+                    path,
+                );
+            }
+        }
+    }
+}
+
+fn printEventImport(
+    writer: std.fs.File.Writer,
+    event: []const u8,
+    scene_name: []const u8,
+    filename: []const u8,
+) !void {
+    try writer.print("\t\ttry {s}_instance.on(\n", .{scene_name});
+    defer _ = writer.write("\t\t);") catch {
+        std.log.err("Filer write error", .{});
+        unreachable;
+    };
+
+    // .{
+    //     .fn_ptr = @import("../app/[default]/index.zig").awake,
+    //     .on_fail = .remove,
+    // },
+
+    try writer.print("\t\t\tel.Events.{s},\n", .{event});
+    _ = try writer.write("\t\t\t.{");
+    try writer.print(
+        " .fn_ptr = @import(\"../app/[{s}]/{s}\").{s}, .on_fail = .remove ",
+        .{ scene_name, filename, event },
+    );
+    _ = try writer.write("},\n");
 }
