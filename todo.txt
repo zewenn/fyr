@@ -2,7 +2,7 @@
 
 +v0.0.2 @file-work
 
-proper InZstance generation from file structure 
+proper Instance generation from file structure 
 export assets dir to zig-out/ 
 
 +v0.0.3 @engine-work
