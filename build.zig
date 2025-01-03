@@ -1,6 +1,9 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const rlz = @import("raylib-zig");
+
+const builtin = @import("builtin");
+const fs = std.fs;
+
 const Allocator = @import("std").mem.Allocator;
 const String = @import("./.zap/libs/[string]/index.zig");
 
@@ -69,8 +72,12 @@ pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    if (optimize != .Debug) {
+        try copyDir(allocator, "./src/assets/", "./zig-out/bin/assets/");
+    }
+
     const exe = b.addExecutable(.{
-        .name = ".zap",
+        .name = "zap-engine-project",
         .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
         .target = target,
@@ -195,19 +202,6 @@ fn getEntries(files_dir: []const u8, allocator: Allocator, shallow: bool, includ
     return try result.toOwnedSlice();
 }
 
-// const zap = @import(".zap");
-// const el = zap.libs.eventloop;
-
-// pub fn register() !void {
-//     const default_instance = try el.new("default");
-//     {
-//         try default_instance.on(
-//             el.Events.awake,
-//             @import("../app/[default]/index.zig").awake,
-//         );
-//     }
-// }
-
 fn generateInstanceRegister(
     allocator: Allocator,
     instances_dir_path: []const u8,
@@ -295,14 +289,6 @@ fn generateInstanceRegister(
             const contents = try file.readToEndAlloc(allocator, BUF_128MB);
             defer allocator.free(contents);
 
-            //     const default_instance = try el.new("default");
-            //     {
-            //         try default_instance.on(
-            //             el.Events.awake,
-            //             @import("../app/[default]/index.zig").awake,
-            //         );
-            //     }
-
             try writer.print("\n\n\t// ----- [{s}] -----\n", .{scene_name});
             try writer.print(
                 "\n\tconst {s}_instance = try el.new(\"{s}\");\n",
@@ -313,20 +299,6 @@ fn generateInstanceRegister(
                 std.log.err("Filer write error", .{});
                 unreachable;
             };
-
-            // {
-            //     try writer.print("\t\ttry {s}_instance.on(", .{scene_name});
-            //     defer _ = writer.write(");") catch {
-            //         std.log.err("Filer write error", .{});
-            //         unreachable;
-            //     };
-
-            //     try writer.print("\t\t\tel.Events.awake,", .{});
-            //     try writer.print(
-            //         "\t\t\t@import(\"../app/{s}/{s}\").awake,",
-            //         .{ shallow_entry_path, path },
-            //     );
-            // }
 
             if (std.mem.containsAtLeast(
                 u8,
@@ -409,11 +381,6 @@ fn printEventImport(
         unreachable;
     };
 
-    // .{
-    //     .fn_ptr = @import("../app/[default]/index.zig").awake,
-    //     .on_fail = .remove,
-    // },
-
     try writer.print("\t\t\tel.Events.{s},\n", .{event});
     _ = try writer.write("\t\t\t.{");
     try writer.print(
@@ -421,4 +388,30 @@ fn printEventImport(
         .{ scene_name, filename, event },
     );
     _ = try writer.write("},\n");
+}
+
+fn copyDir(allocator: Allocator, src_path: []const u8, dist_path: []const u8) !void {
+    var src_dir = try std.fs.cwd().openDir(
+        src_path,
+        .{ .iterate = true },
+    );
+    defer src_dir.close();
+
+    var dest_dir = try std.fs.cwd().makeOpenPath(dist_path, .{});
+    defer dest_dir.close();
+
+    var walker = try src_dir.walk(allocator);
+    defer walker.deinit();
+
+    while (try walker.next()) |entry| {
+        switch (entry.kind) {
+            .file => {
+                try entry.dir.copyFile(entry.basename, dest_dir, entry.path, .{});
+            },
+            .directory => {
+                try dest_dir.makeDir(entry.path);
+            },
+            else => return error.UnexpectedEntryKind,
+        }
+    }
 }

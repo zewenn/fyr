@@ -1,5 +1,5 @@
 .{
-    .name = "HadeSpear",
+    .name = "zap-framework",
     .version = "0.0.1",
     .dependencies = .{
         .@"raylib-zig" = .{

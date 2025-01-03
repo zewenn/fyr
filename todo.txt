@@ -1,12 +1,12 @@
 
 
-+v0.0.2 @files-work
+x 2025-01-03 +v0.0.2-dev.1 @files-work
 
 x 2025-01-03 proper Instance generation from file structure 
-export assets dir to zig-out/ 
+x 2025-01-03 export assets dir to zig-out/ 
 
 
-+v0.0.2-dev.1 @files-update
++v0.0.2-dev.2 @files-update
 
 auto generate "default" instance
 
