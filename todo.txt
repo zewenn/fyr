@@ -21,6 +21,8 @@ x 2025-01-03 bump version + create release
 
 +v0.0.3 @engine-work
 
+x 2025-01-03 add .DS_Store to gitignore
+
 add sounds (asset loading + audio handling)
 implement raylib camera solution
     somehow put everything in the center once again
