@@ -5,6 +5,7 @@ const assets = zap.libs.assets;
 
 const display_components = @import("./components/display.zig");
 const collision_components = @import("./components/collision.zig");
+const camera_components = @import("./components/camera.zig");
 
 pub const Transform = struct {
     const Self = @This();
@@ -32,3 +33,5 @@ pub const Renderer = display_components.Renderer;
 
 pub const ColliderBehaviour = collision_components.ColliderBehaviour;
 pub const Collider = collision_components.Collider;
+
+pub const CameraTarget = camera_components.CameraTarget;

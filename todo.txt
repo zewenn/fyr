@@ -24,8 +24,12 @@ x 2025-01-03 bump version + create release
 x 2025-01-03 add .DS_Store to gitignore
 
 x 2025-01-04 add sounds (asset loading + audio handling)
-implement raylib camera solution
-    somehow put everything in the center once again
+x 2025-01-04 add support for emscripten again
+
+x 2025-01-04 implement raylib camera solution
+    x 2025-01-04 use camera.offset to center everything once again
+    x 2025-01-04 lock camera with a CameraTarget() behaviour
+
 implement component based animation system
 
 

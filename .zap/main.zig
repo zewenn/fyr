@@ -22,6 +22,7 @@ pub const DisplayCache = libs.ecs.components.DisplayCache;
 pub const Renderer = libs.ecs.components.Renderer;
 pub const Collider = libs.ecs.components.Collider;
 pub const ColliderBehaviour = libs.ecs.components.ColliderBehaviour;
+pub const CameraTarget = libs.ecs.components.CameraTarget;
 
 pub const Instance = libs.eventloop.Instance;
 
@@ -68,6 +69,14 @@ pub const Store = libs.ecs.Store;
 pub const Behaviour = libs.behaviour.Behaviour;
 
 pub const time = libs.time;
+pub const assets = libs.assets;
+
+pub var camera: rl.Camera2D = .{
+    .offset = Vec2(0, 0),
+    .target = Vec2(0, 0),
+    .zoom = 1,
+    .rotation = 0,
+};
 
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
@@ -100,6 +109,11 @@ pub fn loop() void {
         if (!loop_running)
             loop_running = true;
 
+        camera.offset = Vec2(
+            tof32(rl.getScreenWidth()) / 2,
+            tof32(rl.getScreenHeight()) / 2,
+        );
+
         libs.time.update();
 
         libs.display.reset();
@@ -112,6 +126,9 @@ pub fn loop() void {
         defer rl.endDrawing();
 
         rl.clearBackground(rl.Color.white);
+
+        camera.begin();
+        defer camera.end();
 
         libs.display.render();
     }

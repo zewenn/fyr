@@ -13,5 +13,6 @@ pub fn Player() !*zap.Store {
             .dynamic = true,
             .rect = zap.Rect(0, 0, 64, 64),
         }),
+        try zap.CameraTarget(),
     });
 }
