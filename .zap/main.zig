@@ -81,6 +81,7 @@ pub fn init() !void {
     }
 
     rl.initWindow(1280, 720, ".zap");
+    rl.initAudioDevice();
 
     libs.time.init();
     try libs.eventloop.init();
@@ -134,6 +135,8 @@ pub fn deinit() void {
     rl.closeWindow();
 
     libs.assets.deinit();
+
+    rl.closeAudioDevice();
 }
 
 pub inline fn changeType(comptime T: type, value: anytype) ?T {

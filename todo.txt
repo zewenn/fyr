@@ -23,7 +23,7 @@ x 2025-01-03 bump version + create release
 
 x 2025-01-03 add .DS_Store to gitignore
 
-add sounds (asset loading + audio handling)
+x 2025-01-04 add sounds (asset loading + audio handling)
 implement raylib camera solution
     somehow put everything in the center once again
 implement component based animation system

@@ -17,6 +17,9 @@ pub fn register() !void {
 
 	const default_instance = try el.new("default");
 	{
-		_ = default_instance;
+		try default_instance.on(
+			el.Events.awake,
+			.{ .fn_ptr = @import("../app/[default]/index.zig").awake, .on_fail = .remove },
+		);
 	}
 }
