@@ -22,6 +22,7 @@ pub const DisplayCache = libs.ecs.components.DisplayCache;
 pub const Renderer = libs.ecs.components.Renderer;
 pub const Collider = libs.ecs.components.Collider;
 pub const ColliderBehaviour = libs.ecs.components.ColliderBehaviour;
+pub const CameraTarget = libs.ecs.components.CameraTarget;
 
 pub const Instance = libs.eventloop.Instance;
 
@@ -68,6 +69,22 @@ pub const Store = libs.ecs.Store;
 pub const Behaviour = libs.behaviour.Behaviour;
 
 pub const time = libs.time;
+pub const assets = libs.assets;
+
+pub var camera: rl.Camera2D = .{
+    .offset = Vec2(0, 0),
+    .target = Vec2(0, 0),
+    .zoom = 1,
+    .rotation = 0,
+};
+
+pub fn screenToWorldPos(pos: Vector2) Vector2 {
+    return rl.getScreenToWorld2D(pos, camera);
+}
+
+pub fn worldToScreenPos(pos: Vector2) Vector2 {
+    return rl.getWorldToScreen2D(pos, camera);
+}
 
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
@@ -81,6 +98,7 @@ pub fn init() !void {
     }
 
     rl.initWindow(1280, 720, ".zap");
+    rl.initAudioDevice();
 
     libs.time.init();
     try libs.eventloop.init();
@@ -99,6 +117,11 @@ pub fn loop() void {
         if (!loop_running)
             loop_running = true;
 
+        camera.offset = Vec2(
+            tof32(rl.getScreenWidth()) / 2,
+            tof32(rl.getScreenHeight()) / 2,
+        );
+
         libs.time.update();
 
         libs.display.reset();
@@ -111,6 +134,9 @@ pub fn loop() void {
         defer rl.endDrawing();
 
         rl.clearBackground(rl.Color.white);
+
+        camera.begin();
+        defer camera.end();
 
         libs.display.render();
     }
@@ -134,6 +160,8 @@ pub fn deinit() void {
     rl.closeWindow();
 
     libs.assets.deinit();
+
+    rl.closeAudioDevice();
 }
 
 pub inline fn changeType(comptime T: type, value: anytype) ?T {

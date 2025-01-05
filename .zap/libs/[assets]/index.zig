@@ -5,7 +5,7 @@ const fs = std.fs;
 const zap = @import("../../main.zig");
 
 /// 512 MB
-const MAX_FILE_SIZE: comptime_int = std.math.pow(usize, 1024, 2) * 512;
+const MAX_FILE_SIZE: comptime_int = 1024 * 1024 * 512;
 
 // ------------------------------------- Caches -------------------------------------
 
@@ -14,6 +14,9 @@ pub var image_cache: ?ImageCache = null;
 
 const TextureCache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture));
 pub var texture_cache: ?TextureCache = null;
+
+const AudioCache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Sound));
+pub var audio_cache: ?AudioCache = null;
 
 // ------------------------------------- Funcs --------------------------------------
 
@@ -33,6 +36,16 @@ pub fn deinit() void {
         defer tc.deinit();
 
         var it = tc.iterator();
+        while (it.next()) |entry| {
+            entry.value_ptr.*.deinit();
+            zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
+        }
+    }
+    Audio: {
+        const ac = &(audio_cache orelse break :Audio);
+        defer ac.deinit();
+
+        var it = ac.iterator();
         while (it.next()) |entry| {
             entry.value_ptr.*.deinit();
             zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
@@ -109,10 +122,10 @@ pub const get = struct {
             break :Blk ic.get(hash).?;
         };
 
-        return stored.ptr();
+        return stored.ptr() orelse error.AlreadyFreed;
     }
 
-    pub fn texture(rel_path: []const u8, img: zap.rl.Image) !?*zap.rl.Texture {
+    pub fn texture(rel_path: []const u8, img: zap.rl.Image) !*zap.rl.Texture {
         const tc = &(texture_cache orelse Blk: {
             texture_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture)).init(zap.getAllocator(.gpa));
             break :Blk texture_cache.?;
@@ -126,7 +139,30 @@ pub const get = struct {
             break :Blk tc.get(hash).?;
         };
 
-        return stored.ptr();
+        return stored.ptr() orelse error.AlreadyFreed;
+    }
+
+    pub fn audio(rel_path: []const u8) !*zap.rl.Sound {
+        const ac = &(audio_cache orelse Blk: {
+            audio_cache = AudioCache.init(zap.getAllocator(.gpa));
+            break :Blk audio_cache.?;
+        });
+        const hash = calculateHash(rel_path, zap.Vec2(1, 1), 0);
+
+        var stored = ac.get(hash) orelse Blk: {
+            const data = try loadFromFile(rel_path);
+            defer zap.getAllocator(.gpa).free(data);
+
+            const wave = zap.rl.loadWaveFromMemory(".mp3", data);
+            defer zap.rl.unloadWave(wave);
+
+            const sound = zap.rl.loadSoundFromWave(wave);
+
+            try ac.put(hash, try zap.SharetPtr(sound));
+            break :Blk ac.get(hash).?;
+        };
+
+        return stored.ptr() orelse error.AlreadyFreed;
     }
 };
 
