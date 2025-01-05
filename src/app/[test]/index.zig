@@ -14,7 +14,7 @@ pub fn awake() !void {
 
     if (audio) |a| {
         std.log.debug("asd", .{});
-        zap.rl.setSoundVolume(a.*, 0.75);
+        zap.rl.setSoundVolume(a.*, 0.1);
         zap.rl.playSound(a.*);
     }
 }

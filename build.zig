@@ -129,7 +129,7 @@ pub fn build(b: *std.Build) !void {
     const uuid = uuid_dep.module("uuid");
     const uuid_artifact = uuid_dep.artifact("uuid-zig");
 
-    // //web exports are completely separate
+    //web exports are completely separate
     if (target.query.os_tag == .emscripten) {
         const exe_lib = try rlz.emcc.compileForEmscripten(b, "Project", "src/main.zig", target, optimize);
 

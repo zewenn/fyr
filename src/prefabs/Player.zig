@@ -7,7 +7,7 @@ pub fn Player() !*zap.Store {
         zap.Transform{},
         try MovementBehaviour(),
         try zap.Renderer(zap.Display{
-            .img = "small.png",
+            .img = "logo_small.png",
         }),
         try zap.ColliderBehaviour(zap.Collider{
             .dynamic = true,

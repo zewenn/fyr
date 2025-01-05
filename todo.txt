@@ -38,6 +38,9 @@ x 2025-01-04 implement raylib camera solution:
 
 x 2025-01-05 update readme to match raylib asthetics
 
+remove cmd.zig and sh for now
+add repeating sprites for Renderer()
+
 animator component to keep track of all animations
 animations which store keyframes
 keyframes that can be interpolated
