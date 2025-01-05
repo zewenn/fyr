@@ -78,6 +78,14 @@ pub var camera: rl.Camera2D = .{
     .rotation = 0,
 };
 
+pub fn screenToWorldPos(pos: Vector2) Vector2 {
+    return rl.getScreenToWorld2D(pos, camera);
+}
+
+pub fn worldToScreenPos(pos: Vector2) Vector2 {
+    return rl.getWorldToScreen2D(pos, camera);
+}
+
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
     return loop_running;
