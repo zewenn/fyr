@@ -10,7 +10,10 @@ const String = @import("./.zap/libs/[string]/index.zig");
 const BUF_128MB = 1024000000;
 
 pub fn build(b: *std.Build) !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
+    var arena = std.heap.ArenaAllocator.init(switch (builtin.os.tag) {
+        .windows => std.heap.page_allocator,
+        else => std.heap.c_allocator,
+    });
     defer arena.deinit();
 
     const allocator = arena.allocator();
@@ -151,12 +154,22 @@ pub fn build(b: *std.Build) !void {
     }
 
     const zap = b.addModule("zap", .{
-        .root_source_file = .{ .cwd_relative = ".zap/main.zig" },
+        .root_source_file = .{
+            .cwd_relative = ".zap/main.zig",
+        },
+        .optimize = optimize,
+        .target = target,
     });
-    zap.linkLibrary(raylib_artifact);
-    zap.addImport("raylib", raylib);
-    zap.linkLibrary(uuid_artifact);
-    zap.addImport("uuid", uuid);
+    {
+        zap.linkLibrary(raylib_artifact);
+        zap.addImport("raylib", raylib);
+
+        zap.linkLibrary(uuid_artifact);
+        zap.addImport("uuid", uuid);
+
+        if (target.result.os.tag == .windows)
+            zap.link_libc = true;
+    }
 
     exe.root_module.addImport(".zap", zap);
 
