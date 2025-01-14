@@ -125,12 +125,12 @@ pub const get = struct {
         return stored.ptr() orelse error.AlreadyFreed;
     }
 
-    pub fn texture(rel_path: []const u8, img: zap.rl.Image) !*zap.rl.Texture {
+    pub fn texture(rel_path: []const u8, img: zap.rl.Image, rotation: f32) !*zap.rl.Texture {
         const tc = &(texture_cache orelse Blk: {
             texture_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture)).init(zap.getAllocator(.gpa));
             break :Blk texture_cache.?;
         });
-        const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), 0);
+        const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
 
         var stored = tc.get(hash) orelse Blk: {
             const t = zap.rl.loadTextureFromImage(img);
@@ -183,9 +183,9 @@ pub const rmref = struct {
         sptr.rmref();
     }
 
-    pub fn texture(rel_path: []const u8, img: zap.rl.Image) void {
+    pub fn texture(rel_path: []const u8, img: zap.rl.Image, rotation: f32) void {
         const tc = &(texture_cache orelse return);
-        const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), 0);
+        const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
         const sptr = tc.get(hash) orelse return;
 
         if (!sptr.isAlive()) return;

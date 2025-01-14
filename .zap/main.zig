@@ -24,6 +24,13 @@ pub const Collider = libs.ecs.components.Collider;
 pub const ColliderBehaviour = libs.ecs.components.ColliderBehaviour;
 pub const CameraTarget = libs.ecs.components.CameraTarget;
 
+pub const AnimatorBehaviour = libs.ecs.components.AnimatorBehaviour;
+pub const Animator = libs.ecs.components.Animator;
+pub const Animation = libs.ecs.components.Animation;
+pub const KeyFrame = libs.ecs.components.KeyFrame;
+
+pub const interpolation = libs.ecs.components.interpolation;
+
 pub const Instance = libs.eventloop.Instance;
 
 const global_allocators = struct {
