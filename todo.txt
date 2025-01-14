@@ -19,6 +19,7 @@ x 2025-01-03 update gitignore
 x 2025-01-03 bump version + create release
 
 
+
 +v0.0.3 @engine-work
 
 x 2025-01-03 add .DS_Store to gitignore
@@ -34,7 +35,8 @@ x 2025-01-04 implement raylib camera solution:
         x 2025-01-05 world to screen position
 
 
-+v0.0.4 @done @animation goal:animation-system 
+
++v0.0.4 @done @animation
 
 x 2025-01-05 update readme to match raylib asthetics
 
@@ -50,6 +52,26 @@ x 2025-01-14 camera:
     x 2025-01-14 use origin for each render instead of one offset
     x 2025-01-14 fix weird snapping - collider issue
 
-@unmapped-future-ideas
+
+
++v0.0.5 @GUI 
+
+automatic layout based on parent and siblings:
+    for width and height use parent
+    for top and bottom use siblings:
+        maybe some ordering principle
+        fill direction; from-bottom, from-top
+
+specified layout grow based on children:
+    maybe a `grow` parameter to mimic CSS3 flex-grow
+
+text:
+    figure out actual line length (comptime constant & runtime calculated)
+    figure out lineheight and have multiple lines
+
+
+
++future @unmapped
 
 implment physics system: vel, acc, drag
+serialisation / deserialisation
