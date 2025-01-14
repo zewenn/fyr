@@ -6,6 +6,7 @@ const assets = zap.libs.assets;
 const display_components = @import("./components/display.zig");
 const collision_components = @import("./components/collision.zig");
 const camera_components = @import("./components/camera.zig");
+const animator_components = @import("./components/animator/index.zig");
 
 pub const Transform = struct {
     const Self = @This();
@@ -35,3 +36,9 @@ pub const ColliderBehaviour = collision_components.ColliderBehaviour;
 pub const Collider = collision_components.Collider;
 
 pub const CameraTarget = camera_components.CameraTarget;
+
+pub const Animator = animator_components.Animator;
+pub const AnimatorBehaviour = animator_components.AnimatorBehaviour;
+pub const Animation = animator_components.Animation;
+pub const KeyFrame = animator_components.KeyFrame;
+pub const interpolation = animator_components.t.interpolation;

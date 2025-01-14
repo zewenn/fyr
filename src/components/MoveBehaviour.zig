@@ -13,7 +13,7 @@ fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
     cache.transform = transform;
 }
 
-fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
+fn update(store: *zap.Store, cache_ptr: *anyopaque) !void {
     const cache = zap.CacheCast(Cache, cache_ptr);
     const transform = cache.transform orelse return;
 
@@ -45,6 +45,11 @@ fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
             ),
         ),
     );
+
+    if (move_vec.length() < 0.5) return;
+    const animator = store.getComponent(zap.Animator) orelse return;
+
+    try animator.play("test");
 }
 
 pub fn MovementBehaviour() !zap.Behaviour {

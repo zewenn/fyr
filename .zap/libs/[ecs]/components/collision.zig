@@ -17,14 +17,16 @@ pub const RectangleVertices = struct {
     transform: *Transform,
 
     center: rl.Vector2,
-    top_left: rl.Vector2,
-    top_right: rl.Vector2,
-    bottom_left: rl.Vector2,
-    bottom_right: rl.Vector2,
+
     delta_top_left: rl.Vector2,
     delta_top_right: rl.Vector2,
     delta_bottom_left: rl.Vector2,
     delta_bottom_right: rl.Vector2,
+
+    top_left: rl.Vector2 = zap.newVec2(),
+    top_right: rl.Vector2 = zap.newVec2(),
+    bottom_left: rl.Vector2 = zap.newVec2(),
+    bottom_right: rl.Vector2 = zap.newVec2(),
 
     x_min: f32 = 0,
     x_max: f32 = 0,
@@ -50,39 +52,25 @@ pub const RectangleVertices = struct {
             .init(collider.rect.width / 2, collider.rect.height / 2)
             .rotate(std.math.degreesToRadians(transform.rotation));
 
-        const point_top_left = center_point.add(delta_point_top_left);
-        const point_top_right = center_point.add(delta_point_top_right);
-        const point_bottom_left = center_point.add(delta_point_bottom_left);
-        const point_bottom_right = center_point.add(delta_point_bottom_right);
-
-        const x_min: f32 = @min(@min(point_top_left.x, point_top_right.x), @min(point_bottom_left.x, point_bottom_right.x));
-        const x_max: f32 = @max(@max(point_top_left.x, point_top_right.x), @max(point_bottom_left.x, point_bottom_right.x));
-
-        const y_min: f32 = @min(@min(point_top_left.y, point_top_right.y), @min(point_bottom_left.y, point_bottom_right.y));
-        const y_max: f32 = @max(@max(point_top_left.y, point_top_right.y), @max(point_bottom_left.y, point_bottom_right.y));
-
-        return Self{
+        var self = Self{
             .transform = transform,
             .center = center_point,
-            .top_left = point_top_left,
-            .top_right = point_top_right,
-            .bottom_left = point_bottom_left,
-            .bottom_right = point_bottom_right,
             .delta_top_left = delta_point_top_left,
             .delta_top_right = delta_point_top_right,
             .delta_bottom_left = delta_point_bottom_left,
             .delta_bottom_right = delta_point_bottom_right,
-            .x_min = x_min,
-            .x_max = x_max,
-            .y_min = y_min,
-            .y_max = y_max,
         };
+
+        self.recalculatePoints();
+        self.recalculateXYMinMax();
+
+        return self;
     }
 
     pub fn getCenterPoint(transform: *Transform, collider: *Collider) rl.Vector2 {
-        return rl.Vector2.init(
-            transform.position.x + collider.rect.x + transform.scale.x / 2,
-            transform.position.y + collider.rect.y + transform.scale.y / 2,
+        return zap.Vec2(
+            transform.position.x + collider.rect.x,
+            transform.position.y + collider.rect.y,
         );
     }
 
@@ -94,10 +82,12 @@ pub const RectangleVertices = struct {
     }
 
     pub fn recalculatePoints(self: *Self) void {
-        self.top_left = self.center.add(self.delta_top_left);
-        self.top_right = self.center.add(self.delta_top_right);
-        self.bottom_left = self.center.add(self.delta_bottom_left);
-        self.bottom_right = self.center.add(self.delta_bottom_right);
+        // zig fmt: off
+        self.top_left       = self.center.add(self.delta_top_left);
+        self.top_right      = self.center.add(self.delta_top_right);
+        self.bottom_left    = self.center.add(self.delta_bottom_left);
+        self.bottom_right   = self.center.add(self.delta_bottom_right);
+        // zig fmt: on
     }
 
     pub fn overlaps(self: *Self, other: Self) bool {

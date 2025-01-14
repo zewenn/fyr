@@ -22,7 +22,7 @@ pub const DisplayCache = struct {
         const i = self.img orelse return;
 
         if (self.texture != null)
-            assets.rmref.texture(self.path, i.*);
+            assets.rmref.texture(self.path, i.*, self.transform.rotation);
 
         assets.rmref.image(
             self.path,
@@ -71,6 +71,7 @@ pub const Renderer = struct {
             display_cache.texture = try assets.get.texture(
                 display_cache.path,
                 i.*,
+                c_transform.rotation,
             );
         }
 
@@ -98,17 +99,24 @@ pub const Renderer = struct {
                 .path = display.img,
                 .transform = transform.*,
             };
-
-            display_cache.img = try assets.get.image(
+            display_cache.img = assets.get.image(
                 display_cache.path,
                 display_cache.transform.scale,
                 display_cache.transform.rotation,
-            );
+            ) catch {
+                std.log.err("Image error!", .{});
+                return;
+            };
+
             if (display_cache.img) |i| {
-                display_cache.texture = try assets.get.texture(
+                display_cache.texture = assets.get.texture(
                     display_cache.path,
                     i.*,
-                );
+                    transform.rotation,
+                ) catch {
+                    std.log.err("Texture error!", .{});
+                    return;
+                };
             }
         }
 

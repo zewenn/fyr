@@ -4,7 +4,7 @@ pub fn Box() !*zap.Store {
     return zap.newStore("Box", .{
         zap.Transform{
             .position = zap.Vec3(128, 128, 0),
-            .scale = zap.Vec2(128, 64),
+            .scale = zap.Vec2(256, 64),
         },
         try zap.Renderer(zap.Display{
             .img = "small.png",
@@ -14,7 +14,7 @@ pub fn Box() !*zap.Store {
             .rect = zap.Rect(
                 0,
                 0,
-                128,
+                256,
                 64,
             ),
         }),

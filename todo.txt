@@ -33,15 +33,22 @@ x 2025-01-04 implement raylib camera solution:
         x 2025-01-05 screen to world positoon
         x 2025-01-05 world to screen position
 
-implement component based animation system
 
-+v0.0.4 @vectors
++v0.0.4 @done @animation goal:animation-system 
 
-add custom vectors:
-    vector2 
-    vector3
-    vector4
-    - with interop between all of them
+x 2025-01-05 update readme to match raylib asthetics
+
+x 2025-01-05 remove cmd.zig and sh for now
+x 2025-01-05 add repeating sprites for Renderer()
+
+x 2025-01-14 animator: 
+    x 2025-01-14 animator component to keep track of all animations
+    x 2025-01-14 animations which store keyframes
+    x 2025-01-14 keyframes that can be interpolated
+
+x 2025-01-14 camera:
+    x 2025-01-14 use origin for each render instead of one offset
+    x 2025-01-14 fix weird snapping - collider issue
 
 @unmapped-future-ideas
 

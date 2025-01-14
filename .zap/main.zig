@@ -24,6 +24,13 @@ pub const Collider = libs.ecs.components.Collider;
 pub const ColliderBehaviour = libs.ecs.components.ColliderBehaviour;
 pub const CameraTarget = libs.ecs.components.CameraTarget;
 
+pub const AnimatorBehaviour = libs.ecs.components.AnimatorBehaviour;
+pub const Animator = libs.ecs.components.Animator;
+pub const Animation = libs.ecs.components.Animation;
+pub const KeyFrame = libs.ecs.components.KeyFrame;
+
+pub const interpolation = libs.ecs.components.interpolation;
+
 pub const Instance = libs.eventloop.Instance;
 
 const global_allocators = struct {
@@ -96,6 +103,8 @@ pub fn init() !void {
         libs.WrappedArray.ENG_HealthCheck();
         libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
     }
+
+    rl.setTraceLogLevel(.warning);
 
     rl.initWindow(1280, 720, ".zap");
     rl.initAudioDevice();
@@ -334,4 +343,8 @@ pub fn UUIDV7() u128 {
 pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
     std.debug.print(fmt ++ "\n", args);
     @panic("ENGINE PANIC!");
+}
+
+pub fn newVec2() Vector2 {
+    return Vec2(0, 0);
 }

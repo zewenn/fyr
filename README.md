@@ -1,7 +1,7 @@
-<div align="center">
-    <img src="./logo.svg" width="350">
-    <h1>Zap!</h1>
-    A custom raylib wrapper!
-</div>
+<img src="./readme/logo_large.png" width="200" align="left" style="margin-right: 25px">
 
-_coming soon_
+### **.zap**
+
+zap is a custom **zig-based** wrapper of [Not-Nik](https://github.com/Not-Nik)'s [raylib-zig](https://github.com/Not-Nik/raylib-zig); containing an entity component system, asset loading, automatic rendering and many more features...
+
+**NOTE: This project is still very much under development, take care when using! Contributions are welcome.**
