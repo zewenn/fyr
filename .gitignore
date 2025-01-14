@@ -2,6 +2,6 @@
 zig-out/
 
 ./src/.codegen/
-./.appT.codegen/
+./.zap/.codegen/
 
 **/.DS_Store
