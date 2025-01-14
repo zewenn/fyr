@@ -61,7 +61,7 @@ inline fn calculateHash(rel_path: []const u8, size: zap.Vector2, rotation: f32) 
 
     res += zap.changeType(usize, size.x).? * 128;
     res += (zap.changeType(usize, size.y).? * 2 + 1) * 3;
-    res += zap.changeType(usize, rotation).? * 7;
+    res += zap.changeType(usize, rotation).? * 700;
     return res;
 }
 
@@ -96,6 +96,31 @@ fn loadFromFile(rel_path: []const u8) ![]const u8 {
 }
 
 pub const get = struct {
+    fn storeImage(
+        ic: *std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Image)),
+        hash: usize,
+        rel_path: []const u8,
+        size: zap.Vector2,
+        rotation: f32,
+    ) !*zap.SharedPointer(zap.rl.Image) {
+        const data = try loadFromFile(rel_path);
+        defer zap.getAllocator(.gpa).free(data);
+
+        var img = zap.rl.loadImageFromMemory(".png", data);
+        zap.rl.imageResizeNN(
+            &img,
+            zap.toi32(size.x),
+            zap.toi32(size.y),
+        );
+        zap.rl.imageRotate(
+            &img,
+            zap.toi32(rotation),
+        );
+
+        try ic.put(hash, try zap.SharetPtr(img));
+        return ic.get(hash).?;
+    }
+
     pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) !?*zap.rl.Image {
         const ic = &(image_cache orelse Blk: {
             image_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Image)).init(zap.getAllocator(.gpa));
@@ -103,26 +128,24 @@ pub const get = struct {
         });
         const hash = calculateHash(rel_path, size, rotation);
 
-        var stored = ic.get(hash) orelse Blk: {
-            const data = try loadFromFile(rel_path);
-            defer zap.getAllocator(.gpa).free(data);
-
-            var img = zap.rl.loadImageFromMemory(".png", data);
-            zap.rl.imageResizeNN(
-                &img,
-                zap.toi32(size.x),
-                zap.toi32(size.y),
-            );
-            zap.rl.imageRotate(
-                &img,
-                zap.toi32(rotation),
-            );
-
-            try ic.put(hash, try zap.SharetPtr(img));
-            break :Blk ic.get(hash).?;
-        };
+        var stored = ic.get(hash) orelse try storeImage(ic, hash, rel_path, size, rotation);
+        if (!stored.isAlive()) {
+            zap.getAllocator(.gpa).destroy(stored);
+            stored = try storeImage(ic, hash, rel_path, size, rotation);
+        }
 
         return stored.ptr() orelse error.AlreadyFreed;
+    }
+
+    fn storeTexture(
+        tc: *std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture)),
+        hash: usize,
+        img: zap.rl.Image,
+    ) !*zap.SharedPointer(zap.rl.Texture) {
+        const t = zap.rl.loadTextureFromImage(img);
+
+        try tc.put(hash, try zap.SharetPtr(t));
+        return tc.get(hash).?;
     }
 
     pub fn texture(rel_path: []const u8, img: zap.rl.Image, rotation: f32) !*zap.rl.Texture {
@@ -132,12 +155,11 @@ pub const get = struct {
         });
         const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
 
-        var stored = tc.get(hash) orelse Blk: {
-            const t = zap.rl.loadTextureFromImage(img);
-
-            try tc.put(hash, try zap.SharetPtr(t));
-            break :Blk tc.get(hash).?;
-        };
+        var stored = tc.get(hash) orelse try storeTexture(tc, hash, img);
+        if (!stored.isAlive()) {
+            zap.getAllocator(.gpa).destroy(stored);
+            stored = try storeTexture(tc, hash, img);
+        }
 
         return stored.ptr() orelse error.AlreadyFreed;
     }
@@ -176,9 +198,13 @@ pub const rmref = struct {
 
         if (sptr.ref_count == 1) {
             const img = sptr.ptr().?;
-            defer sptr.rmref();
 
             zap.rl.unloadImage(img.*);
+
+            sptr.deinit();
+            zap.getAllocator(.gpa).destroy(sptr);
+            _ = ic.remove(hash);
+            return;
         }
         sptr.rmref();
     }
@@ -192,9 +218,13 @@ pub const rmref = struct {
 
         if (sptr.ref_count == 1) {
             const txtr = sptr.ptr().?;
-            defer sptr.rmref();
 
             zap.rl.unloadTexture(txtr.*);
+
+            sptr.deinit();
+            zap.getAllocator(.gpa).destroy(sptr);
+            _ = tc.remove(hash);
+            return;
         }
         sptr.rmref();
     }

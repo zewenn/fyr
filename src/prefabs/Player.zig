@@ -17,12 +17,12 @@ pub fn Player() !*zap.Store {
             Blk: {
                 var anim = zap.Animation.init(
                     "test",
-                    1,
+                    2,
                     zap.interpolation.lerp,
                 );
                 anim
                     .append(.{ .rotation = 0 })
-                    .append(.{ .rotation = 5 })
+                    .append(.{ .rotation = 2 })
                     .append(.{ .rotation = 0 })
                     .close();
                 break :Blk anim;
