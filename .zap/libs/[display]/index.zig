@@ -56,7 +56,7 @@ pub fn render() void {
                 item.transform.scale.x,
                 item.transform.scale.y,
             ),
-            zap.Vec2(0, 0),
+            zap.Vec2(item.transform.scale.x / 2, item.transform.scale.y / 2),
             item.transform.rotation,
             item.display.tint,
         );

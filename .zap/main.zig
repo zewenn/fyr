@@ -104,6 +104,8 @@ pub fn init() !void {
         libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
     }
 
+    rl.setTraceLogLevel(.warning);
+
     rl.initWindow(1280, 720, ".zap");
     rl.initAudioDevice();
 
@@ -341,4 +343,8 @@ pub fn UUIDV7() u128 {
 pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
     std.debug.print(fmt ++ "\n", args);
     @panic("ENGINE PANIC!");
+}
+
+pub fn newVec2() Vector2 {
+    return Vec2(0, 0);
 }
