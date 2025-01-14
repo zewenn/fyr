@@ -56,18 +56,7 @@ x 2025-01-14 camera:
 
 +v0.0.5 @GUI 
 
-automatic layout based on parent and siblings:
-    for width and height use parent
-    for top and bottom use siblings:
-        maybe some ordering principle
-        fill direction; from-bottom, from-top
-
-specified layout grow based on children:
-    maybe a `grow` parameter to mimic CSS3 flex-grow
-
-text:
-    figure out actual line length (comptime constant & runtime calculated)
-    figure out lineheight and have multiple lines
+use C Layout/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI
 
 
 
