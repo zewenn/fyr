@@ -1,7 +1,6 @@
 .zig-cache/
 zig-out/
 
-./src/.codegen/
-./.zap/.codegen/
+**/.codegen/
 
 **/.DS_Store

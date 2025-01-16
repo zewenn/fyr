@@ -14,9 +14,10 @@ x 2025-01-03 automatically create a script in [default] if non-existent
 
 x 2025-01-03 update gitignore
     x 2025-01-03 add ./src/.codegen to gitignore
-    x 2025-01-03 add ./.zap/.codegen to gitignore
+    x 2025-01-03 add ./zap/.codegen to gitignore
 
 x 2025-01-03 bump version + create release
+
 
 
 +v0.0.3 @engine-work
@@ -34,7 +35,8 @@ x 2025-01-04 implement raylib camera solution:
         x 2025-01-05 world to screen position
 
 
-+v0.0.4 @done @animation goal:animation-system 
+
++v0.0.4 @done @animation
 
 x 2025-01-05 update readme to match raylib asthetics
 
@@ -50,6 +52,24 @@ x 2025-01-14 camera:
     x 2025-01-14 use origin for each render instead of one offset
     x 2025-01-14 fix weird snapping - collider issue
 
-@unmapped-future-ideas
+
+
++v0.1 @RESTRUCTURE
+
+x 2025-01-16 move .zap -> src/lib
+x 2025-01-16 move src -> src/demo
+
+x 2025-01-16 add asset path override option
+
+
+
++v0.2 @GUI 
+
+use C Layout/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI
+
+
+
++future @unmapped
 
 implment physics system: vel, acc, drag
+serialisation / deserialisation
