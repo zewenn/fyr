@@ -30,8 +30,14 @@ pub fn build(b: *std.Build) !void {
 
     // zap library
 
+    const zap_module = b.addModule("zap", .{
+        .root_source_file = "./src/lib/main.zig",
+    });
+
+    b.modules.put(b.dupe("zap"), zap_module);
+
     const lib = b.addStaticLibrary(.{
-        .name = "package_test",
+        .name = "zap",
         .root_source_file = b.path("src/lib/main.zig"),
         .target = target,
         .optimize = optimize,
