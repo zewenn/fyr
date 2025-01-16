@@ -34,7 +34,13 @@ pub fn build(b: *std.Build) !void {
         .root_source_file = b.path("./src/lib/main.zig"),
     });
 
-    try b.modules.put(b.dupe("zap"), zap_module); 
+    zap_module.addImport("raylib", raylib);
+    zap_module.linkLibrary(raylib_artifact);
+
+    zap_module.addImport("uuid", uuid);
+    zap_module.linkLibrary(uuid_artifact);
+
+    try b.modules.put(b.dupe("zap"), zap_module);
 
     const lib = b.addStaticLibrary(.{
         .name = "zap",
