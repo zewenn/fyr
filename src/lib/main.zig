@@ -104,13 +104,13 @@ pub inline fn isLoopRunning() bool {
 
 pub fn init() !void {
     if (BUILD_MODE == .Debug) {
-        warray_lib.ENG_HealthCheck();
+        warray_lib.warray_test();
         @import("./.types/strings/export.zig").string_test() catch @panic("HealthCheck failiure!");
     }
 
     rl.setTraceLogLevel(.warning);
 
-    rl.initWindow(1280, 720, ".zap");
+    rl.initWindow(1280, 720, "zap");
     rl.initAudioDevice();
 
     time.init();
@@ -317,6 +317,14 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
     std.debug.print("test: {s}\n", .{formatted});
 }
 
+/// Can be used to set the path of the `assets/` directory. This is the path
+/// which will be used as the base of all asset requests. For instance:
+/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
+pub inline fn useAssetDebugPath(comptime path: []const u8) void {
+    assets.overrideDevPath(path);
+}
+
+/// Sets the instance with the given ID as the active instance, unloading the current one.
 pub fn useInstance(id: []const u8) !void {
     try eventloop.setActive(id);
 }

@@ -7,6 +7,7 @@ const rl = @import("raylib");
 
 /// 512 MB
 const MAX_FILE_SIZE: comptime_int = 1024 * 1024 * 512;
+var ASSETS_PATH_DEBUG: []const u8 = "./src/assets/";
 
 // ------------------------------------- Caches -------------------------------------
 
@@ -70,7 +71,7 @@ fn loadFromFile(rel_path: []const u8) ![]const u8 {
     const file = switch (zap.BUILD_MODE) {
         .Debug => Blk: {
             const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
-                "./src/assets/",
+                ASSETS_PATH_DEBUG,
                 rel_path,
             });
             defer zap.getAllocator(.gpa).free(full_path);
@@ -94,6 +95,10 @@ fn loadFromFile(rel_path: []const u8) ![]const u8 {
     defer file.close();
 
     return try file.readToEndAlloc(zap.getAllocator(.gpa), MAX_FILE_SIZE);
+}
+
+pub inline fn overrideDevPath(comptime path: []const u8) void {
+    ASSETS_PATH_DEBUG = path;
 }
 
 pub const get = struct {

@@ -1,4 +1,4 @@
-const zap = @import(".zap");
+const zap = @import("zap");
 
 pub fn Box() !*zap.Store {
     return zap.newStore("Box", .{

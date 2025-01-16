@@ -1,7 +1,7 @@
 const std = @import("std");
 const zap = @import("../../../main.zig");
 const rl = zap.rl;
-const assets = zap.libs.assets;
+const assets = zap.assets;
 
 const Transform = @import("../components.zig").Transform;
 
@@ -121,7 +121,7 @@ pub const Renderer = struct {
         }
 
         const texture = display_cache.texture orelse return;
-        try zap.libs.display.add(.{
+        try zap.display.add(.{
             .texture = texture.*,
             .transform = transform.*,
             .display = display.*,

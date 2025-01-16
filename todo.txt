@@ -14,7 +14,7 @@ x 2025-01-03 automatically create a script in [default] if non-existent
 
 x 2025-01-03 update gitignore
     x 2025-01-03 add ./src/.codegen to gitignore
-    x 2025-01-03 add ./.zap/.codegen to gitignore
+    x 2025-01-03 add ./zap/.codegen to gitignore
 
 x 2025-01-03 bump version + create release
 
@@ -54,11 +54,16 @@ x 2025-01-14 camera:
 
 
 
-+v0.1.0 @RESTRUCTURE
++v0.1 @RESTRUCTURE
+
+x 2025-01-16 move .zap -> src/lib
+x 2025-01-16 move src -> src/demo
+
+x 2025-01-16 add asset path override option
 
 
 
-+v0.1.1 @GUI 
++v0.2 @GUI 
 
 use C Layout/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI
 

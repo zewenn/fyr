@@ -192,7 +192,7 @@ pub fn arrayAdvanced(
     ) catch unreachable;
 }
 
-pub fn ENG_HealthCheck() void {
+pub fn warray_test() void {
     assertTitle("WrappedArray(T) HealthCheck");
 
     const test_arr = array(usize, .{ 10, 9, 8, 7, 6 });
