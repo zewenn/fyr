@@ -6,32 +6,38 @@ pub const os = std.os;
 pub const target = builtin.target;
 pub const BUILD_MODE = builtin.mode;
 
-pub const libs = @import("./.codegen/libs.zig");
+const deps = @import("./deps/export.zig");
 
-pub const rl = libs.foreign.rl;
-pub const uuid = libs.foreign.uuid;
+pub const rl = deps.raylib;
+pub const uuid = deps.uuid;
 
 pub const Vector2 = rl.Vector2;
 pub const Vector3 = rl.Vector3;
 pub const Vector4 = rl.Vector4;
 pub const Rectangle = rl.Rectangle;
 
-pub const Transform = libs.ecs.components.Transform;
-pub const Display = libs.ecs.components.Display;
-pub const DisplayCache = libs.ecs.components.DisplayCache;
-pub const Renderer = libs.ecs.components.Renderer;
-pub const Collider = libs.ecs.components.Collider;
-pub const ColliderBehaviour = libs.ecs.components.ColliderBehaviour;
-pub const CameraTarget = libs.ecs.components.CameraTarget;
+pub const ecs = @import("libs/ecs/export.zig");
+pub const eventloop = @import("libs/eventloop/export.zig");
+pub const time = @import("libs/time.zig");
+pub const assets = @import("libs/assets.zig");
+pub const display = @import("libs/display.zig");
 
-pub const AnimatorBehaviour = libs.ecs.components.AnimatorBehaviour;
-pub const Animator = libs.ecs.components.Animator;
-pub const Animation = libs.ecs.components.Animation;
-pub const KeyFrame = libs.ecs.components.KeyFrame;
+pub const Transform = ecs.components.Transform;
+pub const Display = ecs.components.Display;
+pub const DisplayCache = ecs.components.DisplayCache;
+pub const Renderer = ecs.components.Renderer;
+pub const Collider = ecs.components.Collider;
+pub const ColliderBehaviour = ecs.components.ColliderBehaviour;
+pub const CameraTarget = ecs.components.CameraTarget;
 
-pub const interpolation = libs.ecs.components.interpolation;
+pub const AnimatorBehaviour = ecs.components.AnimatorBehaviour;
+pub const Animator = ecs.components.Animator;
+pub const Animation = ecs.components.Animation;
+pub const KeyFrame = ecs.components.KeyFrame;
 
-pub const Instance = libs.eventloop.Instance;
+pub const interpolation = ecs.components.interpolation;
+
+pub const Instance = eventloop.Instance;
 
 const global_allocators = struct {
     pub var gpa: AllocatorInstance(std.heap.GeneralPurposeAllocator(.{})) = .{};
@@ -46,7 +52,7 @@ const global_allocators = struct {
         /// Shorthand for `std.heap.page_allocator`.
         page,
         /// If `eventloop` has an instance loaded, this is a shorthand for
-        /// `zap.libs.eventloop.active_instance.allocator()`, otherwise this is the
+        /// `zap.eventloop.active_instance.allocator()`, otherwise this is the
         /// same as arena.
         instance,
         /// Shorthand for `std.heap.c_allocator`
@@ -56,27 +62,25 @@ const global_allocators = struct {
     };
 };
 
-pub const SharedPointer = libs.SharedPointer.SharedPointer;
+pub const SharedPointer = @import("./.types/SharedPointer.zig").SharedPointer;
 pub fn SharetPtr(value: anytype) !*SharedPointer(@TypeOf(value)) {
     const ptr = try getAllocator(.gpa).create(SharedPointer(@TypeOf(value)));
     ptr.* = try SharedPointer(@TypeOf(value)).init(getAllocator(.gpa), value);
     return ptr;
 }
 
-pub const WrappedArray = libs.WrappedArray.WrappedArray;
-pub const WrappedArrayOptions = libs.WrappedArray.WrappedArrayOptions;
-pub const array = libs.WrappedArray.array;
-pub const arrayAdvanced = libs.WrappedArray.arrayAdvanced;
+const warray_lib = @import("./.types/WrappedArray.zig");
 
-pub const String = libs.strings.String;
-pub const string = libs.strings.string;
+pub const WrappedArray = warray_lib.WrappedArray;
+pub const WrappedArrayOptions = warray_lib.WrappedArrayOptions;
+pub const array = warray_lib.array;
+pub const arrayAdvanced = warray_lib.arrayAdvanced;
 
-pub const ecs = libs.ecs;
-pub const Store = libs.ecs.Store;
-pub const Behaviour = libs.behaviour.Behaviour;
+pub const String = @import("./.types/strings/export.zig").String;
+pub const string = @import("./.types/strings/export.zig").string;
 
-pub const time = libs.time;
-pub const assets = libs.assets;
+pub const Store = ecs.Store;
+pub const Behaviour = ecs.Behaviour;
 
 pub var camera: rl.Camera2D = .{
     .offset = Vec2(0, 0),
@@ -100,8 +104,8 @@ pub inline fn isLoopRunning() bool {
 
 pub fn init() !void {
     if (BUILD_MODE == .Debug) {
-        libs.WrappedArray.ENG_HealthCheck();
-        libs.strings.ENG_HealthCheck() catch @panic("HealthCheck failiure!");
+        warray_lib.ENG_HealthCheck();
+        @import("./.types/strings/export.zig").string_test() catch @panic("HealthCheck failiure!");
     }
 
     rl.setTraceLogLevel(.warning);
@@ -109,16 +113,16 @@ pub fn init() !void {
     rl.initWindow(1280, 720, ".zap");
     rl.initAudioDevice();
 
-    libs.time.init();
-    try libs.eventloop.init();
+    time.init();
+    try eventloop.init();
 
-    libs.display.init();
+    display.init();
 
-    try libs.eventloop.setActive("engine");
+    try eventloop.setActive("engine");
 }
 
 pub fn loop() void {
-    if (libs.eventloop.active_instance == null) {
+    if (eventloop.active_instance == null) {
         try useInstance("default");
     }
 
@@ -131,11 +135,11 @@ pub fn loop() void {
             tof32(rl.getScreenHeight()) / 2,
         );
 
-        libs.time.update();
+        time.update();
 
-        libs.display.reset();
+        display.reset();
 
-        libs.eventloop.execute() catch {
+        eventloop.execute() catch {
             std.log.warn("eventloop.execute() failed!", .{});
         };
 
@@ -147,7 +151,7 @@ pub fn loop() void {
         camera.begin();
         defer camera.end();
 
-        libs.display.render();
+        display.render();
     }
 }
 
@@ -164,11 +168,11 @@ pub fn deinit() void {
         intf.deinit();
     };
 
-    libs.eventloop.deinit();
-    libs.display.deinit();
+    eventloop.deinit();
+    display.deinit();
     rl.closeWindow();
 
-    libs.assets.deinit();
+    assets.deinit();
 
     rl.closeAudioDevice();
 }
@@ -285,7 +289,7 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
         },
         .page => global_allocators.page,
         .instance => Blk: {
-            const active_instance = libs.eventloop.active_instance orelse break :Blk getAllocator(.arena);
+            const active_instance = eventloop.active_instance orelse break :Blk getAllocator(.arena);
             break :Blk active_instance.allocator();
         },
         .c => std.heap.c_allocator,
@@ -314,11 +318,11 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
 }
 
 pub fn useInstance(id: []const u8) !void {
-    try libs.eventloop.setActive(id);
+    try eventloop.setActive(id);
 }
 
 pub inline fn activeInstance() *Instance {
-    return libs.eventloop.active_instance orelse panic("No Instance is loaded!", .{});
+    return eventloop.active_instance orelse panic("No Instance is loaded!", .{});
 }
 
 /// Creates a new store with the given identifier and component tuple.

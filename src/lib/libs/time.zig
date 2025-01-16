@@ -1,6 +1,6 @@
 const std = @import("std");
-const zap = @import("../../main.zig");
-const rl = zap.rl;
+const rl = @import("raylib");
+const tof32 = @import("../main.zig").tof32;
 
 var count_game_time = true;
 var game_time: f32 = 0;
@@ -14,7 +14,7 @@ pub fn proceed() void {
 }
 
 pub fn init() void {
-    game_time = zap.tof32(rl.getTime());
+    game_time = tof32(rl.getTime());
 }
 
 pub fn update() void {
