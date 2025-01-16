@@ -14,7 +14,7 @@ You are only a couple of easy steps away fromm building your dream project:
 
 1. Run the following command to save the dependency:
    ```bash
-   zig fetch --save git+https://github.com/zewenn/zap
+   zig fetch --save git+https://github.com/zewenn/zap#stable
    ```
 2. Add the following to your `build.zig`:
 
