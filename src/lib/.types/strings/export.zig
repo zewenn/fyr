@@ -10,8 +10,8 @@ pub fn string(text: []const u8) !String {
     return try String.new(std.heap.page_allocator, text);
 }
 
-pub fn ENG_HealthCheck() !void {
-    assertTitle("Strings HealthCheck");
+pub fn string_test() !void {
+    assertTitle("string_test");
 
     // Init
     var empty = String.init(std.heap.page_allocator);

@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
-const zap = @import("../../main.zig");
-const rl = zap.rl;
+const zap = @import("../main.zig");
+const rl = @import("raylib");
 
 pub const Renderer = struct {
     texture: rl.Texture,

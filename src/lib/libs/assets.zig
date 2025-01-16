@@ -2,20 +2,22 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 const fs = std.fs;
 
-const zap = @import("../../main.zig");
+const zap = @import("../main.zig");
+const rl = @import("raylib");
 
 /// 512 MB
 const MAX_FILE_SIZE: comptime_int = 1024 * 1024 * 512;
+var ASSETS_PATH_DEBUG: []const u8 = "./src/assets/";
 
 // ------------------------------------- Caches -------------------------------------
 
-const ImageCache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Image));
+const ImageCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Image));
 pub var image_cache: ?ImageCache = null;
 
-const TextureCache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture));
+const TextureCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Texture));
 pub var texture_cache: ?TextureCache = null;
 
-const AudioCache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Sound));
+const AudioCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Sound));
 pub var audio_cache: ?AudioCache = null;
 
 // ------------------------------------- Funcs --------------------------------------
@@ -69,7 +71,7 @@ fn loadFromFile(rel_path: []const u8) ![]const u8 {
     const file = switch (zap.BUILD_MODE) {
         .Debug => Blk: {
             const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
-                "./src/assets/",
+                ASSETS_PATH_DEBUG,
                 rel_path,
             });
             defer zap.getAllocator(.gpa).free(full_path);
@@ -95,24 +97,28 @@ fn loadFromFile(rel_path: []const u8) ![]const u8 {
     return try file.readToEndAlloc(zap.getAllocator(.gpa), MAX_FILE_SIZE);
 }
 
+pub inline fn overrideDevPath(comptime path: []const u8) void {
+    ASSETS_PATH_DEBUG = path;
+}
+
 pub const get = struct {
     fn storeImage(
-        ic: *std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Image)),
+        ic: *std.AutoHashMap(usize, *zap.SharedPointer(rl.Image)),
         hash: usize,
         rel_path: []const u8,
         size: zap.Vector2,
         rotation: f32,
-    ) !*zap.SharedPointer(zap.rl.Image) {
+    ) !*zap.SharedPointer(rl.Image) {
         const data = try loadFromFile(rel_path);
         defer zap.getAllocator(.gpa).free(data);
 
-        var img = zap.rl.loadImageFromMemory(".png", data);
-        zap.rl.imageResizeNN(
+        var img = rl.loadImageFromMemory(".png", data);
+        rl.imageResizeNN(
             &img,
             zap.toi32(size.x),
             zap.toi32(size.y),
         );
-        zap.rl.imageRotate(
+        rl.imageRotate(
             &img,
             zap.toi32(rotation),
         );
@@ -121,9 +127,9 @@ pub const get = struct {
         return ic.get(hash).?;
     }
 
-    pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) !?*zap.rl.Image {
+    pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) !?*rl.Image {
         const ic = &(image_cache orelse Blk: {
-            image_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Image)).init(zap.getAllocator(.gpa));
+            image_cache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Image)).init(zap.getAllocator(.gpa));
             break :Blk image_cache.?;
         });
         const hash = calculateHash(rel_path, size, rotation);
@@ -138,19 +144,19 @@ pub const get = struct {
     }
 
     fn storeTexture(
-        tc: *std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture)),
+        tc: *std.AutoHashMap(usize, *zap.SharedPointer(rl.Texture)),
         hash: usize,
-        img: zap.rl.Image,
-    ) !*zap.SharedPointer(zap.rl.Texture) {
-        const t = zap.rl.loadTextureFromImage(img);
+        img: rl.Image,
+    ) !*zap.SharedPointer(rl.Texture) {
+        const t = rl.loadTextureFromImage(img);
 
         try tc.put(hash, try zap.SharetPtr(t));
         return tc.get(hash).?;
     }
 
-    pub fn texture(rel_path: []const u8, img: zap.rl.Image, rotation: f32) !*zap.rl.Texture {
+    pub fn texture(rel_path: []const u8, img: rl.Image, rotation: f32) !*rl.Texture {
         const tc = &(texture_cache orelse Blk: {
-            texture_cache = std.AutoHashMap(usize, *zap.SharedPointer(zap.rl.Texture)).init(zap.getAllocator(.gpa));
+            texture_cache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Texture)).init(zap.getAllocator(.gpa));
             break :Blk texture_cache.?;
         });
         const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
@@ -164,7 +170,7 @@ pub const get = struct {
         return stored.ptr() orelse error.AlreadyFreed;
     }
 
-    pub fn audio(rel_path: []const u8) !*zap.rl.Sound {
+    pub fn audio(rel_path: []const u8) !*rl.Sound {
         const ac = &(audio_cache orelse Blk: {
             audio_cache = AudioCache.init(zap.getAllocator(.gpa));
             break :Blk audio_cache.?;
@@ -175,10 +181,10 @@ pub const get = struct {
             const data = try loadFromFile(rel_path);
             defer zap.getAllocator(.gpa).free(data);
 
-            const wave = zap.rl.loadWaveFromMemory(".mp3", data);
-            defer zap.rl.unloadWave(wave);
+            const wave = rl.loadWaveFromMemory(".mp3", data);
+            defer rl.unloadWave(wave);
 
-            const sound = zap.rl.loadSoundFromWave(wave);
+            const sound = rl.loadSoundFromWave(wave);
 
             try ac.put(hash, try zap.SharetPtr(sound));
             break :Blk ac.get(hash).?;
@@ -199,7 +205,7 @@ pub const rmref = struct {
         if (sptr.ref_count == 1) {
             const img = sptr.ptr().?;
 
-            zap.rl.unloadImage(img.*);
+            rl.unloadImage(img.*);
 
             sptr.deinit();
             zap.getAllocator(.gpa).destroy(sptr);
@@ -209,7 +215,7 @@ pub const rmref = struct {
         sptr.rmref();
     }
 
-    pub fn texture(rel_path: []const u8, img: zap.rl.Image, rotation: f32) void {
+    pub fn texture(rel_path: []const u8, img: rl.Image, rotation: f32) void {
         const tc = &(texture_cache orelse return);
         const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
         const sptr = tc.get(hash) orelse return;
@@ -219,7 +225,7 @@ pub const rmref = struct {
         if (sptr.ref_count == 1) {
             const txtr = sptr.ptr().?;
 
-            zap.rl.unloadTexture(txtr.*);
+            rl.unloadTexture(txtr.*);
 
             sptr.deinit();
             zap.getAllocator(.gpa).destroy(sptr);
