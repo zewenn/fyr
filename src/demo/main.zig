@@ -19,5 +19,6 @@ pub fn main() !void {
     try default.addStore(try Player());
     try default.addStore(try Box());
 
+
     zap.loop();
 }

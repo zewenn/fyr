@@ -1,12 +1,14 @@
 
 
-x 2025-01-03 +v0.0.2-dev.1 @files-work
+
++v0.0.2-dev.1 @files-work
 
 x 2025-01-03 proper Instance generation from file structure 
 x 2025-01-03 export assets dir to zig-out/ 
 
 
-x 2025-01-03 +v0.0.2-dev.2 @files-update
+
++v0.0.2-dev.2 @files-update
 
 x 2025-01-03 auto generate "default" instance
 x 2025-01-03 automatically create a script in [default] if non-existent
@@ -65,11 +67,12 @@ x 2025-01-16 add asset path override option
 
 +v0.2 @GUI 
 
-use C Layout/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI
+use "C Layout"/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI size:m
 
 
 
 +future @unmapped
 
-implment physics system: vel, acc, drag
-serialisation / deserialisation
+implment physics system: vel, acc, drag size:l
+serialisation / deserialisation size:xl
+logging and log levels size:s

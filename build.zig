@@ -28,11 +28,19 @@ pub fn build(b: *std.Build) !void {
             .{ .cwd_relative = "/System/Library/Frameworks" },
         );
 
+    const zclay_dep = b.dependency("zclay", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // zap library
 
     const zap_module = b.addModule("zap", .{
         .root_source_file = b.path("./src/lib/main.zig"),
+        .link_libc = true,
     });
+
+    zap_module.addImport("zclay", zclay_dep.module("zclay"));
 
     zap_module.addImport("raylib", raylib);
     zap_module.linkLibrary(raylib_artifact);
@@ -48,6 +56,9 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+
+    lib.root_module.addImport("zclay", zclay_dep.module("zclay"));
+    lib.linkLibC();
 
     lib.root_module.addImport("raylib", raylib);
     lib.root_module.linkLibrary(raylib_artifact);
