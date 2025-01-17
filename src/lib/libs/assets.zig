@@ -68,33 +68,35 @@ inline fn calculateHash(rel_path: []const u8, size: zap.Vector2, rotation: f32) 
 }
 
 fn loadFromFile(rel_path: []const u8) ![]const u8 {
-    const file = switch (zap.BUILD_MODE) {
-        .Debug => Blk: {
-            const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
-                ASSETS_PATH_DEBUG,
-                rel_path,
-            });
-            defer zap.getAllocator(.gpa).free(full_path);
+    const full_path = try getAssetFullPath(rel_path);
+    defer zap.getAllocator(.gpa).free(full_path);
 
-            break :Blk fs.cwd().openFile(full_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path});
-        },
+    const file = fs.openFileAbsolute(full_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path});
+    defer file.close();
+
+    return try file.readToEndAlloc(zap.getAllocator(.gpa), MAX_FILE_SIZE);
+}
+
+pub fn getAssetFullPath(rel_path: []const u8) ![]const u8 {
+    const path = switch (zap.BUILD_MODE) {
+        .Debug => try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
+            ASSETS_PATH_DEBUG,
+            rel_path,
+        }),
         else => Blk: {
             const base_path = try fs.selfExeDirPathAlloc(zap.getAllocator(.gpa));
             defer zap.getAllocator(.gpa).free(base_path);
 
-            const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
+            break :Blk try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
                 base_path,
                 "assets/",
                 rel_path,
             });
-            defer zap.getAllocator(.gpa).free(full_path);
-
-            break :Blk fs.openFileAbsolute(full_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path});
         },
     };
-    defer file.close();
+    defer zap.getAllocator(.gpa).free(path);
 
-    return try file.readToEndAlloc(zap.getAllocator(.gpa), MAX_FILE_SIZE);
+    return try fs.realpathAlloc(zap.getAllocator(.gpa), path);
 }
 
 pub inline fn overrideDevPath(comptime path: []const u8) void {

@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const raylib = raylib_dep.module("raylib");
+    const raygui = raylib_dep.module("raygui");
     const raylib_artifact = raylib_dep.artifact("raylib");
 
     const uuid_dep = b.dependency("uuid", .{
@@ -28,11 +29,6 @@ pub fn build(b: *std.Build) !void {
             .{ .cwd_relative = "/System/Library/Frameworks" },
         );
 
-    const zclay_dep = b.dependency("zclay", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
     // zap library
 
     const zap_module = b.addModule("zap", .{
@@ -40,9 +36,8 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
     });
 
-    zap_module.addImport("zclay", zclay_dep.module("zclay"));
-
     zap_module.addImport("raylib", raylib);
+    zap_module.addImport("raygui", raygui);
     zap_module.linkLibrary(raylib_artifact);
 
     zap_module.addImport("uuid", uuid);
@@ -57,10 +52,8 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    lib.root_module.addImport("zclay", zclay_dep.module("zclay"));
-    lib.linkLibC();
-
     lib.root_module.addImport("raylib", raylib);
+    lib.root_module.addImport("raygui", raygui);
     lib.root_module.linkLibrary(raylib_artifact);
 
     lib.root_module.addImport("uuid", uuid);

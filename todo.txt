@@ -67,7 +67,8 @@ x 2025-01-16 add asset path override option
 
 +v0.2 @GUI 
 
-use "C Layout"/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI size:m
+x 2025-01-17 load .rgs files with the assets/ dir path
+figure out structure to have a draw() function which can be overridden
 
 
 
@@ -75,4 +76,4 @@ use "C Layout"/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for G
 
 implment physics system: vel, acc, drag size:l
 serialisation / deserialisation size:xl
-logging and log levels size:s
+logging and log-levels size:s

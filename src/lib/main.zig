@@ -9,7 +9,8 @@ pub const BUILD_MODE = builtin.mode;
 const deps = @import("./deps/export.zig");
 
 pub const rl = deps.raylib;
-pub const clay = deps.clay;
+pub const rgui = deps.raygui;
+
 pub const uuid = deps.uuid;
 
 pub const Vector2 = rl.Vector2;
@@ -22,6 +23,7 @@ pub const eventloop = @import("libs/eventloop/export.zig");
 pub const time = @import("libs/time.zig");
 pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
+pub const gui = @import("libs/gui.zig");
 
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
@@ -98,12 +100,6 @@ pub fn worldToScreenPos(pos: Vector2) Vector2 {
     return rl.getWorldToScreen2D(pos, camera);
 }
 
-const clay_info = struct {
-    var min_memory_size: u32 = 0;
-    var memory: []u8 = undefined;
-    var arena: clay.Arena = undefined;
-};
-
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
     return loop_running;
@@ -114,21 +110,8 @@ pub fn init() !void {
         warray_lib.warray_test();
         @import("./.types/strings/export.zig").string_test() catch @panic("HealthCheck failiure!");
     }
-    clay_info.min_memory_size = clay.minMemorySize();
-    clay_info.memory = try getAllocator(.gpa).alloc(u8, clay_info.min_memory_size);
-    clay_info.arena = clay.createArenaWithCapacityAndMemory(clay_info.memory);
-    _ = clay.initialize(
-        clay_info.arena,
-        .{
-            .w = 1000,
-            .h = 1000,
-        },
-        .{},
-    );
 
-    clay.setMeasureTextFunction(deps.clay_raylib_renderer.measureText);
-
-    rl.setTraceLogLevel(.warning);
+    // rl.setTraceLogLevel(.warning);
 
     rl.initWindow(1280, 720, "zap");
     rl.initAudioDevice();
@@ -164,14 +147,17 @@ pub fn loop() void {
         };
 
         rl.beginDrawing();
-        defer rl.endDrawing();
+        {
+            rl.clearBackground(rl.Color.white);
+            camera.begin();
+            {
+                display.render();
+            }
+            camera.end();
 
-        rl.clearBackground(rl.Color.white);
-
-        camera.begin();
-        defer camera.end();
-
-        display.render();
+            _ = rgui.guiButton(Rect(50, 50, 200, 20), "Fasza");
+        }
+        rl.endDrawing();
     }
 }
 
@@ -195,8 +181,6 @@ pub fn deinit() void {
     assets.deinit();
 
     rl.closeAudioDevice();
-
-    getAllocator(.gpa).free(clay_info.memory);
 }
 
 pub inline fn changeType(comptime T: type, value: anytype) ?T {

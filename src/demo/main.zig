@@ -13,12 +13,13 @@ pub fn main() !void {
     try zap.init();
     defer zap.deinit();
 
+    try zap.gui.loadStyle("style_cherry.rgs");
+
     const default = try zap.eventloop.new("default");
     try zap.useInstance("default");
 
     try default.addStore(try Player());
     try default.addStore(try Box());
-
 
     zap.loop();
 }
