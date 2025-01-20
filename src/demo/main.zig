@@ -13,10 +13,26 @@ pub fn main() !void {
     try zap.init();
     defer zap.deinit();
 
-    try zap.gui.loadStyle("style_cherry.rgs");
-
     const default = try zap.eventloop.new("default");
     try zap.useInstance("default");
+
+    zap.gui.clear();
+    defer zap.gui.clear();
+    zap.gui.Element({
+        zap.gui.ID("test_1");
+    })({
+        zap.gui.Element({
+            zap.gui.ID("test_1_1");
+        })({
+            zap.gui.Element({
+                zap.gui.ID("test_1_1");
+            })({});
+        });
+
+        zap.gui.Element({
+            zap.gui.ID("test_1_2");
+        })({});
+    });
 
     try default.addStore(try Player());
     try default.addStore(try Box());

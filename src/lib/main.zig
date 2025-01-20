@@ -23,7 +23,7 @@ pub const eventloop = @import("libs/eventloop/export.zig");
 pub const time = @import("libs/time.zig");
 pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
-pub const gui = @import("libs/gui.zig");
+pub const gui = @import("libs/gui/export.zig");
 
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;

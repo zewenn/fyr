@@ -8,7 +8,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/<executable file>",
+            "program": "${workspaceFolder}/zig-out/bin/zap-demo",
             "args": [],
             "cwd": "${workspaceFolder}"
         }
