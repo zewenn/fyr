@@ -1,8 +1,8 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
-const zap = @import("../../main.zig");
-const Store = zap.Store;
+const fyr = @import("../../main.zig");
+const Store = fyr.Store;
 
 const EventActions = std.ArrayList(Action);
 const EventMapType = std.AutoHashMap(Target, EventActions);
@@ -66,7 +66,7 @@ pub inline fn reset(self: *Self) void {
 fn makeGetEventList(self: *Self, event: anytype) !*EventActions {
     const emap: *EventMapType = &(self.event_map orelse @panic("event_map wasn't initalised! Call eventloop.init()!"));
 
-    const key = zap.changeType(Target, event) orelse -1;
+    const key = fyr.changeType(Target, event) orelse -1;
 
     if (!emap.contains(key)) {
         try emap.put(key, EventActions.init(self.original_alloc));
@@ -84,7 +84,7 @@ pub fn on(self: *Self, event: anytype, action: Action) !void {
 pub fn call(self: *Self, event: anytype) !void {
     const ptr = try self.makeGetEventList(event);
 
-    const items = try zap.cloneToOwnedSlice(Action, ptr.*);
+    const items = try fyr.cloneToOwnedSlice(Action, ptr.*);
     defer ptr.allocator.free(items);
 
     for (items) |action| {
@@ -125,7 +125,7 @@ pub fn newStore(self: *Self, id: []const u8, components: anytype) !*Store {
 }
 
 pub fn addStore(self: *Self, store: *Store) !void {
-    const behaviours = try store.getComponents(zap.Behaviour);
+    const behaviours = try store.getComponents(fyr.Behaviour);
     for (behaviours) |b| {
         b.callSafe(.awake, store);
         b.callSafe(.init, store);
@@ -140,7 +140,7 @@ pub fn removeStore(self: *Self, store: *Store) void {
     for (stores.items, 0..) |it, index| {
         if (@intFromPtr(store) != @intFromPtr(it)) continue;
 
-        const behaviours = store.getComponents(zap.Behaviour) catch &[_]*zap.Behaviour{};
+        const behaviours = store.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
         for (behaviours) |b| {
             b.callSafe(.deinit, store);
         }

@@ -4,7 +4,7 @@ const Allocator = @import("std").mem.Allocator;
 const TICK_TARGET: comptime_float = 20;
 
 pub const Instance = @import("./Instance.zig");
-const zap = @import("../../main.zig");
+const fyr = @import("../../main.zig");
 
 var instances: ?std.StringHashMap(*Instance) = null;
 pub var active_instance: ?*Instance = null;
@@ -34,13 +34,13 @@ const EventLoopErrors = error{
 
 pub fn init() !void {
     instances = std.StringHashMap(*Instance).init(
-        zap.getAllocator(.gpa),
+        fyr.getAllocator(.gpa),
     );
 
     const ptr = &(instances.?);
 
-    const instanceptr = try zap.getAllocator(.gpa).create(Instance);
-    instanceptr.* = Instance.init(zap.getAllocator(.gpa));
+    const instanceptr = try fyr.getAllocator(.gpa).create(Instance);
+    instanceptr.* = Instance.init(fyr.getAllocator(.gpa));
 
     ptr.put("engine", instanceptr) catch @panic("Failed to create default Instance. (eventloop)");
 }
@@ -53,8 +53,8 @@ pub fn new(comptime id: []const u8) EventLoopErrors!*Instance {
     }
 
     const ptr = &(instances.?);
-    const instanceptr = try zap.getAllocator(.gpa).create(Instance);
-    instanceptr.* = Instance.init(zap.getAllocator(.gpa));
+    const instanceptr = try fyr.getAllocator(.gpa).create(Instance);
+    instanceptr.* = Instance.init(fyr.getAllocator(.gpa));
 
     if (!ptr.contains(id)) {
         try ptr.put(id, instanceptr);
@@ -94,7 +94,7 @@ pub fn get(id: []const u8) ?*Instance {
 /// Executes the main event loop, handling instance updates and ticks.
 ///
 /// This function performs the following tasks:
-/// - Retrieves the current time using `zap.rl.getTime()`.
+/// - Retrieves the current time using `fyr.rl.getTime()`.
 /// - Determines if a tick should occur based on the elapsed time since the last tick.
 /// - Iterates over all executing instances and performs the following:
 ///   - Executes store behaviour if the instance has stores.
@@ -110,7 +110,7 @@ pub fn execute() !void {
     // - The function uses `orelse continue` to skip over `null` entries in the `executing_instances` array.
     // - The `active_instance` is set to `next_instance` after unloading.
 
-    const now = zap.rl.getTime();
+    const now = fyr.rl.getTime();
 
     const do_tick = last_tick + tick_time <= now;
     // Defer used so ticking takes instance event call times into account
@@ -145,8 +145,8 @@ pub fn execute() !void {
     ai.executing = false;
 }
 
-fn executeStoreBehaviour(store: *zap.Store, do_tick: bool) void {
-    const behaviours = store.getComponents(zap.Behaviour) catch &[_]*zap.Behaviour{};
+fn executeStoreBehaviour(store: *fyr.Store, do_tick: bool) void {
+    const behaviours = store.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
     for (behaviours) |b| {
         b.callSafe(.update, store);
 
@@ -177,7 +177,7 @@ pub fn setActive(id: []const u8) !void {
         return;
     }
 
-    if (!zap.isLoopRunning()) {
+    if (!fyr.isLoopRunning()) {
         active_instance = instance;
         return;
     }
@@ -197,7 +197,7 @@ pub fn deinit() void {
     var iterator = ptr.iterator();
     while (iterator.next()) |entry| {
         entry.value_ptr.*.deinit();
-        zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
+        fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
     }
 }
 

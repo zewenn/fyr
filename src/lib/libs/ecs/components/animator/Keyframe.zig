@@ -1,4 +1,4 @@
-const zap = @import("../../../../main.zig");
+const fyr = @import("../../../../main.zig");
 const components = @import("../../components.zig");
 const Transform = components.Transform;
 const Display = components.Display;
@@ -17,7 +17,7 @@ width: ?f32 = null,
 height: ?f32 = null,
 
 sprite: ?[]const u8 = null,
-// tint: ?zap.rl.Color,
+// tint: ?fyr.rl.Color,
 
 pub fn interpolate(
     self: Self,

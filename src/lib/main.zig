@@ -55,7 +55,7 @@ const global_allocators = struct {
         /// Shorthand for `std.heap.page_allocator`.
         page,
         /// If `eventloop` has an instance loaded, this is a shorthand for
-        /// `zap.eventloop.active_instance.allocator()`, otherwise this is the
+        /// `fyr.eventloop.active_instance.allocator()`, otherwise this is the
         /// same as arena.
         instance,
         /// Shorthand for `std.heap.c_allocator`
@@ -111,9 +111,9 @@ pub fn init() !void {
         @import("./.types/strings/export.zig").string_test() catch @panic("HealthCheck failiure!");
     }
 
-    // rl.setTraceLogLevel(.warning);
+    rl.setTraceLogLevel(.warning);
 
-    rl.initWindow(1280, 720, "zap");
+    rl.initWindow(1280, 720, "fyr");
     rl.initAudioDevice();
 
     time.init();
@@ -216,7 +216,7 @@ pub inline fn changeType(comptime T: type, value: anytype) ?T {
         },
         else => Catch: {
             std.log.warn(
-                "cannot change type of \"{any}\" to type \"{any}\"! (zap.changeType())",
+                "cannot change type of \"{any}\" to type \"{any}\"! (fyr.changeType())",
                 .{ value, T },
             );
             break :Catch null;

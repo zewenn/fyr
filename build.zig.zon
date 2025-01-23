@@ -1,5 +1,5 @@
 .{
-    .name = "zap",
+    .name = "fyr",
     .version = "0.1.0",
     .dependencies = .{
         .@"raylib-zig" = .{

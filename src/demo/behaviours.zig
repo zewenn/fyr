@@ -1,35 +1,35 @@
 const std = @import("std");
-const zap = @import("zap");
+const fyr = @import("fyr");
 
 pub const MovementBehaviour = struct {
     const Cache = struct {
-        transform: ?*zap.Transform = null,
+        transform: ?*fyr.Transform = null,
         speed: f32 = 10,
     };
 
-    fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
-        const transform = store.getComponent(zap.Transform);
+        const transform = store.getComponent(fyr.Transform);
         cache.transform = transform;
     }
 
-    fn update(store: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn update(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
         const transform = cache.transform orelse return;
 
-        var move_vec = zap.Vec3(0, 0, 0);
+        var move_vec = fyr.Vec3(0, 0, 0);
 
-        if (zap.rl.isKeyDown(.w)) {
+        if (fyr.rl.isKeyDown(.w)) {
             move_vec.y -= 1;
         }
-        if (zap.rl.isKeyDown(.s)) {
+        if (fyr.rl.isKeyDown(.s)) {
             move_vec.y += 1;
         }
-        if (zap.rl.isKeyDown(.a)) {
+        if (fyr.rl.isKeyDown(.a)) {
             move_vec.x -= 1;
         }
-        if (zap.rl.isKeyDown(.d)) {
+        if (fyr.rl.isKeyDown(.d)) {
             move_vec.x += 1;
         }
 
@@ -37,24 +37,24 @@ pub const MovementBehaviour = struct {
 
         transform.position = transform.position.add(
             move_vec.multiply(
-                zap.Vec3(cache.speed, cache.speed, 0),
+                fyr.Vec3(cache.speed, cache.speed, 0),
             ).multiply(
-                zap.Vec3(
-                    zap.time.deltaTime(),
-                    zap.time.deltaTime(),
+                fyr.Vec3(
+                    fyr.time.deltaTime(),
+                    fyr.time.deltaTime(),
                     0,
                 ),
             ),
         );
 
         if (move_vec.length() < 0.5) return;
-        const animator = store.getComponent(zap.Animator) orelse return;
+        const animator = store.getComponent(fyr.Animator) orelse return;
 
         try animator.play("test");
     }
 
-    pub fn behaviour() !zap.Behaviour {
-        var b = try zap.Behaviour.initWithDefaultValue(Cache{
+    pub fn behaviour() !fyr.Behaviour {
+        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
             .speed = 300,
         });
         b.add(.awake, awake);

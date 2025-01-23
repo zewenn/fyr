@@ -1,6 +1,6 @@
 const std = @import("std");
-const zap = @import("../../../main.zig");
-const rl = zap.rl;
+const fyr = @import("../../../main.zig");
+const rl = fyr.rl;
 
 const Transform = @import("../components.zig").Transform;
 
@@ -23,10 +23,10 @@ pub const RectangleVertices = struct {
     delta_bottom_left: rl.Vector2,
     delta_bottom_right: rl.Vector2,
 
-    top_left: rl.Vector2 = zap.newVec2(),
-    top_right: rl.Vector2 = zap.newVec2(),
-    bottom_left: rl.Vector2 = zap.newVec2(),
-    bottom_right: rl.Vector2 = zap.newVec2(),
+    top_left: rl.Vector2 = fyr.newVec2(),
+    top_right: rl.Vector2 = fyr.newVec2(),
+    bottom_left: rl.Vector2 = fyr.newVec2(),
+    bottom_right: rl.Vector2 = fyr.newVec2(),
 
     x_min: f32 = 0,
     x_max: f32 = 0,
@@ -68,7 +68,7 @@ pub const RectangleVertices = struct {
     }
 
     pub fn getCenterPoint(transform: *Transform, collider: *Collider) rl.Vector2 {
-        return zap.Vec2(
+        return fyr.Vec2(
             transform.position.x + collider.rect.x,
             transform.position.y + collider.rect.y,
         );
@@ -128,14 +128,14 @@ pub const ColliderBehaviour = struct {
     const Cache = struct {
         base: Collider,
 
-        store: ?*zap.Store = null,
+        store: ?*fyr.Store = null,
         transform: ?*Transform = null,
         collider: ?*Collider = null,
     };
     var collidable: ?std.ArrayList(*Cache) = null;
 
-    fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
         const transform = store.getComponent(Transform) orelse Blk: {
             try store.addComonent(Transform{});
@@ -152,15 +152,15 @@ pub const ColliderBehaviour = struct {
         cache.store = store;
 
         const c = &(collidable orelse Blk: {
-            collidable = std.ArrayList(*Cache).init(zap.getAllocator(.gpa));
+            collidable = std.ArrayList(*Cache).init(fyr.getAllocator(.gpa));
             break :Blk collidable.?;
         });
 
         try c.append(cache);
     }
 
-    fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn update(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
         const c = collidable orelse return;
 
         const a_store = cache.store orelse return;
@@ -196,8 +196,8 @@ pub const ColliderBehaviour = struct {
         }
     }
 
-    fn deinit(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn deinit(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
         const c = &(collidable orelse return);
         for (c.items, 0..) |item, index| {
@@ -209,8 +209,8 @@ pub const ColliderBehaviour = struct {
         if (c.items.len == 0) c.deinit();
     }
 
-    pub fn behaviour(base: Collider) !zap.Behaviour {
-        var b = try zap.Behaviour.initWithDefaultValue(Cache{
+    pub fn behaviour(base: Collider) !fyr.Behaviour {
+        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
             .base = base,
         });
 

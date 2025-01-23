@@ -1,5 +1,5 @@
 const std = @import("std");
-const zap = @import("../../main.zig");
+const fyr = @import("../../main.zig");
 const rl = @import("raylib");
 
 const string = []const u8;
@@ -16,6 +16,6 @@ pub const StyleSheet = struct {
         color: rl.Color = rl.Color.white,
     };
 
-    rectangle: ?zap.Rectangle = null,
+    rectangle: ?fyr.Rectangle = null,
     background: BackgroundStyle = .{},
 };

@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
 const Entry = @import("./Entry.zig");
-const zap = @import("../../main.zig");
+const fyr = @import("../../main.zig");
 
 const ComponentErrors = error{ ItemCreationError, AlreadyHasComponent };
 const Self = @This();
@@ -18,7 +18,7 @@ arena: std.heap.ArenaAllocator,
 pub fn init(alloc: Allocator, id: []const u8) Self {
     return Self{
         .id = id,
-        .uuid = zap.UUIDV7(),
+        .uuid = fyr.UUIDV7(),
         .arena = std.heap.ArenaAllocator.init(alloc),
         .original_alloc = alloc,
         .list = std.ArrayList(Entry).init(alloc),
@@ -26,7 +26,7 @@ pub fn init(alloc: Allocator, id: []const u8) Self {
 }
 
 pub fn new(id: []const u8) Self {
-    return Self.init(zap.getAllocator(.gpa), id);
+    return Self.init(fyr.getAllocator(.gpa), id);
 }
 
 pub fn deinit(self: *Self) void {

@@ -1,7 +1,7 @@
 const std = @import("std");
-const zap = @import("../../main.zig");
+const fyr = @import("../../main.zig");
 
-const FnType = ?(*const fn (*zap.Store, *anyopaque) anyerror!void);
+const FnType = ?(*const fn (*fyr.Store, *anyopaque) anyerror!void);
 const Events = enum { awake, init, update, tick, deinit };
 const AllocationError = error.OutOfMemory;
 
@@ -40,7 +40,7 @@ pub fn add(self: *Self, event: Events, callback: FnType) void {
     }
 }
 
-pub fn callSafe(self: *Self, event: Events, store: *zap.Store) void {
+pub fn callSafe(self: *Self, event: Events, store: *fyr.Store) void {
     defer FreeingCAllocations: {
         if (event != .deinit) break :FreeingCAllocations;
 

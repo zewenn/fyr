@@ -1,7 +1,7 @@
 const std = @import("std");
-const zap = @import("../../../main.zig");
-const rl = zap.rl;
-const assets = zap.assets;
+const fyr = @import("../../../main.zig");
+const rl = fyr.rl;
+const assets = fyr.assets;
 
 const Transform = @import("../components.zig").Transform;
 
@@ -42,8 +42,8 @@ const DCCache = struct {
 };
 
 pub const Renderer = struct {
-    fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(DCCache, cache_ptr);
+    fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(DCCache, cache_ptr);
 
         try store.addComonent(cache.base);
         cache.display = store.getComponent(Display);
@@ -79,8 +79,8 @@ pub const Renderer = struct {
         cache.display_cache = store.getComponent(DisplayCache);
     }
 
-    fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(DCCache, cache_ptr);
+    fn update(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(DCCache, cache_ptr);
 
         const display_cache = cache.display_cache orelse return;
         const transform = cache.transform orelse return;
@@ -121,7 +121,7 @@ pub const Renderer = struct {
         }
 
         const texture = display_cache.texture orelse return;
-        try zap.display.add(.{
+        try fyr.display.add(.{
             .texture = texture.*,
             .transform = transform.*,
             .display = display.*,
@@ -129,15 +129,15 @@ pub const Renderer = struct {
         // rl.drawTexture(texture.*, 0, 0, rl.Color.white);
     }
 
-    fn deinit(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(DCCache, cache_ptr);
+    fn deinit(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(DCCache, cache_ptr);
         const c_display_cache = cache.display_cache orelse return;
 
         c_display_cache.free();
     }
 
-    pub fn behaviour(base: Display) !zap.Behaviour {
-        var b = try zap.Behaviour.initWithDefaultValue(DCCache{
+    pub fn behaviour(base: Display) !fyr.Behaviour {
+        var b = try fyr.Behaviour.initWithDefaultValue(DCCache{
             .base = base,
         });
 

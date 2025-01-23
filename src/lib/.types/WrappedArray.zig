@@ -1,13 +1,13 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
-const zap = @import("../main.zig");
+const fyr = @import("../main.zig");
 
-const assertTitle = zap.assertTitle;
-const assert = zap.assert;
+const assertTitle = fyr.assertTitle;
+const assert = fyr.assert;
 
-const changeType = zap.changeType;
-const cloneToOwnedSlice = zap.cloneToOwnedSlice;
+const changeType = fyr.changeType;
+const cloneToOwnedSlice = fyr.cloneToOwnedSlice;
 
 pub const WrappedArrayOptions = struct {
     allocator: Allocator = std.heap.page_allocator,

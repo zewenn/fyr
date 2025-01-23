@@ -1,5 +1,5 @@
 const std = @import("std");
-const zap = @import("zap");
+const fyr = @import("fyr");
 
 const behaviours = @import("behaviours.zig");
 
@@ -7,18 +7,18 @@ const MovementBehaviour = behaviours.MovementBehaviour;
 const Player = @import("./prefabs/Player.zig").Player;
 const Box = @import("./prefabs/Box.zig").Box;
 
-const gui = zap.gui;
+const gui = fyr.gui;
 const Element = gui.Element;
 const ID = gui.ID;
 
 pub fn main() !void {
-    zap.useAssetDebugPath("./src/demo/assets/");
+    fyr.useAssetDebugPath("./src/demo/assets/");
 
-    try zap.init();
-    defer zap.deinit();
+    try fyr.init();
+    defer fyr.deinit();
 
-    const default = try zap.eventloop.new("default");
-    try zap.useInstance("default");
+    const default = try fyr.eventloop.new("default");
+    try fyr.useInstance("default");
 
     gui.clear();
     defer gui.clear();
@@ -42,5 +42,5 @@ pub fn main() !void {
     try default.addStore(try Player());
     try default.addStore(try Box());
 
-    zap.loop();
+    fyr.loop();
 }

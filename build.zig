@@ -29,24 +29,24 @@ pub fn build(b: *std.Build) !void {
             .{ .cwd_relative = "/System/Library/Frameworks" },
         );
 
-    // zap library
+    // fyr library
 
-    const zap_module = b.addModule("zap", .{
+    const fyr_module = b.addModule("fyr", .{
         .root_source_file = b.path("./src/lib/main.zig"),
         .link_libc = true,
     });
 
-    zap_module.addImport("raylib", raylib);
-    zap_module.addImport("raygui", raygui);
-    zap_module.linkLibrary(raylib_artifact);
+    fyr_module.addImport("raylib", raylib);
+    fyr_module.addImport("raygui", raygui);
+    fyr_module.linkLibrary(raylib_artifact);
 
-    zap_module.addImport("uuid", uuid);
-    zap_module.linkLibrary(uuid_artifact);
+    fyr_module.addImport("uuid", uuid);
+    fyr_module.linkLibrary(uuid_artifact);
 
-    try b.modules.put(b.dupe("zap"), zap_module);
+    try b.modules.put(b.dupe("fyr"), fyr_module);
 
     const lib = b.addStaticLibrary(.{
-        .name = "zap",
+        .name = "fyr",
         .root_source_file = b.path("src/lib/main.zig"),
         .target = target,
         .optimize = optimize,
@@ -64,13 +64,13 @@ pub fn build(b: *std.Build) !void {
     // demo-exe
 
     const demo_exe = b.addExecutable(.{
-        .name = "zap-demo",
+        .name = "fyr-demo",
         .root_source_file = b.path("src/demo/main.zig"),
         .optimize = optimize,
         .target = target,
     });
 
-    demo_exe.root_module.addImport("zap", &lib.root_module);
+    demo_exe.root_module.addImport("fyr", &lib.root_module);
 
     b.installArtifact(demo_exe);
 

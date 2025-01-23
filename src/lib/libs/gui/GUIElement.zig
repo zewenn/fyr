@@ -1,5 +1,5 @@
 const std = @import("std");
-const zap = @import("../../main.zig");
+const fyr = @import("../../main.zig");
 const rl = @import("raylib");
 
 const Style = @import("Style.zig");
@@ -28,8 +28,8 @@ children: std.ArrayList(Child),
 
 pub fn create() Self {
     return Self{
-        .uuid = zap.UUIDV7(),
-        .children = std.ArrayList(Child).init(zap.getAllocator(.gpa)),
+        .uuid = fyr.UUIDV7(),
+        .children = std.ArrayList(Child).init(fyr.getAllocator(.gpa)),
     };
 }
 

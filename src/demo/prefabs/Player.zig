@@ -1,10 +1,10 @@
-const zap = @import("zap");
+const fyr = @import("fyr");
 
 const MovementBehaviour = @import("../behaviours.zig").MovementBehaviour;
 
-pub fn Player() !*zap.Store {
-    return zap.newStore("Player", .{
-        zap.Transform{
+pub fn Player() !*fyr.Store {
+    return fyr.newStore("Player", .{
+        fyr.Transform{
             .position = .{
                 .x = 0,
                 .y = 0,
@@ -12,27 +12,27 @@ pub fn Player() !*zap.Store {
             },
         },
         try MovementBehaviour(),
-        try zap.Renderer(zap.Display{
+        try fyr.Renderer(fyr.Display{
             .img = "logo_small.png",
         }),
-        try zap.ColliderBehaviour(zap.Collider{
+        try fyr.ColliderBehaviour(fyr.Collider{
             .dynamic = true,
-            .rect = zap.Rect(
+            .rect = fyr.Rect(
                 0,
                 0,
                 64,
                 64,
             ),
         }),
-        try zap.CameraTarget(),
-        try zap.AnimatorBehaviour(zap.array(
-            zap.Animation,
+        try fyr.CameraTarget(),
+        try fyr.AnimatorBehaviour(fyr.array(
+            fyr.Animation,
             .{
                 Blk: {
-                    var anim = zap.Animation.init(
+                    var anim = fyr.Animation.init(
                         "test",
                         2,
-                        zap.interpolation.lerp,
+                        fyr.interpolation.lerp,
                     );
                     anim
                         .append(.{ .rotation = 0 })
