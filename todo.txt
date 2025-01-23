@@ -70,10 +70,17 @@ x 2025-01-16 add asset path override option
 x 2025-01-17 load .rgs files with the assets/ dir path
 figure out structure to have a draw() function which can be overridden
 
+add element structure
+gui rendering 
+    - reverse-recursive tree rendering?
+    - measuring text sizes
+    - always render to a 16:9 aspect ratio
+    - add width-grow and height-grow
+    - non absolute positioned elements should be placed under each other
 
 
 +future @unmapped
 
-implment physics system: vel, acc, drag size:l
-serialisation / deserialisation size:xl
-logging and log-levels size:s
+implment physics system: vel, acc, drag 
+serialisation / deserialisation 
+logging and log-levels 

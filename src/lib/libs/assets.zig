@@ -20,6 +20,9 @@ pub var texture_cache: ?TextureCache = null;
 const AudioCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Sound));
 pub var audio_cache: ?AudioCache = null;
 
+const FontCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Font));
+pub var font_cache: ?FontCache = null;
+
 // ------------------------------------- Funcs --------------------------------------
 
 pub fn deinit() void {
@@ -48,6 +51,16 @@ pub fn deinit() void {
         defer ac.deinit();
 
         var it = ac.iterator();
+        while (it.next()) |entry| {
+            entry.value_ptr.*.deinit();
+            zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
+        }
+    }
+    Font: {
+        const fc = &(font_cache orelse break :Font);
+        defer fc.deinit();
+
+        var it = fc.iterator();
         while (it.next()) |entry| {
             entry.value_ptr.*.deinit();
             zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
@@ -190,6 +203,26 @@ pub const get = struct {
 
             try ac.put(hash, try zap.SharetPtr(sound));
             break :Blk ac.get(hash).?;
+        };
+
+        return stored.ptr() orelse error.AlreadyFreed;
+    }
+
+    pub fn font(rel_path: []const u8) !*rl.Sound {
+        const fc = &(font_cache orelse Blk: {
+            audio_cache = AudioCache.init(zap.getAllocator(.gpa));
+            break :Blk audio_cache.?;
+        });
+        const hash = calculateHash(rel_path, zap.Vec2(1, 1), 0);
+
+        var stored = fc.get(hash) orelse Blk: {
+            const data = try loadFromFile(rel_path);
+            defer zap.getAllocator(.gpa).free(data);
+
+            const f = rl.loadFontFromMemory(".ttf", data);
+
+            try fc.put(hash, try zap.SharetPtr(f));
+            break :Blk fc.get(hash).?;
         };
 
         return stored.ptr() orelse error.AlreadyFreed;

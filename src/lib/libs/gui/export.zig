@@ -85,16 +85,9 @@ pub fn Element(_: void) *const fn (void) void {
 
     if (parent_indexes[0] != null)
         parent_indexer += 1;
+
     parent_indexes[parent_indexer] = current_index;
     current_index += 1;
-    // std.log.debug(
-    //     "\n\nIN\ncurrent: {d} | parent: {d}\nparents: {any}",
-    //     .{
-    //         current_index,
-    //         parent_indexer,
-    //         parent_indexes[0..5]
-    //     },
-    // );
 
     return struct {
         pub fn c(_: void) void {
@@ -102,15 +95,6 @@ pub fn Element(_: void) *const fn (void) void {
                 parent_indexes[parent_indexer] = null;
                 parent_indexer -= 1;
             }
-
-            // std.log.debug(
-            //     "\n\nOUT\ncurrent: {d} | parent: {d}\nparents: {any}",
-            //     .{
-            //         current_index,
-            //         parent_indexer,
-            //         parent_indexes[0..5],
-            //     },
-            // );
         }
     }.c;
 }

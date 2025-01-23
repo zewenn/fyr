@@ -7,6 +7,10 @@ const MovementBehaviour = behaviours.MovementBehaviour;
 const Player = @import("./prefabs/Player.zig").Player;
 const Box = @import("./prefabs/Box.zig").Box;
 
+const gui = zap.gui;
+const Element = gui.Element;
+const ID = gui.ID;
+
 pub fn main() !void {
     zap.useAssetDebugPath("./src/demo/assets/");
 
@@ -16,21 +20,22 @@ pub fn main() !void {
     const default = try zap.eventloop.new("default");
     try zap.useInstance("default");
 
-    zap.gui.clear();
-    defer zap.gui.clear();
-    zap.gui.Element({
-        zap.gui.ID("test_1");
+    gui.clear();
+    defer gui.clear();
+
+    Element({
+        ID("test_1");
     })({
-        zap.gui.Element({
-            zap.gui.ID("test_1_1");
+        Element({
+            ID("test_1_1");
         })({
-            zap.gui.Element({
-                zap.gui.ID("test_1_1");
+            Element({
+                ID("test_1_1");
             })({});
         });
 
-        zap.gui.Element({
-            zap.gui.ID("test_1_2");
+        Element({
+            ID("test_1_2");
         })({});
     });
 

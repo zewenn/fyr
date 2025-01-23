@@ -327,6 +327,7 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
 /// which will be used as the base of all asset requests. For instance:
 /// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
 pub inline fn useAssetDebugPath(comptime path: []const u8) void {
+    if (BUILD_MODE != .Debug) return;
     assets.overrideDevPath(path);
 }
 
