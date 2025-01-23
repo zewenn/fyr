@@ -3,14 +3,14 @@
 
 +v0.0.2-dev.1 @files-work
 
-x 2025-01-03 proper Instance generation from file structure 
+x 2025-01-03 proper Scene generation from file structure 
 x 2025-01-03 export assets dir to zig-out/ 
 
 
 
 +v0.0.2-dev.2 @files-update
 
-x 2025-01-03 auto generate "default" instance
+x 2025-01-03 auto generate "default" Scene
 x 2025-01-03 automatically create a script in [default] if non-existent
     x 2025-01-03 auto generate imports for base file
 
@@ -24,7 +24,7 @@ x 2025-01-03 bump version + create release
 
 +v0.0.3 @engine-work
 
-x 2025-01-03 add .DS_Store to gitignore
+x 2025-01-03 add .DS_Entity to gitignore
 
 x 2025-01-04 add sounds (asset loading + audio handling)
 x 2025-01-04 add support for emscripten again
@@ -47,7 +47,7 @@ x 2025-01-05 add repeating sprites for Renderer()
 
 x 2025-01-14 animator: 
     x 2025-01-14 animator component to keep track of all animations
-    x 2025-01-14 animations which store keyframes
+    x 2025-01-14 animations which Entity keyframes
     x 2025-01-14 keyframes that can be interpolated
 
 x 2025-01-14 camera:

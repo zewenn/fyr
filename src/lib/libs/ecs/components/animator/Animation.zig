@@ -39,7 +39,7 @@ pub fn init(name: []const u8, length: anytype, timing_function: t.TimingFunction
     return Self{
         .name = name,
         .uuid = fyr.UUIDV7(),
-        .alloc = fyr.getAllocator(.instance),
+        .alloc = fyr.getAllocator(.Scene),
         .length = length,
         .timing_function = timing_function,
     };

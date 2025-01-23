@@ -2,8 +2,8 @@ const fyr = @import("fyr");
 
 const MovementBehaviour = @import("../behaviours.zig").MovementBehaviour;
 
-pub fn Player() !*fyr.Store {
-    return fyr.newStore("Player", .{
+pub fn Player() !*fyr.Entity {
+    return fyr.newEntity("Player", .{
         fyr.Transform{
             .position = .{
                 .x = 0,

@@ -117,7 +117,7 @@ pub inline fn overrideDevPath(comptime path: []const u8) void {
 }
 
 pub const get = struct {
-    fn storeImage(
+    fn EntityImage(
         ic: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image)),
         hash: usize,
         rel_path: []const u8,
@@ -149,16 +149,16 @@ pub const get = struct {
         });
         const hash = calculateHash(rel_path, size, rotation);
 
-        var stored = ic.get(hash) orelse try storeImage(ic, hash, rel_path, size, rotation);
-        if (!stored.isAlive()) {
-            fyr.getAllocator(.gpa).destroy(stored);
-            stored = try storeImage(ic, hash, rel_path, size, rotation);
+        var Entityd = ic.get(hash) orelse try EntityImage(ic, hash, rel_path, size, rotation);
+        if (!Entityd.isAlive()) {
+            fyr.getAllocator(.gpa).destroy(Entityd);
+            Entityd = try EntityImage(ic, hash, rel_path, size, rotation);
         }
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
-    fn storeTexture(
+    fn EntityTexture(
         tc: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture)),
         hash: usize,
         img: rl.Image,
@@ -176,13 +176,13 @@ pub const get = struct {
         });
         const hash = calculateHash(rel_path, fyr.Vec2(img.width, img.height), rotation);
 
-        var stored = tc.get(hash) orelse try storeTexture(tc, hash, img);
-        if (!stored.isAlive()) {
-            fyr.getAllocator(.gpa).destroy(stored);
-            stored = try storeTexture(tc, hash, img);
+        var Entityd = tc.get(hash) orelse try EntityTexture(tc, hash, img);
+        if (!Entityd.isAlive()) {
+            fyr.getAllocator(.gpa).destroy(Entityd);
+            Entityd = try EntityTexture(tc, hash, img);
         }
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
     pub fn audio(rel_path: []const u8) !*rl.Sound {
@@ -192,7 +192,7 @@ pub const get = struct {
         });
         const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
 
-        var stored = ac.get(hash) orelse Blk: {
+        var Entityd = ac.get(hash) orelse Blk: {
             const data = try loadFromFile(rel_path);
             defer fyr.getAllocator(.gpa).free(data);
 
@@ -205,7 +205,7 @@ pub const get = struct {
             break :Blk ac.get(hash).?;
         };
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
     pub fn font(rel_path: []const u8) !*rl.Sound {
@@ -215,7 +215,7 @@ pub const get = struct {
         });
         const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
 
-        var stored = fc.get(hash) orelse Blk: {
+        var Entityd = fc.get(hash) orelse Blk: {
             const data = try loadFromFile(rel_path);
             defer fyr.getAllocator(.gpa).free(data);
 
@@ -225,7 +225,7 @@ pub const get = struct {
             break :Blk fc.get(hash).?;
         };
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 };
 

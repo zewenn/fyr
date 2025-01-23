@@ -18,9 +18,9 @@ pub const Animator = struct {
 
     pub fn init() Self {
         return Self{
-            .alloc = fyr.getAllocator(.instance),
-            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.instance)),
-            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.instance)),
+            .alloc = fyr.getAllocator(.Scene),
+            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.Scene)),
+            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.Scene)),
         };
     }
 
@@ -80,7 +80,7 @@ pub const AnimatorBehaviour = struct {
         display: ?*fyr.Display = null,
     };
 
-    fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(Cache, cache_ptr);
 
         var animator = Animator.init();
@@ -90,14 +90,14 @@ pub const AnimatorBehaviour = struct {
 
         cache.animations.deinit();
 
-        try store.addComonent(animator);
+        try Entity.addComonent(animator);
 
-        cache.animator = store.getComponent(fyr.Animator) orelse return;
-        cache.transform = store.getComponent(fyr.Transform) orelse return;
-        cache.display = store.getComponent(fyr.Display) orelse return;
+        cache.animator = Entity.getComponent(fyr.Animator) orelse return;
+        cache.transform = Entity.getComponent(fyr.Transform) orelse return;
+        cache.display = Entity.getComponent(fyr.Display) orelse return;
     }
 
-    fn update(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(Cache, cache_ptr);
 
         const transform = cache.transform orelse return;
@@ -139,7 +139,7 @@ pub const AnimatorBehaviour = struct {
         }
     }
 
-    fn deinit(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(Cache, cache_ptr);
 
         if (cache.animator) |animator| {

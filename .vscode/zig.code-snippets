@@ -18,11 +18,11 @@
 	"behaviour fn": {
 		"prefix": "bfn",
 		"body": [
-			"fn $1(store: *fyr.Store, cache_ptr: *anyopaque) !void {",
+			"fn $1(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {",
 			"\tconst cache = fyr.CacheCast($2, cache_ptr);",
 			"",
 			"\t_ = cache;",
-			"\t_ = store;",
+			"\t_ = Entity;",
 			"}",
 		]
 	}

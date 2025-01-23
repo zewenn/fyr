@@ -7,14 +7,14 @@ pub const MovementBehaviour = struct {
         speed: f32 = 10,
     };
 
-    fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(Cache, cache_ptr);
 
-        const transform = store.getComponent(fyr.Transform);
+        const transform = Entity.getComponent(fyr.Transform);
         cache.transform = transform;
     }
 
-    fn update(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn update(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(Cache, cache_ptr);
         const transform = cache.transform orelse return;
 
@@ -48,7 +48,7 @@ pub const MovementBehaviour = struct {
         );
 
         if (move_vec.length() < 0.5) return;
-        const animator = store.getComponent(fyr.Animator) orelse return;
+        const animator = Entity.getComponent(fyr.Animator) orelse return;
 
         try animator.play("test");
     }

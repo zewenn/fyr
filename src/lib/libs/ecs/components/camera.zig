@@ -8,18 +8,18 @@ const Cache = struct {
     transform: ?*Transform = null,
 };
 
-fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
     const cache = fyr.CacheCast(Cache, cache_ptr);
 
-    const transform = store.getComponent(Transform) orelse Blk: {
-        try store.addComonent(Transform{});
-        break :Blk store.getComponent(Transform).?;
+    const transform = Entity.getComponent(Transform) orelse Blk: {
+        try Entity.addComonent(Transform{});
+        break :Blk Entity.getComponent(Transform).?;
     };
 
     cache.transform = transform;
 }
 
-fn update(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
     const cache = fyr.CacheCast(Cache, cache_ptr);
 
     const transform = cache.transform orelse return;

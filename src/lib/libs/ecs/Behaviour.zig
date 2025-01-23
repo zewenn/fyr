@@ -1,7 +1,7 @@
 const std = @import("std");
 const fyr = @import("../../main.zig");
 
-const FnType = ?(*const fn (*fyr.Store, *anyopaque) anyerror!void);
+const FnType = ?(*const fn (*fyr.Entity, *anyopaque) anyerror!void);
 const Events = enum { awake, init, update, tick, deinit };
 const AllocationError = error.OutOfMemory;
 
@@ -40,7 +40,7 @@ pub fn add(self: *Self, event: Events, callback: FnType) void {
     }
 }
 
-pub fn callSafe(self: *Self, event: Events, store: *fyr.Store) void {
+pub fn callSafe(self: *Self, event: Events, Entity: *fyr.Entity) void {
     defer FreeingCAllocations: {
         if (event != .deinit) break :FreeingCAllocations;
 
@@ -56,7 +56,7 @@ pub fn callSafe(self: *Self, event: Events, store: *fyr.Store) void {
         .deinit => self.deinit,
     } orelse return;
 
-    func(store, self.cache) catch {
+    func(Entity, self.cache) catch {
         std.log.err("Error when calling Behaviour event!", .{});
     };
 }

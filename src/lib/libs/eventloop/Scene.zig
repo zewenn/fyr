@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
 const fyr = @import("../../main.zig");
-const Store = fyr.Store;
+const Entity = fyr.Entity;
 
 const EventActions = std.ArrayList(Action);
 const EventMapType = std.AutoHashMap(Target, EventActions);
@@ -14,7 +14,7 @@ const Self = @This();
 arena: std.heap.ArenaAllocator,
 arena_alloc: ?Allocator = null,
 
-stores: ?std.ArrayList(*Store) = null,
+entities: ?std.ArrayList(*Entity) = null,
 
 original_alloc: Allocator,
 event_map: ?EventMapType,
@@ -55,9 +55,9 @@ pub inline fn allocator(self: *Self) Allocator {
 pub inline fn reset(self: *Self) void {
     defer _ = self.arena.reset(.free_all);
 
-    const stores = self.stores orelse return;
-    for (stores.items) |store| {
-        self.removeStore(store);
+    const entities = self.entities orelse return;
+    for (entities.items) |entity| {
+        self.removeEntity(entity);
     }
 }
 
@@ -106,16 +106,16 @@ pub fn call(self: *Self, event: anytype) !void {
     }
 }
 
-// Stores
+// Entitys
 
-fn makeGetStores(self: *Self) *std.ArrayList(*Store) {
-    if (self.stores == null) self.stores = std.ArrayList(*Store).init(self.allocator());
-    return &(self.stores.?);
+fn makeGetEntities(self: *Self) *std.ArrayList(*Entity) {
+    if (self.entities == null) self.entities = std.ArrayList(*Entity).init(self.allocator());
+    return &(self.entities.?);
 }
 
-pub fn newStore(self: *Self, id: []const u8, components: anytype) !*Store {
-    const ptr = try self.allocator().create(Store);
-    ptr.* = Store.init(self.allocator(), id);
+pub fn newEntity(self: *Self, id: []const u8, components: anytype) !*Entity {
+    const ptr = try self.allocator().create(Entity);
+    ptr.* = Entity.init(self.allocator(), id);
 
     inline for (components) |component| {
         try ptr.addComonent(component);
@@ -124,35 +124,35 @@ pub fn newStore(self: *Self, id: []const u8, components: anytype) !*Store {
     return ptr;
 }
 
-pub fn addStore(self: *Self, store: *Store) !void {
-    const behaviours = try store.getComponents(fyr.Behaviour);
+pub fn addEntity(self: *Self, entity: *Entity) !void {
+    const behaviours = try entity.getComponents(fyr.Behaviour);
     for (behaviours) |b| {
-        b.callSafe(.awake, store);
-        b.callSafe(.init, store);
+        b.callSafe(.awake, entity);
+        b.callSafe(.init, entity);
     }
 
-    const stores = self.makeGetStores();
-    try stores.append(store);
+    const entities = self.makeGetEntities();
+    try entities.append(entity);
 }
 
-pub fn removeStore(self: *Self, store: *Store) void {
-    const stores = self.makeGetStores();
-    for (stores.items, 0..) |it, index| {
-        if (@intFromPtr(store) != @intFromPtr(it)) continue;
+pub fn removeEntity(self: *Self, entity: *Entity) void {
+    const entities = self.makeGetEntities();
+    for (entities.items, 0..) |it, index| {
+        if (@intFromPtr(entity) != @intFromPtr(it)) continue;
 
-        const behaviours = store.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
+        const behaviours = entity.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
         for (behaviours) |b| {
-            b.callSafe(.deinit, store);
+            b.callSafe(.deinit, entity);
         }
-        _ = stores.swapRemove(index);
+        _ = entities.swapRemove(index);
     }
 }
 
-pub fn getStoreById(self: *Self, id: []const u8) ?*Store {
-    const stores = self.stores orelse return null;
-    for (stores.items) |store| {
-        if (!std.mem.eql(u8, store.id, id)) continue;
-        return store;
+pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
+    const Entitys = self.entities orelse return null;
+    for (Entitys.items) |entity| {
+        if (!std.mem.eql(u8, entity.id, id)) continue;
+        return Entity;
     }
 
     return null;

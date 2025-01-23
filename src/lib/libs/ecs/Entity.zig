@@ -42,13 +42,13 @@ pub inline fn allocator(self: *Self) Allocator {
     return self.arena_alloc.?;
 }
 
-/// Adds a component to the store.
+/// Adds a component to the Entity.
 ///
-/// This function takes a value of any type and attempts to add it to the store's list.
+/// This function takes a value of any type and attempts to add it to the Entity's list.
 /// If the addition fails, it returns a `ComponentErrors.ItemCreationError`.
 ///
 /// Parameters:
-/// - `self`: A pointer to the store instance.
+/// - `self`: A pointer to the Entity Scene.
 /// - `value`: The component value to be added.
 ///
 /// Returns:

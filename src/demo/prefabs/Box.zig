@@ -1,7 +1,7 @@
 const fyr = @import("fyr");
 
-pub fn Box() !*fyr.Store {
-    return fyr.newStore("Box", .{
+pub fn Box() !*fyr.Entity {
+    return fyr.newEntity("Box", .{
         fyr.Transform{
             .position = fyr.Vec3(128, 128, 0),
             .scale = fyr.Vec2(256, 64),

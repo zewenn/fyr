@@ -42,16 +42,16 @@ const DCCache = struct {
 };
 
 pub const Renderer = struct {
-    fn awake(store: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(DCCache, cache_ptr);
 
-        try store.addComonent(cache.base);
-        cache.display = store.getComponent(Display);
+        try Entity.addComonent(cache.base);
+        cache.display = Entity.getComponent(Display);
 
-        cache.transform = store.getComponent(Transform);
+        cache.transform = Entity.getComponent(Transform);
         if (cache.transform == null) {
-            try store.addComonent(Transform{});
-            cache.transform = store.getComponent(Transform);
+            try Entity.addComonent(Transform{});
+            cache.transform = Entity.getComponent(Transform);
         }
 
         const c_transform = cache.transform.?;
@@ -75,11 +75,11 @@ pub const Renderer = struct {
             );
         }
 
-        try store.addComonent(display_cache);
-        cache.display_cache = store.getComponent(DisplayCache);
+        try Entity.addComonent(display_cache);
+        cache.display_cache = Entity.getComponent(DisplayCache);
     }
 
-    fn update(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(DCCache, cache_ptr);
 
         const display_cache = cache.display_cache orelse return;
@@ -129,7 +129,7 @@ pub const Renderer = struct {
         // rl.drawTexture(texture.*, 0, 0, rl.Color.white);
     }
 
-    fn deinit(_: *fyr.Store, cache_ptr: *anyopaque) !void {
+    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
         const cache = fyr.CacheCast(DCCache, cache_ptr);
         const c_display_cache = cache.display_cache orelse return;
 

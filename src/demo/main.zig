@@ -17,8 +17,8 @@ pub fn main() !void {
     try fyr.init();
     defer fyr.deinit();
 
-    const default = try fyr.eventloop.new("default");
-    try fyr.useInstance("default");
+    const default = try fyr.scene("default");
+    try fyr.useScene("default");
 
     gui.clear();
     defer gui.clear();
@@ -39,8 +39,8 @@ pub fn main() !void {
         })({});
     });
 
-    try default.addStore(try Player());
-    try default.addStore(try Box());
+    try default.addEntity(try Player());
+    try default.addEntity(try Box());
 
     fyr.loop();
 }
