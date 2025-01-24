@@ -1,6 +1,11 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+pub const lib_info = struct {
+    pub const lib_name = "fyr";
+    pub const version_str = "v0.0.1-dev";
+};
+
 pub const builtin = @import("builtin");
 pub const os = std.os;
 pub const target = builtin.target;
@@ -41,6 +46,53 @@ pub const KeyFrame = ecs.components.KeyFrame;
 pub const interpolation = ecs.components.interpolation;
 
 pub const Scene = eventloop.Scene;
+pub const window = struct {
+    var _size = Vec2(860, 480);
+    pub var _temp_size = Vec2(860, 480);
+
+    var _inited = false;
+
+    pub const initalised = struct {
+        pub inline fn set(to: bool) void {
+            if (_inited) return;
+            _inited = to;
+        }
+
+        pub inline fn get() bool {
+            return _inited;
+        }
+    };
+
+    pub const size = struct {
+        inline fn update() void {
+            _size = Vec2(rl.getScreenWidth(), rl.getScreenHeight());
+        }
+
+        pub inline fn set(to: Vector2) void {
+            if (initalised.get()) {
+                rl.setWindowSize(toi32(to.x), toi32(to.y));
+                update();
+                return;
+            }
+            _temp_size = to;
+        }
+
+        pub inline fn get() Vector2 {
+            update();
+            return _size;
+        }
+    };
+
+    pub var _temp_title: [*:0]const u8 = "";
+
+    pub fn title(to: [*:0]const u8) void {
+        if (initalised.get()) {
+            rl.setWindowTitle(to);
+            return;
+        }
+        _temp_title = to;
+    }
+};
 
 const global_allocators = struct {
     pub var gpa: AllocatorScene(std.heap.GeneralPurposeAllocator(.{})) = .{};
@@ -108,8 +160,17 @@ pub inline fn isLoopRunning() bool {
 pub fn init() !void {
     rl.setTraceLogLevel(.warning);
 
-    rl.initWindow(1280, 720, "fyr");
+    rl.initWindow(
+        toi32(window.size.get().x),
+        toi32(window.size.get().y),
+        "fyr project - loading...",
+    );
     rl.initAudioDevice();
+
+    window.initalised.set(true);
+
+    window.size.set(window._temp_size);
+    window.title(window._temp_title);
 
     time.init();
     try eventloop.init();
@@ -154,7 +215,26 @@ pub fn loop() void {
     }
 }
 
-pub fn project(_: void) void {}
+pub fn project(_: void) *const fn (void) void {
+    init() catch panic("couldn't initalise window!", .{});
+
+    return struct {
+        pub fn callback(_: void) void {
+            loop();
+            deinit();
+        }
+    }.callback;
+}
+
+/// Shorthand for window.size.set()
+pub fn winSize(dimenstions: Vector2) void {
+    window.size.set(dimenstions);
+}
+
+/// Shorthand for window.title()
+pub fn title(text: [*:0]const u8) void {
+    window.title(text);
+}
 
 pub fn deinit() void {
     defer if (global_allocators.gpa.interface) |*intf| {
@@ -298,13 +378,13 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     };
 }
 
-pub fn assert(title: []const u8, statement: bool) void {
+pub fn assert(text: []const u8, statement: bool) void {
     if (statement) {
-        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{title});
+        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{text});
         return;
     }
 
-    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{title});
+    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{text});
     @panic("ASSERTON FAILIURE");
 }
 

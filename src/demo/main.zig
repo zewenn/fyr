@@ -1,47 +1,21 @@
 const std = @import("std");
 const fyr = @import("fyr");
 
-const behaviours = @import("behaviours.zig");
-
-const MovementBehaviour = behaviours.MovementBehaviour;
 const Player = @import("./prefabs/Player.zig").Player;
 const Box = @import("./prefabs/Box.zig").Box;
 
-const gui = fyr.gui;
-const Element = gui.Element;
-const ID = gui.ID;
-
 pub fn main() !void {
-    fyr.useAssetDebugPath("./src/demo/assets/");
+    fyr.project({
+        fyr.title("fyr-demo");
+        fyr.winSize(fyr.Vec2(1280, 720));
 
-    try fyr.init();
-    defer fyr.deinit();
-
-    fyr.scene("default")({
-        fyr.entities(.{
-            try Player(),
-            try Box(),
-        });
-    });
-
-    gui.clear();
-    defer gui.clear();
-
-    Element({
-        ID("test_1");
+        fyr.useAssetDebugPath("./src/demo/assets/");
     })({
-        Element({
-            ID("test_1_1");
-        })({
-            Element({
-                ID("test_1_1");
-            })({});
+        fyr.scene("default")({
+            fyr.entities(.{
+                try Player(),
+                try Box(),
+            });
         });
-
-        Element({
-            ID("test_1_2");
-        })({});
     });
-
-    fyr.loop();
 }
