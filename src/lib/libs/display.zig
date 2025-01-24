@@ -1,12 +1,12 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
-const zap = @import("../main.zig");
+const fyr = @import("../main.zig");
 const rl = @import("raylib");
 
 pub const Renderer = struct {
     texture: rl.Texture,
-    transform: zap.Transform,
-    display: zap.Display,
+    transform: fyr.Transform,
+    display: fyr.Display,
 };
 
 const BufferType = std.ArrayList(Renderer);
@@ -18,7 +18,7 @@ fn sort(_: void, lsh: Renderer, rsh: Renderer) bool {
 }
 
 pub fn init() void {
-    buffer = BufferType.init(zap.getAllocator(.gpa));
+    buffer = BufferType.init(fyr.getAllocator(.gpa));
 }
 
 pub fn reset() void {
@@ -44,19 +44,19 @@ pub fn render() void {
     for (buf.items) |item| {
         rl.drawTexturePro(
             item.texture,
-            zap.Rect(
+            fyr.Rect(
                 0,
                 0,
                 item.transform.scale.x,
                 item.transform.scale.y,
             ),
-            zap.Rect(
+            fyr.Rect(
                 item.transform.position.x,
                 item.transform.position.y,
                 item.transform.scale.x,
                 item.transform.scale.y,
             ),
-            zap.Vec2(item.transform.scale.x / 2, item.transform.scale.y / 2),
+            fyr.Vec2(item.transform.scale.x / 2, item.transform.scale.y / 2),
             item.transform.rotation,
             item.display.tint,
         );

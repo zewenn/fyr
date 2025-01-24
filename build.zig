@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) !void {
     });
 
     const raylib = raylib_dep.module("raylib");
+    const raygui = raylib_dep.module("raygui");
     const raylib_artifact = raylib_dep.artifact("raylib");
 
     const uuid_dep = b.dependency("uuid", .{
@@ -28,28 +29,31 @@ pub fn build(b: *std.Build) !void {
             .{ .cwd_relative = "/System/Library/Frameworks" },
         );
 
-    // zap library
+    // fyr library
 
-    const zap_module = b.addModule("zap", .{
+    const fyr_module = b.addModule("fyr", .{
         .root_source_file = b.path("./src/lib/main.zig"),
+        .link_libc = true,
     });
 
-    zap_module.addImport("raylib", raylib);
-    zap_module.linkLibrary(raylib_artifact);
+    fyr_module.addImport("raylib", raylib);
+    fyr_module.addImport("raygui", raygui);
+    fyr_module.linkLibrary(raylib_artifact);
 
-    zap_module.addImport("uuid", uuid);
-    zap_module.linkLibrary(uuid_artifact);
+    fyr_module.addImport("uuid", uuid);
+    fyr_module.linkLibrary(uuid_artifact);
 
-    try b.modules.put(b.dupe("zap"), zap_module);
+    try b.modules.put(b.dupe("fyr"), fyr_module);
 
     const lib = b.addStaticLibrary(.{
-        .name = "zap",
+        .name = "fyr",
         .root_source_file = b.path("src/lib/main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     lib.root_module.addImport("raylib", raylib);
+    lib.root_module.addImport("raygui", raygui);
     lib.root_module.linkLibrary(raylib_artifact);
 
     lib.root_module.addImport("uuid", uuid);
@@ -60,17 +64,28 @@ pub fn build(b: *std.Build) !void {
     // demo-exe
 
     const demo_exe = b.addExecutable(.{
-        .name = "zap-demo",
+        .name = "fyr-demo",
         .root_source_file = b.path("src/demo/main.zig"),
         .optimize = optimize,
         .target = target,
     });
 
-    demo_exe.root_module.addImport("zap", &lib.root_module);
+    demo_exe.root_module.addImport("fyr", &lib.root_module);
 
     b.installArtifact(demo_exe);
 
     const run_cmd = b.addRunArtifact(demo_exe);
     const run_step = b.step("run", "run demo");
     run_step.dependOn(&run_cmd.step);
+
+    const exe_unit_tests = b.addTest(.{
+        .root_source_file = b.path("src/lib/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
+
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_exe_unit_tests.step);
 }

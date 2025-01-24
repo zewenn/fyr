@@ -1,6 +1,6 @@
 const std = @import("std");
-const zap = @import("../../../main.zig");
-const rl = zap.rl;
+const fyr = @import("../../../main.zig");
+const rl = fyr.rl;
 
 const Transform = @import("../components.zig").Transform;
 
@@ -8,29 +8,29 @@ const Cache = struct {
     transform: ?*Transform = null,
 };
 
-fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
-    const cache = zap.CacheCast(Cache, cache_ptr);
+fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
+    const cache = fyr.CacheCast(Cache, cache_ptr);
 
-    const transform = store.getComponent(Transform) orelse Blk: {
-        try store.addComonent(Transform{});
-        break :Blk store.getComponent(Transform).?;
+    const transform = Entity.getComponent(Transform) orelse Blk: {
+        try Entity.addComonent(Transform{});
+        break :Blk Entity.getComponent(Transform).?;
     };
 
     cache.transform = transform;
 }
 
-fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
-    const cache = zap.CacheCast(Cache, cache_ptr);
+fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
+    const cache = fyr.CacheCast(Cache, cache_ptr);
 
     const transform = cache.transform orelse return;
-    defer zap.camera.target = zap.Vec2(
+    defer fyr.camera.target = fyr.Vec2(
         transform.position.x,
         transform.position.y,
     );
 }
 
-pub fn CameraTarget() !zap.Behaviour {
-    var b = try zap.Behaviour.init(Cache);
+pub fn CameraTarget() !fyr.Behaviour {
+    var b = try fyr.Behaviour.init(Cache);
 
     b.add(.awake, awake);
     b.add(.update, update);

@@ -1,7 +1,7 @@
 const std = @import("std");
-const zap = @import("../../main.zig");
+const fyr = @import("../../main.zig");
 
-const FnType = ?(*const fn (*zap.Store, *anyopaque) anyerror!void);
+const FnType = ?(*const fn (*fyr.Entity, *anyopaque) anyerror!void);
 const Events = enum { awake, init, update, tick, deinit };
 const AllocationError = error.OutOfMemory;
 
@@ -40,24 +40,38 @@ pub fn add(self: *Self, event: Events, callback: FnType) void {
     }
 }
 
-pub fn callSafe(self: *Self, event: Events, store: *zap.Store) void {
+pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
     defer FreeingCAllocations: {
         if (event != .deinit) break :FreeingCAllocations;
 
-        std.c.free(self.cache);
-        std.log.info("BEHAVIOUR: [DEINIT] C memory Cache freed!", .{});
+        if (fyr.BUILD_MODE == .Debug) {
+            const addr = @intFromPtr(self.cache);
+
+            std.c.free(self.cache);
+            std.log.info("behaviour cache \x1b[32m\x1b[1mfree\x1b[0m at 0x{x}", .{addr});
+        }
     }
 
     const func = switch (event) {
-        .awake => self.awake,
-        .init => self.init,
+        // zig fmt: off
+        .awake  => self.awake,
+        .init   => self.init,
         .update => self.update,
-        .tick => self.tick,
+        .tick   => self.tick,
         .deinit => self.deinit,
+        // zig fmt: on
     } orelse return;
 
-    func(store, self.cache) catch {
-        std.log.err("Error when calling Behaviour event!", .{});
+    func(entity, self.cache) catch {
+        std.log.err("failed to call behaviour event ({s})", .{switch (event) {
+            // zig fmt: off
+            .awake  => "awake",
+            .init   => "init",
+            .deinit => "deinit",
+            .update => "update",
+            .tick   => "tick",
+            // zig fmt: on
+        }});
     };
 }
 

@@ -1,13 +1,13 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
-const zap = @import("../main.zig");
+const fyr = @import("../main.zig");
 
-const assertTitle = zap.assertTitle;
-const assert = zap.assert;
+const assertTitle = fyr.assertTitle;
+const assert = fyr.assert;
 
-const changeType = zap.changeType;
-const cloneToOwnedSlice = zap.cloneToOwnedSlice;
+const changeType = fyr.changeNumberType;
+const cloneToOwnedSlice = fyr.cloneToOwnedSlice;
 
 pub const WrappedArrayOptions = struct {
     allocator: Allocator = std.heap.page_allocator,
@@ -171,6 +171,15 @@ pub fn WrappedArray(comptime T: type) type {
             return new_slice;
         }
 
+        pub fn toArrayList(self: Self) !std.ArrayList(T) {
+            var list = std.ArrayList(T).init(self.alloc);
+            try list.resize(self.len());
+
+            @memcpy(list.items, self.items);
+
+            return list;
+        }
+
         pub fn deinit(self: Self) void {
             self.alloc.free(self.items);
         }
@@ -190,46 +199,4 @@ pub fn arrayAdvanced(
         tuple,
         options,
     ) catch unreachable;
-}
-
-pub fn warray_test() void {
-    assertTitle("WrappedArray(T) HealthCheck");
-
-    const test_arr = array(usize, .{ 10, 9, 8, 7, 6 });
-    defer test_arr.deinit();
-
-    assert("test_arr len is 5", test_arr.len() == 5);
-    assert("test_arr lastIndex is 4", test_arr.lastIndex() == 4);
-
-    assert("test_arr.getFirst() == 10", test_arr.getFirst().? == 10);
-    assert("test_arr.getLast() == 6", test_arr.getLast().? == 6);
-
-    assert("test_arr.at(2) == 8", test_arr.at(2) == 8);
-
-    const sliced = test_arr.slice(2, 4) catch {
-        assert("Allocation failiure in test_arr.slice()", false);
-        return;
-    };
-
-    defer sliced.deinit();
-
-    assert(
-        "test_arr.slice(2, 4) == [8, 7]",
-        std.mem.eql(
-            usize,
-            sliced.items,
-            @constCast(&[_]usize{ 8, 7 }),
-        ),
-    );
-
-    const ownedSlice = test_arr.toOwnedSlice() catch {
-        assert("Allocation failiure in test_arr.toOwnedSlice()", false);
-        return;
-    };
-    defer test_arr.alloc.free(ownedSlice);
-
-    assert("ownedSlice[0] == test_arr.at(0)", ownedSlice[0] == test_arr.at(0));
-
-    test_arr.set(2, 11);
-    assert("test_arr.set(2, 11) set value to 11", test_arr.at(2) == 11);
 }

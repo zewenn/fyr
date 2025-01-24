@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
-const zap = @import("../../../../main.zig");
+const fyr = @import("../../../../main.zig");
 
 pub const t = @import("./types.zig");
 
@@ -18,9 +18,9 @@ pub const Animator = struct {
 
     pub fn init() Self {
         return Self{
-            .alloc = zap.getAllocator(.instance),
-            .animations = std.StringHashMap(*Animation).init(zap.getAllocator(.instance)),
-            .playing = std.ArrayList(*Animation).init(zap.getAllocator(.instance)),
+            .alloc = fyr.getAllocator(.Scene),
+            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.Scene)),
+            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.Scene)),
         };
     }
 
@@ -54,7 +54,7 @@ pub const Animator = struct {
 
         anim.playing = true;
         anim.current_percent = 0;
-        anim.start_time = zap.time.gameTime();
+        anim.start_time = fyr.time.gameTime();
     }
 
     pub fn stop(self: *Self, name: []const u8) void {
@@ -74,14 +74,14 @@ pub const Animator = struct {
 
 pub const AnimatorBehaviour = struct {
     const Cache = struct {
-        animations: zap.WrappedArray(Animation),
+        animations: fyr.WrappedArray(Animation),
         animator: ?*Animator = null,
-        transform: ?*zap.Transform = null,
-        display: ?*zap.Display = null,
+        transform: ?*fyr.Transform = null,
+        display: ?*fyr.Display = null,
     };
 
-    fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
         var animator = Animator.init();
         for (cache.animations.items) |item| {
@@ -90,15 +90,15 @@ pub const AnimatorBehaviour = struct {
 
         cache.animations.deinit();
 
-        try store.addComonent(animator);
+        try Entity.addComonent(animator);
 
-        cache.animator = store.getComponent(zap.Animator) orelse return;
-        cache.transform = store.getComponent(zap.Transform) orelse return;
-        cache.display = store.getComponent(zap.Display) orelse return;
+        cache.animator = Entity.getComponent(fyr.Animator) orelse return;
+        cache.transform = Entity.getComponent(fyr.Transform) orelse return;
+        cache.display = Entity.getComponent(fyr.Display) orelse return;
     }
 
-    fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
         const transform = cache.transform orelse return;
         const display = cache.display orelse return;
@@ -118,10 +118,10 @@ pub const AnimatorBehaviour = struct {
             const next_keyframe = next orelse continue;
 
             const interpolation_factor =
-                @min(1, @max(0, (zap.time.gameTime() - zap.tof32(animation.start_time)) / zap.tof32(animation.length)));
+                @min(1, @max(0, (fyr.time.gameTime() - fyr.tof32(animation.start_time)) / fyr.tof32(animation.length)));
 
             const anim_progress_percent = animation.timing_function(0, 1, interpolation_factor);
-            const next_index_percent = animation.timing_function(0, 1, zap.tof32(animation.next_index) / 100);
+            const next_index_percent = animation.timing_function(0, 1, fyr.tof32(animation.next_index) / 100);
 
             const percent = @min(1, @max(0, anim_progress_percent / next_index_percent));
 
@@ -131,7 +131,7 @@ pub const AnimatorBehaviour = struct {
 
             if (percent != 1) continue;
 
-            animation.incrementCurrentPercent(zap.toi32(interpolation_factor * 100));
+            animation.incrementCurrentPercent(fyr.toi32(interpolation_factor * 100));
             if (!animation.playing) {
                 animator.stop(animation.name);
                 break;
@@ -139,17 +139,19 @@ pub const AnimatorBehaviour = struct {
         }
     }
 
-    fn deinit(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
         if (cache.animator) |animator| {
             animator.deinit();
         }
+
+        cache.animations.deinit();
     }
 
-    pub fn behaviour(anims: zap.WrappedArray(Animation)) !zap.Behaviour {
-        var b = try zap.Behaviour.initWithDefaultValue(Cache{
-            .animations = anims,
+    pub fn behaviour(animations_tuple: anytype) !fyr.Behaviour {
+        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
+            .animations = fyr.array(Animation, animations_tuple),
         });
 
         b.add(.awake, awake);

@@ -1,6 +1,13 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+const testing = std.testing;
+
+pub const lib_info = struct {
+    pub const lib_name = "fyr";
+    pub const version_str = "v0.0.1-dev";
+};
+
 pub const builtin = @import("builtin");
 pub const os = std.os;
 pub const target = builtin.target;
@@ -9,6 +16,8 @@ pub const BUILD_MODE = builtin.mode;
 const deps = @import("./deps/export.zig");
 
 pub const rl = deps.raylib;
+pub const rgui = deps.raygui;
+
 pub const uuid = deps.uuid;
 
 pub const Vector2 = rl.Vector2;
@@ -21,6 +30,7 @@ pub const eventloop = @import("libs/eventloop/export.zig");
 pub const time = @import("libs/time.zig");
 pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
+pub const gui = @import("libs/gui/export.zig");
 
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
@@ -37,11 +47,58 @@ pub const KeyFrame = ecs.components.KeyFrame;
 
 pub const interpolation = ecs.components.interpolation;
 
-pub const Instance = eventloop.Instance;
+pub const Scene = eventloop.Scene;
+pub const window = struct {
+    var _size = Vec2(860, 480);
+    pub var _temp_size = Vec2(860, 480);
+
+    var _inited = false;
+
+    pub const initalised = struct {
+        pub inline fn set(to: bool) void {
+            if (_inited) return;
+            _inited = to;
+        }
+
+        pub inline fn get() bool {
+            return _inited;
+        }
+    };
+
+    pub const size = struct {
+        inline fn update() void {
+            _size = Vec2(rl.getScreenWidth(), rl.getScreenHeight());
+        }
+
+        pub inline fn set(to: Vector2) void {
+            if (initalised.get()) {
+                rl.setWindowSize(toi32(to.x), toi32(to.y));
+                update();
+                return;
+            }
+            _temp_size = to;
+        }
+
+        pub inline fn get() Vector2 {
+            update();
+            return _size;
+        }
+    };
+
+    pub var _temp_title: [*:0]const u8 = "";
+
+    pub fn title(to: [*:0]const u8) void {
+        if (initalised.get()) {
+            rl.setWindowTitle(to);
+            return;
+        }
+        _temp_title = to;
+    }
+};
 
 const global_allocators = struct {
-    pub var gpa: AllocatorInstance(std.heap.GeneralPurposeAllocator(.{})) = .{};
-    pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
+    pub var gpa: AllocatorScene(std.heap.GeneralPurposeAllocator(.{})) = .{};
+    pub var arena: AllocatorScene(std.heap.ArenaAllocator) = .{};
     pub var page: Allocator = std.heap.page_allocator;
 
     pub const types = enum {
@@ -51,10 +108,10 @@ const global_allocators = struct {
         arena,
         /// Shorthand for `std.heap.page_allocator`.
         page,
-        /// If `eventloop` has an instance loaded, this is a shorthand for
-        /// `zap.eventloop.active_instance.allocator()`, otherwise this is the
+        /// If `eventloop` has an Scene loaded, this is a shorthand for
+        /// `fyr.eventloop.active_Scene.allocator()`, otherwise this is the
         /// same as arena.
-        instance,
+        Scene,
         /// Shorthand for `std.heap.c_allocator`
         c,
         /// Shorthand for `std.heap.raw_c_allocator`
@@ -79,7 +136,7 @@ pub const arrayAdvanced = warray_lib.arrayAdvanced;
 pub const String = @import("./.types/strings/export.zig").String;
 pub const string = @import("./.types/strings/export.zig").string;
 
-pub const Store = ecs.Store;
+pub const Entity = ecs.Entity;
 pub const Behaviour = ecs.Behaviour;
 
 pub var camera: rl.Camera2D = .{
@@ -103,15 +160,19 @@ pub inline fn isLoopRunning() bool {
 }
 
 pub fn init() !void {
-    if (BUILD_MODE == .Debug) {
-        warray_lib.warray_test();
-        @import("./.types/strings/export.zig").string_test() catch @panic("HealthCheck failiure!");
-    }
-
     rl.setTraceLogLevel(.warning);
 
-    rl.initWindow(1280, 720, "zap");
+    rl.initWindow(
+        toi32(window.size.get().x),
+        toi32(window.size.get().y),
+        "fyr project - loading...",
+    );
     rl.initAudioDevice();
+
+    window.initalised.set(true);
+
+    window.size.set(window._temp_size);
+    window.title(window._temp_title);
 
     time.init();
     try eventloop.init();
@@ -122,8 +183,8 @@ pub fn init() !void {
 }
 
 pub fn loop() void {
-    if (eventloop.active_instance == null) {
-        try useInstance("default");
+    if (eventloop.active_scene == null) {
+        try useScene("default");
     }
 
     while (!rl.windowShouldClose()) {
@@ -144,15 +205,37 @@ pub fn loop() void {
         };
 
         rl.beginDrawing();
-        defer rl.endDrawing();
-
-        rl.clearBackground(rl.Color.white);
-
-        camera.begin();
-        defer camera.end();
-
-        display.render();
+        {
+            rl.clearBackground(rl.Color.white);
+            camera.begin();
+            {
+                display.render();
+            }
+            camera.end();
+        }
+        rl.endDrawing();
     }
+}
+
+pub fn project(_: void) *const fn (void) void {
+    init() catch panic("couldn't initalise window!", .{});
+
+    return struct {
+        pub fn callback(_: void) void {
+            loop();
+            deinit();
+        }
+    }.callback;
+}
+
+/// Shorthand for window.size.set()
+pub fn winSize(dimenstions: Vector2) void {
+    window.size.set(dimenstions);
+}
+
+/// Shorthand for window.title()
+pub fn title(text: [*:0]const u8) void {
+    window.title(text);
 }
 
 pub fn deinit() void {
@@ -177,7 +260,7 @@ pub fn deinit() void {
     rl.closeAudioDevice();
 }
 
-pub inline fn changeType(comptime T: type, value: anytype) ?T {
+pub inline fn changeNumberType(comptime T: type, value: anytype) ?T {
     const value_info = @typeInfo(@TypeOf(value));
     return switch (@typeInfo(T)) {
         .Int, .ComptimeInt => switch (value_info) {
@@ -210,7 +293,7 @@ pub inline fn changeType(comptime T: type, value: anytype) ?T {
         },
         else => Catch: {
             std.log.warn(
-                "cannot change type of \"{any}\" to type \"{any}\"! (zap.changeType())",
+                "cannot change type of \"{any}\" to type \"{any}\"! (fyr.changeType())",
                 .{ value, T },
             );
             break :Catch null;
@@ -219,11 +302,11 @@ pub inline fn changeType(comptime T: type, value: anytype) ?T {
 }
 
 pub inline fn tof32(value: anytype) f32 {
-    return changeType(f32, value) orelse 0;
+    return changeNumberType(f32, value) orelse 0;
 }
 
 pub fn toi32(value: anytype) i32 {
-    return changeType(i32, value) orelse 0;
+    return changeNumberType(i32, value) orelse 0;
 }
 
 pub fn Vec2(x: anytype, y: anytype) Vector2 {
@@ -266,13 +349,14 @@ pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     return try cloned.toOwnedSlice();
 }
 
-pub fn AllocatorInstance(comptime T: type) type {
+pub fn AllocatorScene(comptime T: type) type {
     return struct {
         interface: ?T = null,
         allocator: ?Allocator = null,
     };
 }
 
+// ^GetAllocator ------------------------------------------------------------
 pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     return switch (T) {
         .gpa => global_allocators.gpa.allocator orelse Blk: {
@@ -288,22 +372,60 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
             break :Blk global_allocators.arena.allocator.?;
         },
         .page => global_allocators.page,
-        .instance => Blk: {
-            const active_instance = eventloop.active_instance orelse break :Blk getAllocator(.arena);
-            break :Blk active_instance.allocator();
+        .Scene => Blk: {
+            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
+            break :Blk active_Scene.allocator();
         },
         .c => std.heap.c_allocator,
         .raw_c => std.heap.raw_c_allocator,
     };
 }
 
-pub fn assert(title: []const u8, statement: bool) void {
+test "getAllocator" {
+    try testing.expect(
+        std.meta.eql(
+            std.heap.raw_c_allocator,
+            getAllocator(.raw_c),
+        ),
+    );
+
+    try testing.expect(
+        std.meta.eql(
+            std.heap.c_allocator,
+            getAllocator(.c),
+        ),
+    );
+
+    try testing.expect(
+        std.meta.eql(
+            std.heap.page_allocator,
+            getAllocator(.page),
+        ),
+    );
+
+    _ = getAllocator(.gpa);
+    try testing.expect(global_allocators.gpa.allocator != null);
+
+    _ = getAllocator(.arena);
+    try testing.expect(global_allocators.arena.allocator != null);
+
+    global_allocators.arena.interface = null;
+    global_allocators.arena.allocator = null;
+
+    global_allocators.gpa.interface = null;
+    global_allocators.gpa.allocator = null;
+
+    _ = getAllocator(.arena);
+    try testing.expect(global_allocators.gpa.allocator != null);
+}
+
+pub fn assert(text: []const u8, statement: bool) void {
     if (statement) {
-        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{title});
+        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{text});
         return;
     }
 
-    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{title});
+    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{text});
     @panic("ASSERTON FAILIURE");
 }
 
@@ -318,32 +440,62 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
 }
 
 /// Can be used to set the path of the `assets/` directory. This is the path
-/// which will be used as the base of all asset requests. For instance:
+/// which will be used as the base of all asset requests. For Scene:
 /// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
 pub inline fn useAssetDebugPath(comptime path: []const u8) void {
+    if (BUILD_MODE != .Debug) return;
     assets.overrideDevPath(path);
 }
 
-/// Sets the instance with the given ID as the active instance, unloading the current one.
-pub fn useInstance(id: []const u8) !void {
-    try eventloop.setActive(id);
+/// Sets the Scene with the given ID as the active Scene, unloading the current one.
+pub const useScene = eventloop.setActive;
+
+/// Created
+pub inline fn scene(comptime id: []const u8) *const fn (void) void {
+    _ = eventloop.new(id) catch {
+        std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
+    };
+
+    return struct {
+        pub fn callback(_: void) void {
+            eventloop.last_created_scene = null;
+        }
+    }.callback;
 }
 
-pub inline fn activeInstance() *Instance {
-    return eventloop.active_instance orelse panic("No Instance is loaded!", .{});
+/// Set the default entities of the last created scene
+/// If an entity fn returns an error it will be ignored!
+pub fn entities(tuple: anytype) void {
+    const list = arrayAdvanced(
+        *Entity,
+        .{ .on_type_change_fail = .ignore },
+        tuple,
+    );
+    defer list.deinit();
+
+    const scene_ptr = activeOrLastScene() catch {
+        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
+        return;
+    };
+
+    for (list.items) |ptr| {
+        scene_ptr.addEntity(ptr) catch {
+            std.log.err("failed to add entity to scene!", .{});
+            continue;
+        };
+    }
 }
 
-/// Creates a new store with the given identifier and component tuple.
-///
-/// This function calls the `newStore` method on the singleton instance and returns a pointer to the newly created store.
-///
-/// - Parameters:
-///   - id: A constant byte slice representing the identifier for the new store.
-///   - component_tuple: A tuple containing the components for the new store.
-/// - Returns: A pointer to the newly created `Store` instance.
-/// - Throws: An error if the store creation fails.
-pub inline fn newStore(id: []const u8, component_tuple: anytype) !*Store {
-    return try activeInstance().newStore(id, component_tuple);
+pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
+    return try (try activeOrLastScene()).newEntity(id, component_tuple);
+}
+
+pub inline fn activeScene() !*Scene {
+    return eventloop.active_scene orelse error.NoScenesPresent;
+}
+
+pub inline fn activeOrLastScene() !*Scene {
+    return eventloop.active_scene orelse (eventloop.last_created_scene orelse error.NoScenesPresent);
 }
 
 pub const CacheCast = Behaviour.CacheCast;

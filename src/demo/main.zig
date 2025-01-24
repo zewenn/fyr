@@ -1,23 +1,21 @@
 const std = @import("std");
-const zap = @import("zap");
+const fyr = @import("fyr");
 
-const behaviours = @import("behaviours.zig");
-
-const MovementBehaviour = behaviours.MovementBehaviour;
 const Player = @import("./prefabs/Player.zig").Player;
 const Box = @import("./prefabs/Box.zig").Box;
 
 pub fn main() !void {
-    zap.useAssetDebugPath("./src/demo/assets/");
+    fyr.project({
+        fyr.title("fyr-demo");
+        fyr.winSize(fyr.Vec2(1280, 720));
 
-    try zap.init();
-    defer zap.deinit();
-
-    const default = try zap.eventloop.new("default");
-    try zap.useInstance("default");
-
-    try default.addStore(try Player());
-    try default.addStore(try Box());
-
-    zap.loop();
+        fyr.useAssetDebugPath("./src/demo/assets/");
+    })({
+        fyr.scene("default")({
+            fyr.entities(.{
+                try Player(),
+                try Box(),
+            });
+        });
+    });
 }

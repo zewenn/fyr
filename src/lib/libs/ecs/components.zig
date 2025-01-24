@@ -1,7 +1,7 @@
 const std = @import("std");
-const zap = @import("../../main.zig");
-const rl = zap.rl;
-const assets = zap.libs.assets;
+const fyr = @import("../../main.zig");
+const rl = fyr.rl;
+const assets = fyr.libs.assets;
 
 const display_components = @import("./components/display.zig");
 const collision_components = @import("./components/collision.zig");
@@ -11,9 +11,9 @@ const animator_components = @import("./components/animator/index.zig");
 pub const Transform = struct {
     const Self = @This();
 
-    position: zap.Vector3 = zap.Vec3(0, 0, 0),
+    position: fyr.Vector3 = fyr.Vec3(0, 0, 0),
     rotation: f32 = 0,
-    scale: zap.Vector2 = zap.Vec2(64, 64),
+    scale: fyr.Vector2 = fyr.Vec2(64, 64),
 
     pub fn eql(self: Self, other: Self) bool {
         if (self.position.equals(other.position) == 0) return false;

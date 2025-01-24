@@ -1,20 +1,22 @@
 
 
-x 2025-01-03 +v0.0.2-dev.1 @files-work
 
-x 2025-01-03 proper Instance generation from file structure 
++v0.0.2-dev.1 @files-work
+
+x 2025-01-03 proper Scene generation from file structure 
 x 2025-01-03 export assets dir to zig-out/ 
 
 
-x 2025-01-03 +v0.0.2-dev.2 @files-update
 
-x 2025-01-03 auto generate "default" instance
++v0.0.2-dev.2 @files-update
+
+x 2025-01-03 auto generate "default" Scene
 x 2025-01-03 automatically create a script in [default] if non-existent
     x 2025-01-03 auto generate imports for base file
 
 x 2025-01-03 update gitignore
     x 2025-01-03 add ./src/.codegen to gitignore
-    x 2025-01-03 add ./zap/.codegen to gitignore
+    x 2025-01-03 add ./fyr/.codegen to gitignore
 
 x 2025-01-03 bump version + create release
 
@@ -22,7 +24,7 @@ x 2025-01-03 bump version + create release
 
 +v0.0.3 @engine-work
 
-x 2025-01-03 add .DS_Store to gitignore
+x 2025-01-03 add .DS_Entity to gitignore
 
 x 2025-01-04 add sounds (asset loading + audio handling)
 x 2025-01-04 add support for emscripten again
@@ -45,7 +47,7 @@ x 2025-01-05 add repeating sprites for Renderer()
 
 x 2025-01-14 animator: 
     x 2025-01-14 animator component to keep track of all animations
-    x 2025-01-14 animations which store keyframes
+    x 2025-01-14 animations which Entity keyframes
     x 2025-01-14 keyframes that can be interpolated
 
 x 2025-01-14 camera:
@@ -56,20 +58,40 @@ x 2025-01-14 camera:
 
 +v0.1 @RESTRUCTURE
 
-x 2025-01-16 move .zap -> src/lib
+x 2025-01-16 move .fyr -> src/lib
 x 2025-01-16 move src -> src/demo
 
 x 2025-01-16 add asset path override option
 
+-----
+NEW VERSIONING - <stable_full_release>.<large_scale_update/refactor>.<update/new_modules>-<dev/alpha/beta/release>.<small_change>
+-----
+
++v0.0.1-dev.1
+
+x 2025-01-24 add new function based config
+x 2025-01-24 shift the dev direction to config model instead of init, deinit and all that
 
 
-+v0.2 @GUI 
 
-use C Layout/Clay (https://github.com/nicbarker/clay?tab=readme-ov-file) for GUI
++v0.0.1-dev.2
+
+x 2025-01-24 update readme
 
 
 
 +future @unmapped
 
-implment physics system: vel, acc, drag
-serialisation / deserialisation
+@GUI 
+
+add element structure
+gui rendering 
+    - reverse-recursive tree rendering?
+    - measuring text sizes
+    - always render to a 16:9 aspect ratio
+    - add width-grow and height-grow
+    - non absolute positioned elements should be placed under each other
+
+implment physics system: vel, acc, drag 
+serialisation / deserialisation 
+logging and log-levels 

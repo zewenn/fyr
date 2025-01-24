@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 const fs = std.fs;
 
-const zap = @import("../main.zig");
+const fyr = @import("../main.zig");
 const rl = @import("raylib");
 
 /// 512 MB
@@ -11,14 +11,17 @@ var ASSETS_PATH_DEBUG: []const u8 = "./src/assets/";
 
 // ------------------------------------- Caches -------------------------------------
 
-const ImageCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Image));
+const ImageCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image));
 pub var image_cache: ?ImageCache = null;
 
-const TextureCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Texture));
+const TextureCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture));
 pub var texture_cache: ?TextureCache = null;
 
-const AudioCache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Sound));
+const AudioCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Sound));
 pub var audio_cache: ?AudioCache = null;
+
+const FontCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Font));
+pub var font_cache: ?FontCache = null;
 
 // ------------------------------------- Funcs --------------------------------------
 
@@ -30,7 +33,7 @@ pub fn deinit() void {
         var it = ic.iterator();
         while (it.next()) |entry| {
             entry.value_ptr.*.deinit();
-            zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
+            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
         }
     }
     Texture: {
@@ -40,7 +43,7 @@ pub fn deinit() void {
         var it = tc.iterator();
         while (it.next()) |entry| {
             entry.value_ptr.*.deinit();
-            zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
+            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
         }
     }
     Audio: {
@@ -50,152 +53,197 @@ pub fn deinit() void {
         var it = ac.iterator();
         while (it.next()) |entry| {
             entry.value_ptr.*.deinit();
-            zap.getAllocator(.gpa).destroy(entry.value_ptr.*);
+            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
+        }
+    }
+    Font: {
+        const fc = &(font_cache orelse break :Font);
+        defer fc.deinit();
+
+        var it = fc.iterator();
+        while (it.next()) |entry| {
+            entry.value_ptr.*.deinit();
+            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
         }
     }
 }
 
-inline fn calculateHash(rel_path: []const u8, size: zap.Vector2, rotation: f32) usize {
+inline fn calculateHash(rel_path: []const u8, size: fyr.Vector2, rotation: f32) usize {
     var res: usize = 0;
     for (rel_path, 0..) |char, index| {
         res += char * index;
     }
 
-    res += zap.changeType(usize, size.x).? * 128;
-    res += (zap.changeType(usize, size.y).? * 2 + 1) * 3;
-    res += zap.changeType(usize, rotation).? * 700;
+    res += fyr.changeNumberType(usize, size.x).? * 128;
+    res += (fyr.changeNumberType(usize, size.y).? * 2 + 1) * 3;
+    res += fyr.changeNumberType(usize, rotation).? * 700;
     return res;
 }
 
 fn loadFromFile(rel_path: []const u8) ![]const u8 {
-    const file = switch (zap.BUILD_MODE) {
-        .Debug => Blk: {
-            const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
-                ASSETS_PATH_DEBUG,
-                rel_path,
-            });
-            defer zap.getAllocator(.gpa).free(full_path);
+    const full_path = try getAssetFullPath(rel_path);
+    defer fyr.getAllocator(.gpa).free(full_path);
 
-            break :Blk fs.cwd().openFile(full_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path});
-        },
+    const file = fs.openFileAbsolute(full_path, .{}) catch fyr.panic("Asset {s} couldn't be found!", .{rel_path});
+    defer file.close();
+
+    return try file.readToEndAlloc(fyr.getAllocator(.gpa), MAX_FILE_SIZE);
+}
+
+pub fn getAssetFullPath(rel_path: []const u8) ![]const u8 {
+    const path = switch (fyr.BUILD_MODE) {
+        .Debug => try fs.path.join(fyr.getAllocator(.gpa), &[_][]const u8{
+            ASSETS_PATH_DEBUG,
+            rel_path,
+        }),
         else => Blk: {
-            const base_path = try fs.selfExeDirPathAlloc(zap.getAllocator(.gpa));
-            defer zap.getAllocator(.gpa).free(base_path);
+            const base_path = try fs.selfExeDirPathAlloc(fyr.getAllocator(.gpa));
+            defer fyr.getAllocator(.gpa).free(base_path);
 
-            const full_path = try fs.path.join(zap.getAllocator(.gpa), &[_][]const u8{
+            break :Blk try fs.path.join(fyr.getAllocator(.gpa), &[_][]const u8{
                 base_path,
                 "assets/",
                 rel_path,
             });
-            defer zap.getAllocator(.gpa).free(full_path);
-
-            break :Blk fs.openFileAbsolute(full_path, .{}) catch zap.panic("Asset {s} couldn't be found!", .{rel_path});
         },
     };
-    defer file.close();
+    defer fyr.getAllocator(.gpa).free(path);
 
-    return try file.readToEndAlloc(zap.getAllocator(.gpa), MAX_FILE_SIZE);
+    return try fs.realpathAlloc(fyr.getAllocator(.gpa), path);
 }
 
 pub inline fn overrideDevPath(comptime path: []const u8) void {
     ASSETS_PATH_DEBUG = path;
 }
 
+test "override dev path" {
+    const expect = std.testing.expect;
+
+    overrideDevPath("test");
+    try expect(
+        std.mem.eql(
+            u8,
+            ASSETS_PATH_DEBUG,
+            "test",
+        ),
+    );
+}
+
 pub const get = struct {
-    fn storeImage(
-        ic: *std.AutoHashMap(usize, *zap.SharedPointer(rl.Image)),
+    fn EntityImage(
+        ic: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image)),
         hash: usize,
         rel_path: []const u8,
-        size: zap.Vector2,
+        size: fyr.Vector2,
         rotation: f32,
-    ) !*zap.SharedPointer(rl.Image) {
+    ) !*fyr.SharedPointer(rl.Image) {
         const data = try loadFromFile(rel_path);
-        defer zap.getAllocator(.gpa).free(data);
+        defer fyr.getAllocator(.gpa).free(data);
 
         var img = rl.loadImageFromMemory(".png", data);
         rl.imageResizeNN(
             &img,
-            zap.toi32(size.x),
-            zap.toi32(size.y),
+            fyr.toi32(size.x),
+            fyr.toi32(size.y),
         );
         rl.imageRotate(
             &img,
-            zap.toi32(rotation),
+            fyr.toi32(rotation),
         );
 
-        try ic.put(hash, try zap.SharetPtr(img));
+        try ic.put(hash, try fyr.SharetPtr(img));
         return ic.get(hash).?;
     }
 
-    pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) !?*rl.Image {
+    pub fn image(rel_path: []const u8, size: fyr.Vector2, rotation: f32) !?*rl.Image {
         const ic = &(image_cache orelse Blk: {
-            image_cache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Image)).init(zap.getAllocator(.gpa));
+            image_cache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image)).init(fyr.getAllocator(.gpa));
             break :Blk image_cache.?;
         });
         const hash = calculateHash(rel_path, size, rotation);
 
-        var stored = ic.get(hash) orelse try storeImage(ic, hash, rel_path, size, rotation);
-        if (!stored.isAlive()) {
-            zap.getAllocator(.gpa).destroy(stored);
-            stored = try storeImage(ic, hash, rel_path, size, rotation);
+        var Entityd = ic.get(hash) orelse try EntityImage(ic, hash, rel_path, size, rotation);
+        if (!Entityd.isAlive()) {
+            fyr.getAllocator(.gpa).destroy(Entityd);
+            Entityd = try EntityImage(ic, hash, rel_path, size, rotation);
         }
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
-    fn storeTexture(
-        tc: *std.AutoHashMap(usize, *zap.SharedPointer(rl.Texture)),
+    fn EntityTexture(
+        tc: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture)),
         hash: usize,
         img: rl.Image,
-    ) !*zap.SharedPointer(rl.Texture) {
+    ) !*fyr.SharedPointer(rl.Texture) {
         const t = rl.loadTextureFromImage(img);
 
-        try tc.put(hash, try zap.SharetPtr(t));
+        try tc.put(hash, try fyr.SharetPtr(t));
         return tc.get(hash).?;
     }
 
     pub fn texture(rel_path: []const u8, img: rl.Image, rotation: f32) !*rl.Texture {
         const tc = &(texture_cache orelse Blk: {
-            texture_cache = std.AutoHashMap(usize, *zap.SharedPointer(rl.Texture)).init(zap.getAllocator(.gpa));
+            texture_cache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture)).init(fyr.getAllocator(.gpa));
             break :Blk texture_cache.?;
         });
-        const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
+        const hash = calculateHash(rel_path, fyr.Vec2(img.width, img.height), rotation);
 
-        var stored = tc.get(hash) orelse try storeTexture(tc, hash, img);
-        if (!stored.isAlive()) {
-            zap.getAllocator(.gpa).destroy(stored);
-            stored = try storeTexture(tc, hash, img);
+        var Entityd = tc.get(hash) orelse try EntityTexture(tc, hash, img);
+        if (!Entityd.isAlive()) {
+            fyr.getAllocator(.gpa).destroy(Entityd);
+            Entityd = try EntityTexture(tc, hash, img);
         }
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
     pub fn audio(rel_path: []const u8) !*rl.Sound {
         const ac = &(audio_cache orelse Blk: {
-            audio_cache = AudioCache.init(zap.getAllocator(.gpa));
+            audio_cache = AudioCache.init(fyr.getAllocator(.gpa));
             break :Blk audio_cache.?;
         });
-        const hash = calculateHash(rel_path, zap.Vec2(1, 1), 0);
+        const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
 
-        var stored = ac.get(hash) orelse Blk: {
+        var Entityd = ac.get(hash) orelse Blk: {
             const data = try loadFromFile(rel_path);
-            defer zap.getAllocator(.gpa).free(data);
+            defer fyr.getAllocator(.gpa).free(data);
 
             const wave = rl.loadWaveFromMemory(".mp3", data);
             defer rl.unloadWave(wave);
 
             const sound = rl.loadSoundFromWave(wave);
 
-            try ac.put(hash, try zap.SharetPtr(sound));
+            try ac.put(hash, try fyr.SharetPtr(sound));
             break :Blk ac.get(hash).?;
         };
 
-        return stored.ptr() orelse error.AlreadyFreed;
+        return Entityd.ptr() orelse error.AlreadyFreed;
+    }
+
+    pub fn font(rel_path: []const u8) !*rl.Sound {
+        const fc = &(font_cache orelse Blk: {
+            audio_cache = AudioCache.init(fyr.getAllocator(.gpa));
+            break :Blk audio_cache.?;
+        });
+        const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
+
+        var Entityd = fc.get(hash) orelse Blk: {
+            const data = try loadFromFile(rel_path);
+            defer fyr.getAllocator(.gpa).free(data);
+
+            const f = rl.loadFontFromMemory(".ttf", data);
+
+            try fc.put(hash, try fyr.SharetPtr(f));
+            break :Blk fc.get(hash).?;
+        };
+
+        return Entityd.ptr() orelse error.AlreadyFreed;
     }
 };
 
 pub const rmref = struct {
-    pub fn image(rel_path: []const u8, size: zap.Vector2, rotation: f32) void {
+    pub fn image(rel_path: []const u8, size: fyr.Vector2, rotation: f32) void {
         const ic = &(image_cache orelse return);
         const hash = calculateHash(rel_path, size, rotation);
         const sptr = ic.get(hash) orelse return;
@@ -208,7 +256,7 @@ pub const rmref = struct {
             rl.unloadImage(img.*);
 
             sptr.deinit();
-            zap.getAllocator(.gpa).destroy(sptr);
+            fyr.getAllocator(.gpa).destroy(sptr);
             _ = ic.remove(hash);
             return;
         }
@@ -217,7 +265,7 @@ pub const rmref = struct {
 
     pub fn texture(rel_path: []const u8, img: rl.Image, rotation: f32) void {
         const tc = &(texture_cache orelse return);
-        const hash = calculateHash(rel_path, zap.Vec2(img.width, img.height), rotation);
+        const hash = calculateHash(rel_path, fyr.Vec2(img.width, img.height), rotation);
         const sptr = tc.get(hash) orelse return;
 
         if (!sptr.isAlive()) return;
@@ -228,7 +276,7 @@ pub const rmref = struct {
             rl.unloadTexture(txtr.*);
 
             sptr.deinit();
-            zap.getAllocator(.gpa).destroy(sptr);
+            fyr.getAllocator(.gpa).destroy(sptr);
             _ = tc.remove(hash);
             return;
         }

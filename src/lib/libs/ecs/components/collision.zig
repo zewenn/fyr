@@ -1,6 +1,6 @@
 const std = @import("std");
-const zap = @import("../../../main.zig");
-const rl = zap.rl;
+const fyr = @import("../../../main.zig");
+const rl = fyr.rl;
 
 const Transform = @import("../components.zig").Transform;
 
@@ -23,10 +23,10 @@ pub const RectangleVertices = struct {
     delta_bottom_left: rl.Vector2,
     delta_bottom_right: rl.Vector2,
 
-    top_left: rl.Vector2 = zap.newVec2(),
-    top_right: rl.Vector2 = zap.newVec2(),
-    bottom_left: rl.Vector2 = zap.newVec2(),
-    bottom_right: rl.Vector2 = zap.newVec2(),
+    top_left: rl.Vector2 = fyr.newVec2(),
+    top_right: rl.Vector2 = fyr.newVec2(),
+    bottom_left: rl.Vector2 = fyr.newVec2(),
+    bottom_right: rl.Vector2 = fyr.newVec2(),
 
     x_min: f32 = 0,
     x_max: f32 = 0,
@@ -68,7 +68,7 @@ pub const RectangleVertices = struct {
     }
 
     pub fn getCenterPoint(transform: *Transform, collider: *Collider) rl.Vector2 {
-        return zap.Vec2(
+        return fyr.Vec2(
             transform.position.x + collider.rect.x,
             transform.position.y + collider.rect.y,
         );
@@ -128,42 +128,42 @@ pub const ColliderBehaviour = struct {
     const Cache = struct {
         base: Collider,
 
-        store: ?*zap.Store = null,
+        Entity: ?*fyr.Entity = null,
         transform: ?*Transform = null,
         collider: ?*Collider = null,
     };
     var collidable: ?std.ArrayList(*Cache) = null;
 
-    fn awake(store: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
-        const transform = store.getComponent(Transform) orelse Blk: {
-            try store.addComonent(Transform{});
-            break :Blk store.getComponent(Transform).?;
+        const transform = Entity.getComponent(Transform) orelse Blk: {
+            try Entity.addComonent(Transform{});
+            break :Blk Entity.getComponent(Transform).?;
         };
 
-        const collider = store.getComponent(Collider) orelse Blk: {
-            try store.addComonent(cache.base);
-            break :Blk store.getComponent(Collider).?;
+        const collider = Entity.getComponent(Collider) orelse Blk: {
+            try Entity.addComonent(cache.base);
+            break :Blk Entity.getComponent(Collider).?;
         };
 
         cache.transform = transform;
         cache.collider = collider;
-        cache.store = store;
+        cache.Entity = Entity;
 
         const c = &(collidable orelse Blk: {
-            collidable = std.ArrayList(*Cache).init(zap.getAllocator(.gpa));
+            collidable = std.ArrayList(*Cache).init(fyr.getAllocator(.gpa));
             break :Blk collidable.?;
         });
 
         try c.append(cache);
     }
 
-    fn update(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
         const c = collidable orelse return;
 
-        const a_store = cache.store orelse return;
+        const a_Entity = cache.Entity orelse return;
         const a_transform = cache.transform orelse return;
 
         const a_collider = cache.collider orelse return;
@@ -172,8 +172,8 @@ pub const ColliderBehaviour = struct {
         var a_vertices = RectangleVertices.init(a_transform, a_collider);
 
         for (c.items) |b| {
-            const b_store = b.store orelse continue;
-            if (a_store.uuid == b_store.uuid) continue;
+            const b_Entity = b.Entity orelse continue;
+            if (a_Entity.uuid == b_Entity.uuid) continue;
 
             const b_transform = b.transform orelse return;
             const b_collider = b.collider orelse continue;
@@ -196,8 +196,8 @@ pub const ColliderBehaviour = struct {
         }
     }
 
-    fn deinit(_: *zap.Store, cache_ptr: *anyopaque) !void {
-        const cache = zap.CacheCast(Cache, cache_ptr);
+    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
+        const cache = fyr.CacheCast(Cache, cache_ptr);
 
         const c = &(collidable orelse return);
         for (c.items, 0..) |item, index| {
@@ -209,8 +209,8 @@ pub const ColliderBehaviour = struct {
         if (c.items.len == 0) c.deinit();
     }
 
-    pub fn behaviour(base: Collider) !zap.Behaviour {
-        var b = try zap.Behaviour.initWithDefaultValue(Cache{
+    pub fn behaviour(base: Collider) !fyr.Behaviour {
+        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
             .base = base,
         });
 

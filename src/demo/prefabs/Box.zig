@@ -1,17 +1,17 @@
-const zap = @import("zap");
+const fyr = @import("fyr");
 
-pub fn Box() !*zap.Store {
-    return zap.newStore("Box", .{
-        zap.Transform{
-            .position = zap.Vec3(128, 128, 0),
-            .scale = zap.Vec2(256, 64),
+pub fn Box() !*fyr.Entity {
+    return try fyr.entity("Box", .{
+        fyr.Transform{
+            .position = fyr.Vec3(128, 128, 0),
+            .scale = fyr.Vec2(256, 64),
         },
-        try zap.Renderer(zap.Display{
+        try fyr.Renderer(fyr.Display{
             .img = "small.png",
         }),
-        try zap.ColliderBehaviour(zap.Collider{
+        try fyr.ColliderBehaviour(fyr.Collider{
             .dynamic = false,
-            .rect = zap.Rect(
+            .rect = fyr.Rect(
                 0,
                 0,
                 256,
