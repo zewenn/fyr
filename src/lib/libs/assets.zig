@@ -116,6 +116,19 @@ pub inline fn overrideDevPath(comptime path: []const u8) void {
     ASSETS_PATH_DEBUG = path;
 }
 
+test "override dev path" {
+    const expect = std.testing.expect;
+
+    overrideDevPath("test");
+    try expect(
+        std.mem.eql(
+            u8,
+            ASSETS_PATH_DEBUG,
+            "test",
+        ),
+    );
+}
+
 pub const get = struct {
     fn EntityImage(
         ic: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image)),

@@ -1,6 +1,8 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+const testing = std.testing;
+
 pub const lib_info = struct {
     pub const lib_name = "fyr";
     pub const version_str = "v0.0.1-dev";
@@ -354,6 +356,7 @@ pub fn AllocatorScene(comptime T: type) type {
     };
 }
 
+// ^GetAllocator ------------------------------------------------------------
 pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     return switch (T) {
         .gpa => global_allocators.gpa.allocator orelse Blk: {
@@ -376,6 +379,44 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
         .c => std.heap.c_allocator,
         .raw_c => std.heap.raw_c_allocator,
     };
+}
+
+test "getAllocator" {
+    try testing.expect(
+        std.meta.eql(
+            std.heap.raw_c_allocator,
+            getAllocator(.raw_c),
+        ),
+    );
+
+    try testing.expect(
+        std.meta.eql(
+            std.heap.c_allocator,
+            getAllocator(.c),
+        ),
+    );
+
+    try testing.expect(
+        std.meta.eql(
+            std.heap.page_allocator,
+            getAllocator(.page),
+        ),
+    );
+
+    _ = getAllocator(.gpa);
+    try testing.expect(global_allocators.gpa.allocator != null);
+
+    _ = getAllocator(.arena);
+    try testing.expect(global_allocators.arena.allocator != null);
+
+    global_allocators.arena.interface = null;
+    global_allocators.arena.allocator = null;
+
+    global_allocators.gpa.interface = null;
+    global_allocators.gpa.allocator = null;
+
+    _ = getAllocator(.arena);
+    try testing.expect(global_allocators.gpa.allocator != null);
 }
 
 pub fn assert(text: []const u8, statement: bool) void {
