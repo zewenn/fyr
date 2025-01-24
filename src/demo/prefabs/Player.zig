@@ -12,10 +12,10 @@ pub fn Player() !*fyr.Entity {
             },
         },
         try MovementBehaviour(),
-        try fyr.Renderer(fyr.Display{
+        try fyr.Renderer(.{
             .img = "logo_small.png",
         }),
-        try fyr.ColliderBehaviour(fyr.Collider{
+        try fyr.ColliderBehaviour(.{
             .dynamic = true,
             .rect = fyr.Rect(
                 0,
@@ -25,20 +25,12 @@ pub fn Player() !*fyr.Entity {
             ),
         }),
         try fyr.CameraTarget(),
-        try fyr.AnimatorBehaviour(fyr.array(
-            fyr.Animation,
-            .{
-                try fyr.Animation.create(
-                    "test",
-                    2,
-                    fyr.interpolation.lerp,
-                    fyr.array(fyr.KeyFrame, .{
-                        fyr.KeyFrame{ .rotation = 0 },
-                        fyr.KeyFrame{ .rotation = 2 },
-                        fyr.KeyFrame{ .rotation = 0 },
-                    }),
-                ),
-            },
-        )),
+        try fyr.AnimatorBehaviour(.{
+            try fyr.Animation.create("test", 2, fyr.interpolation.lerp, .{
+                fyr.KeyFrame{ .rotation = 0 },
+                fyr.KeyFrame{ .rotation = 2 },
+                fyr.KeyFrame{ .rotation = 0 },
+            }),
+        }),
     });
 }

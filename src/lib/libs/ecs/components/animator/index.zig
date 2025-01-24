@@ -149,9 +149,9 @@ pub const AnimatorBehaviour = struct {
         cache.animations.deinit();
     }
 
-    pub fn behaviour(anims: fyr.WrappedArray(Animation)) !fyr.Behaviour {
+    pub fn behaviour(animations_tuple: anytype) !fyr.Behaviour {
         var b = try fyr.Behaviour.initWithDefaultValue(Cache{
-            .animations = anims,
+            .animations = fyr.array(Animation, animations_tuple),
         });
 
         b.add(.awake, awake);
