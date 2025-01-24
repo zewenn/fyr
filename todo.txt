@@ -64,13 +64,19 @@ x 2025-01-16 move src -> src/demo
 x 2025-01-16 add asset path override option
 
 -----
-NEW VERSIONING - <stable_full_release>.<large_scale_update/refactor>.<update/new_modules>-<dev/alpha/beta/release>
+NEW VERSIONING - <stable_full_release>.<large_scale_update/refactor>.<update/new_modules>-<dev/alpha/beta/release>.<small_change>
 -----
 
-+v0.0.1-dev
++v0.0.1-dev.0
 
 x 2025-01-24 add new function based config
 x 2025-01-24 shift the dev direction to config model instead of init, deinit and all that
+
+
+
++v0.0.1-dev.1
+
+update readme
 
 
 
