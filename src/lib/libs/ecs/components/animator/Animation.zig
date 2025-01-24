@@ -45,6 +45,18 @@ pub fn init(name: []const u8, length: anytype, timing_function: t.TimingFunction
     };
 }
 
+pub fn create(name: []const u8, length: anytype, timing_function: t.TimingFunction, keyframes: fyr.WrappedArray(t.KeyFrame)) !Self {
+    defer keyframes.deinit();
+
+    var self = Self.init(name, length, timing_function);
+    for (keyframes.items) |kf| {
+        _ = self.append(kf);
+    }
+    self.close();
+
+    return self;
+}
+
 pub fn deinit(self: *Self) void {
     self.playing = false;
 

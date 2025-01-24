@@ -28,19 +28,16 @@ pub fn Player() !*fyr.Entity {
         try fyr.AnimatorBehaviour(fyr.array(
             fyr.Animation,
             .{
-                Blk: {
-                    var anim = fyr.Animation.init(
-                        "test",
-                        2,
-                        fyr.interpolation.lerp,
-                    );
-                    anim
-                        .append(.{ .rotation = 0 })
-                        .append(.{ .rotation = 2 })
-                        .append(.{ .rotation = 0 })
-                        .close();
-                    break :Blk anim;
-                },
+                try fyr.Animation.create(
+                    "test",
+                    2,
+                    fyr.interpolation.lerp,
+                    fyr.array(fyr.KeyFrame, .{
+                        fyr.KeyFrame{ .rotation = 0 },
+                        fyr.KeyFrame{ .rotation = 2 },
+                        fyr.KeyFrame{ .rotation = 0 },
+                    }),
+                ),
             },
         )),
     });

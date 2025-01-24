@@ -145,6 +145,8 @@ pub const AnimatorBehaviour = struct {
         if (cache.animator) |animator| {
             animator.deinit();
         }
+
+        cache.animations.deinit();
     }
 
     pub fn behaviour(anims: fyr.WrappedArray(Animation)) !fyr.Behaviour {
