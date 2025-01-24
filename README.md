@@ -42,29 +42,29 @@ Setting up a project with `fyr` is so easy, even your grandma could do it :smile
 // This handles the entire program, from start to finish
 // All your code must be configured within these blocks
 fyr.project({
-   // This block will run before initalising the raylib window
-   // Great place to configure default behaviours
+   	// This block will run before initalising the raylib window
+	// Great place to configure default behaviours
 
-   // Set the title of the window
-   fyr.title("fyr-demo");
-   // Resize to 720p
-   fyr.winSize(fyr.Vec2(1280, 720));
+   	// Set the title of the window
+   	fyr.title("fyr-demo");
+   	// Resize to 720p
+   	fyr.winSize(fyr.Vec2(1280, 720));
 
-   // Set the path of the debug assets dir
-   fyr.useAssetDebugPath("./src/demo/assets/");
+   	// Set the path of the debug assets dir
+   	fyr.useAssetDebugPath("./src/demo/assets/");
 })({
-   // This codeblock will run after the initalisation, but before the loop
-   // Code here is used to configure scenes, entities, scripts and uis
+   	// This codeblock will run after the initalisation, but before the loop
+   	// Code here is used to configure scenes, entities, scripts and uis
 
-   // Create the "default" scene, fyr will auto load the scene with this id
-   fyr.scene("default")({
-      // This block is used to configure the scene itself
-      
-      // Adding entities for example
-      fyr.entities(.{
-            try Player(),
+   	// Create the "default" scene, fyr will auto load the scene with this id
+   	fyr.scene("default")({
+      	// This block is used to configure the scene itself
+
+     	 // Adding entities for example
+      	fyr.entities(.{
+        	try Player(),
             try Box(),
-      });
-   });
+      	});
+   	});
 });
 ```
