@@ -3,7 +3,7 @@ const fyr = @import("fyr");
 const MovementBehaviour = @import("../behaviours.zig").MovementBehaviour;
 
 pub fn Player() !*fyr.Entity {
-    return fyr.newEntity("Player", .{
+    return try fyr.entity("Player", .{
         fyr.Transform{
             .position = .{
                 .x = 0,

@@ -74,9 +74,9 @@ inline fn calculateHash(rel_path: []const u8, size: fyr.Vector2, rotation: f32) 
         res += char * index;
     }
 
-    res += fyr.changeType(usize, size.x).? * 128;
-    res += (fyr.changeType(usize, size.y).? * 2 + 1) * 3;
-    res += fyr.changeType(usize, rotation).? * 700;
+    res += fyr.changeNumberType(usize, size.x).? * 128;
+    res += (fyr.changeNumberType(usize, size.y).? * 2 + 1) * 3;
+    res += fyr.changeNumberType(usize, rotation).? * 700;
     return res;
 }
 

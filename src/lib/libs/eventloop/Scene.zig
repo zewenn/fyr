@@ -11,6 +11,7 @@ pub const Target = isize;
 
 const Self = @This();
 
+id: []const u8,
 arena: std.heap.ArenaAllocator,
 arena_alloc: ?Allocator = null,
 
@@ -22,11 +23,12 @@ executing: bool = false,
 
 // Creation -- Destruction
 
-pub fn init(alloc: Allocator) Self {
+pub fn init(alloc: Allocator, id: []const u8) Self {
     return Self{
         .arena = std.heap.ArenaAllocator.init(alloc),
         .original_alloc = alloc,
         .event_map = EventMapType.init(alloc),
+        .id = id,
     };
 }
 
@@ -66,7 +68,7 @@ pub inline fn reset(self: *Self) void {
 fn makeGetEventList(self: *Self, event: anytype) !*EventActions {
     const emap: *EventMapType = &(self.event_map orelse @panic("event_map wasn't initalised! Call eventloop.init()!"));
 
-    const key = fyr.changeType(Target, event) orelse -1;
+    const key = fyr.changeNumberType(Target, event) orelse -1;
 
     if (!emap.contains(key)) {
         try emap.put(key, EventActions.init(self.original_alloc));

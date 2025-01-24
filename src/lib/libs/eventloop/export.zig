@@ -13,6 +13,8 @@ var engine_scene: ?*Scene = null;
 
 var _unload = false;
 
+pub var last_created_scene: ?*Scene = null;
+
 const executing_scenes = [2]*?*Scene{ &active_scene, &engine_scene };
 
 const tick_time: f64 = 1.0 / TICK_TARGET;
@@ -40,7 +42,7 @@ pub fn init() !void {
     const ptr = &(Scenes.?);
 
     const Sceneptr = try fyr.getAllocator(.gpa).create(Scene);
-    Sceneptr.* = Scene.init(fyr.getAllocator(.gpa));
+    Sceneptr.* = Scene.init(fyr.getAllocator(.gpa), "engine");
 
     ptr.put("engine", Sceneptr) catch @panic("Failed to create default Scene. (eventloop)");
 }
@@ -54,13 +56,17 @@ pub fn new(comptime id: []const u8) EventLoopErrors!*Scene {
 
     const ptr = &(Scenes.?);
     const Sceneptr = try fyr.getAllocator(.gpa).create(Scene);
-    Sceneptr.* = Scene.init(fyr.getAllocator(.gpa));
+    Sceneptr.* = Scene.init(fyr.getAllocator(.gpa), id);
 
     if (!ptr.contains(id)) {
         try ptr.put(id, Sceneptr);
     }
 
-    return ptr.get(id).?;
+    const scene_ptr = ptr.get(id).?;
+
+    last_created_scene = scene_ptr;
+
+    return scene_ptr;
 }
 
 pub fn remove(comptime id: []const u8) void {

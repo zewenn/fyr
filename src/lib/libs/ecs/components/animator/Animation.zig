@@ -5,7 +5,7 @@ const fyr = @import("../../../../main.zig");
 const t = @import("./types.zig");
 
 const tof32 = fyr.tof32;
-const changeType = fyr.changeType;
+const changeType = fyr.changeNumberType;
 
 const Self = @This();
 const MAX_FRAMES: comptime_float = 10;
@@ -156,7 +156,7 @@ pub fn next(self: *Self) ?t.KeyFrame {
     for (keys) |percent| {
         if (self.current_percent >= percent) continue;
 
-        self.next_index = fyr.changeType(usize, percent) orelse 0;
+        self.next_index = fyr.changeNumberType(usize, percent) orelse 0;
         return keyframes.get(fyr.toi32(percent));
     }
 

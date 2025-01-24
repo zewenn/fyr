@@ -106,11 +106,6 @@ pub inline fn isLoopRunning() bool {
 }
 
 pub fn init() !void {
-    if (BUILD_MODE == .Debug) {
-        warray_lib.warray_test();
-        @import("./.types/strings/export.zig").string_test() catch @panic("HealthCheck failiure!");
-    }
-
     rl.setTraceLogLevel(.warning);
 
     rl.initWindow(1280, 720, "fyr");
@@ -154,8 +149,6 @@ pub fn loop() void {
                 display.render();
             }
             camera.end();
-
-            _ = rgui.guiButton(Rect(50, 50, 200, 20), "Fasza");
         }
         rl.endDrawing();
     }
@@ -185,7 +178,7 @@ pub fn deinit() void {
     rl.closeAudioDevice();
 }
 
-pub inline fn changeType(comptime T: type, value: anytype) ?T {
+pub inline fn changeNumberType(comptime T: type, value: anytype) ?T {
     const value_info = @typeInfo(@TypeOf(value));
     return switch (@typeInfo(T)) {
         .Int, .ComptimeInt => switch (value_info) {
@@ -227,11 +220,11 @@ pub inline fn changeType(comptime T: type, value: anytype) ?T {
 }
 
 pub inline fn tof32(value: anytype) f32 {
-    return changeType(f32, value) orelse 0;
+    return changeNumberType(f32, value) orelse 0;
 }
 
 pub fn toi32(value: anytype) i32 {
-    return changeType(i32, value) orelse 0;
+    return changeNumberType(i32, value) orelse 0;
 }
 
 pub fn Vec2(x: anytype, y: anytype) Vector2 {
@@ -336,24 +329,52 @@ pub inline fn useAssetDebugPath(comptime path: []const u8) void {
 /// Sets the Scene with the given ID as the active Scene, unloading the current one.
 pub const useScene = eventloop.setActive;
 
-/// Create a new Scene
-pub const scene = eventloop.new;
+/// Created
+pub inline fn scene(comptime id: []const u8) *const fn (void) void {
+    _ = eventloop.new(id) catch {
+        std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
+    };
 
-pub inline fn activeScene() *Scene {
-    return eventloop.active_scene orelse panic("No scene loaded!", .{});
+    return struct {
+        pub fn callback(_: void) void {
+            eventloop.last_created_scene = null;
+        }
+    }.callback;
 }
 
-/// Creates a new Entity with the given identifier and component tuple.
-///
-/// This function calls the `newEntity` method on the singleton Scene and returns a pointer to the newly created Entity.
-///
-/// - Parameters:
-///   - id: A constant byte slice representing the identifier for the new Entity.
-///   - component_tuple: A tuple containing the components for the new Entity.
-/// - Returns: A pointer to the newly created `Entity` Scene.
-/// - Throws: An error if the Entity creation fails.
-pub inline fn newEntity(id: []const u8, component_tuple: anytype) !*Entity {
-    return try activeScene().newEntity(id, component_tuple);
+/// Set the default entities of the last created scene
+/// If an entity fn returns an error it will be ignored!
+pub fn entities(tuple: anytype) void {
+    const list = arrayAdvanced(
+        *Entity,
+        .{ .on_type_change_fail = .ignore },
+        tuple,
+    );
+    defer list.deinit();
+
+    const scene_ptr = activeOrLastScene() catch {
+        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
+        return;
+    };
+
+    for (list.items) |ptr| {
+        scene_ptr.addEntity(ptr) catch {
+            std.log.err("failed to add entity to scene!", .{});
+            continue;
+        };
+    }
+}
+
+pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
+    return try (try activeOrLastScene()).newEntity(id, component_tuple);
+}
+
+pub inline fn activeScene() !*Scene {
+    return eventloop.active_scene orelse error.NoScenesPresent;
+}
+
+pub inline fn activeOrLastScene() !*Scene {
+    return eventloop.active_scene orelse (eventloop.last_created_scene orelse error.NoScenesPresent);
 }
 
 pub const CacheCast = Behaviour.CacheCast;
