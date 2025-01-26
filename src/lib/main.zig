@@ -62,7 +62,7 @@ pub const KeyFrame = ecs.components.KeyFrame;
 
 // ^Allocators
 // --------------------------------------------------------------------------------
-pub fn AllocatorInstance(comptime T: type) type {
+fn AllocatorInstance(comptime T: type) type {
     return struct {
         interface: ?T = null,
         allocator: ?Allocator = null,
@@ -233,13 +233,19 @@ pub const useScene = eventloop.setActive;
 
 /// Created
 pub inline fn scene(comptime id: []const u8) *const fn (void) void {
-    _ = eventloop.new(id) catch {
+    if (eventloop.open_scene != null) {
+        std.log.warn("Opening a scene without closing the current open scene is dangerous, and can lead to unwanted results.", .{});
+        eventloop.open_scene = null;
+    }
+
+    eventloop.open_scene = eventloop.new(id) catch Blk: {
         std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
+        break :Blk null;
     };
 
     return struct {
         pub fn callback(_: void) void {
-            eventloop.last_created_scene = null;
+            eventloop.open_scene = null;
         }
     }.callback;
 }
@@ -254,7 +260,7 @@ pub fn entities(tuple: anytype) void {
     );
     defer list.deinit();
 
-    const scene_ptr = activeOrLastScene() catch {
+    const scene_ptr = activeOrOpenScene() catch {
         std.log.err("no scene was loaded or found, entities cannot be added!", .{});
         return;
     };
@@ -268,15 +274,15 @@ pub fn entities(tuple: anytype) void {
 }
 
 pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
-    return try (try activeOrLastScene()).newEntity(id, component_tuple);
+    return try (try activeOrOpenScene()).newEntity(id, component_tuple);
 }
 
 pub inline fn activeScene() !*Scene {
     return eventloop.active_scene orelse error.NoScenesPresent;
 }
 
-pub inline fn activeOrLastScene() !*Scene {
-    return eventloop.active_scene orelse (eventloop.last_created_scene orelse error.NoScenesPresent);
+pub inline fn activeOrOpenScene() !*Scene {
+    return eventloop.active_scene orelse (eventloop.open_scene orelse error.NoScenesPresent);
 }
 
 // ^Normal control flow

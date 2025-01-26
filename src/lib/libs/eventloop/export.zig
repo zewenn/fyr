@@ -13,7 +13,7 @@ var engine_scene: ?*Scene = null;
 
 var _unload = false;
 
-pub var last_created_scene: ?*Scene = null;
+pub var open_scene: ?*Scene = null;
 
 const executing_scenes = [2]*?*Scene{ &active_scene, &engine_scene };
 
@@ -63,8 +63,6 @@ pub fn new(comptime id: []const u8) EventLoopErrors!*Scene {
     }
 
     const scene_ptr = ptr.get(id).?;
-
-    last_created_scene = scene_ptr;
 
     return scene_ptr;
 }
