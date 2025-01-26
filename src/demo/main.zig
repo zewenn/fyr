@@ -9,7 +9,7 @@ pub fn main() !void {
         fyr.title("fyr-demo");
         fyr.winSize(fyr.Vec2(1280, 720));
 
-        fyr.useAssetDebugPath("./src/demo/assets/");
+        fyr.useDebugAssetPath("./src/demo/assets/");
     })({
         fyr.scene("default")({
             fyr.entities(.{

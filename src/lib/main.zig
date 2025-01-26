@@ -62,9 +62,16 @@ pub const KeyFrame = ecs.components.KeyFrame;
 
 // ^Allocators
 // --------------------------------------------------------------------------------
+pub fn AllocatorInstance(comptime T: type) type {
+    return struct {
+        interface: ?T = null,
+        allocator: ?Allocator = null,
+    };
+}
+
 const global_allocators = struct {
-    pub var gpa: AllocatorScene(std.heap.GeneralPurposeAllocator(.{})) = .{};
-    pub var arena: AllocatorScene(std.heap.ArenaAllocator) = .{};
+    pub var gpa: AllocatorInstance(std.heap.GeneralPurposeAllocator(.{})) = .{};
+    pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
     pub var page: Allocator = std.heap.page_allocator;
 
     pub const types = enum {
@@ -75,15 +82,77 @@ const global_allocators = struct {
         /// Shorthand for `std.heap.page_allocator`.
         page,
         /// If `eventloop` has an Scene loaded, this is a shorthand for
-        /// `fyr.eventloop.active_Scene.allocator()`, otherwise this is the
-        /// same as arena.
-        Scene,
+        /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
+        /// same as `arena`.
+        scene,
         /// Shorthand for `std.heap.c_allocator`
         c,
         /// Shorthand for `std.heap.raw_c_allocator`
         raw_c,
     };
 };
+
+pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
+    return switch (T) {
+        .gpa => global_allocators.gpa.allocator orelse Blk: {
+            global_allocators.gpa.interface = std.heap.GeneralPurposeAllocator(.{}){};
+            global_allocators.gpa.allocator = global_allocators.gpa.interface.?.allocator();
+
+            break :Blk global_allocators.gpa.allocator.?;
+        },
+        .arena => global_allocators.arena.allocator orelse Blk: {
+            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.gpa));
+            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
+
+            break :Blk global_allocators.arena.allocator.?;
+        },
+        .page => global_allocators.page,
+        .scene => Blk: {
+            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
+            break :Blk active_Scene.allocator();
+        },
+        .c => std.heap.c_allocator,
+        .raw_c => std.heap.raw_c_allocator,
+    };
+}
+
+test "getAllocator" {
+    try testing.expect(
+        std.meta.eql(
+            std.heap.raw_c_allocator,
+            getAllocator(.raw_c),
+        ),
+    );
+
+    try testing.expect(
+        std.meta.eql(
+            std.heap.c_allocator,
+            getAllocator(.c),
+        ),
+    );
+
+    try testing.expect(
+        std.meta.eql(
+            std.heap.page_allocator,
+            getAllocator(.page),
+        ),
+    );
+
+    _ = getAllocator(.gpa);
+    try testing.expect(global_allocators.gpa.allocator != null);
+
+    _ = getAllocator(.arena);
+    try testing.expect(global_allocators.arena.allocator != null);
+
+    global_allocators.arena.interface = null;
+    global_allocators.arena.allocator = null;
+
+    global_allocators.gpa.interface = null;
+    global_allocators.gpa.allocator = null;
+
+    _ = getAllocator(.arena);
+    try testing.expect(global_allocators.gpa.allocator != null);
+}
 
 // ^Fyr Types
 // --------------------------------------------------------------------------------
@@ -132,7 +201,7 @@ pub inline fn isLoopRunning() bool {
     return loop_running;
 }
 
-// ^Block-based control flow
+// ^Block-based control flow and shorthands
 // --------------------------------------------------------------------------------
 pub fn project(_: void) *const fn (void) void {
     normal_control_flow.init() catch panic("couldn't initalise window!", .{});
@@ -151,6 +220,65 @@ pub const winSize = window.size.set;
 /// Shorthand for window.title()
 pub const title = window.title;
 
+/// Can be used to set the path of the `assets/` directory. This is the path
+/// which will be used as the base of all asset requests. For Scene:
+/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
+pub inline fn useDebugAssetPath(comptime path: []const u8) void {
+    if (lib_info.build_mode != .Debug) return;
+    assets.overrideDevPath(path);
+}
+
+/// Sets the Scene with the given ID as the active Scene, unloading the current one.
+pub const useScene = eventloop.setActive;
+
+/// Created
+pub inline fn scene(comptime id: []const u8) *const fn (void) void {
+    _ = eventloop.new(id) catch {
+        std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
+    };
+
+    return struct {
+        pub fn callback(_: void) void {
+            eventloop.last_created_scene = null;
+        }
+    }.callback;
+}
+
+/// Set the default entities of the last created scene
+/// If an entity fn returns an error it will be ignored!
+pub fn entities(tuple: anytype) void {
+    const list = arrayAdvanced(
+        *Entity,
+        .{ .on_type_change_fail = .ignore },
+        tuple,
+    );
+    defer list.deinit();
+
+    const scene_ptr = activeOrLastScene() catch {
+        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
+        return;
+    };
+
+    for (list.items) |ptr| {
+        scene_ptr.addEntity(ptr) catch {
+            std.log.err("failed to add entity to scene!", .{});
+            continue;
+        };
+    }
+}
+
+pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
+    return try (try activeOrLastScene()).newEntity(id, component_tuple);
+}
+
+pub inline fn activeScene() !*Scene {
+    return eventloop.active_scene orelse error.NoScenesPresent;
+}
+
+pub inline fn activeOrLastScene() !*Scene {
+    return eventloop.active_scene orelse (eventloop.last_created_scene orelse error.NoScenesPresent);
+}
+
 // ^Normal control flow
 // --------------------------------------------------------------------------------
 pub const normal_control_flow = struct {
@@ -158,8 +286,6 @@ pub const normal_control_flow = struct {
         rl.setTraceLogLevel(.warning);
 
         window.init();
-
-        window.initalised.set(true);
 
         time.init();
         try eventloop.init();
@@ -225,21 +351,23 @@ pub const normal_control_flow = struct {
     }
 };
 
-pub inline fn changeNumberType(comptime T: type, value: anytype) ?T {
+// ^Changing between number(int, float), enum, and boolean types
+// --------------------------------------------------------------------------------
+pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeTarget {
     const value_info = @typeInfo(@TypeOf(value));
-    return switch (@typeInfo(T)) {
+    return switch (@typeInfo(TypeTarget)) {
         .Int, .ComptimeInt => switch (value_info) {
-            .Int, .ComptimeInt => @as(T, @intCast(value)),
-            .Float, .ComptimeFloat => @as(T, @intFromFloat(@round(value))),
-            .Bool => @as(T, @intFromBool(value)),
-            .Enum => @as(T, @intFromEnum(value)),
+            .Int, .ComptimeInt => @as(TypeTarget, @intCast(value)),
+            .Float, .ComptimeFloat => @as(TypeTarget, @intFromFloat(@round(value))),
+            .Bool => @as(TypeTarget, @intFromBool(value)),
+            .Enum => @as(TypeTarget, @intFromEnum(value)),
             else => null,
         },
         .Float, .ComptimeFloat => switch (value_info) {
-            .Int, .ComptimeInt => @as(T, @floatFromInt(value)),
-            .Float, .ComptimeFloat => @as(T, @floatCast(value)),
-            .Bool => @as(T, @floatFromInt(@intFromBool(value))),
-            .Enum => @as(T, @floatFromInt(@intFromEnum(value))),
+            .Int, .ComptimeInt => @as(TypeTarget, @floatFromInt(value)),
+            .Float, .ComptimeFloat => @as(TypeTarget, @floatCast(value)),
+            .Bool => @as(TypeTarget, @floatFromInt(@intFromBool(value))),
+            .Enum => @as(TypeTarget, @floatFromInt(@intFromEnum(value))),
             else => null,
         },
         .Bool => switch (value_info) {
@@ -259,21 +387,86 @@ pub inline fn changeNumberType(comptime T: type, value: anytype) ?T {
         else => Catch: {
             std.log.warn(
                 "cannot change type of \"{any}\" to type \"{any}\"! (fyr.changeType())",
-                .{ value, T },
+                .{ value, TypeTarget },
             );
             break :Catch null;
         },
     };
 }
 
+test "changeNumberType conversions" {
+    const expect = testing.expect;
+    const x = enum(u8) { a = 0, b = 32 };
+
+    // Check if types can be handled properly
+    try expect(changeNumberType(f32, 0) != null);
+    try expect(changeNumberType(i32, 0) != null);
+    try expect(changeNumberType(x, 0) != null);
+    try expect(changeNumberType(bool, 0) != null);
+
+    // Check if the correct type is returned
+    try expect(@TypeOf(changeNumberType(f32, 0).?) == f32);
+    try expect(@TypeOf(changeNumberType(i32, 0).?) == i32);
+    try expect(@TypeOf(changeNumberType(x, 0).?) == x);
+    try expect(@TypeOf(changeNumberType(bool, 0).?) == bool);
+
+    // Check if ints get converted correctly
+    const int: usize = 32;
+    const compint: comptime_int = 32;
+
+    try expect(changeNumberType(isize, int).? == @as(isize, 32));
+    try expect(changeNumberType(f32, int).? == @as(f32, 32.0));
+    try expect(changeNumberType(x, int).? == @as(x, x.b));
+    try expect(changeNumberType(bool, int).? == @as(bool, true));
+
+    try expect(changeNumberType(isize, compint).? == @as(isize, 32));
+    try expect(changeNumberType(f32, compint).? == @as(f32, 32.0));
+    try expect(changeNumberType(x, compint).? == @as(x, x.b));
+    try expect(changeNumberType(bool, compint).? == @as(bool, true));
+
+    // Check if floats get converted correctly
+    const float: f64 = 32.34;
+    const compfloat: comptime_float = 32.34;
+
+    try expect(changeNumberType(isize, float).? == @as(isize, 32));
+    try expect(changeNumberType(f32, float).? == @as(f32, 32.34));
+    try expect(changeNumberType(x, float).? == @as(x, x.b));
+    try expect(changeNumberType(bool, float).? == @as(bool, true));
+
+    try expect(changeNumberType(isize, compfloat).? == @as(isize, 32));
+    try expect(changeNumberType(f32, compfloat).? == @as(f32, 32.34));
+    try expect(changeNumberType(x, compfloat).? == @as(x, x.b));
+    try expect(changeNumberType(bool, compfloat).? == @as(bool, true));
+
+    // Check if enums get converted correctly
+    const enm: x = x.b;
+
+    try expect(changeNumberType(isize, enm).? == @as(isize, 32));
+    try expect(changeNumberType(f32, enm).? == @as(f32, 32.0));
+    try expect(changeNumberType(x, enm).? == @as(x, x.b));
+    try expect(changeNumberType(bool, enm).? == @as(bool, true));
+
+    // Check if bools get converted correctly
+    const bo_l: bool = false;
+
+    try expect(changeNumberType(isize, bo_l).? == @as(isize, 0));
+    try expect(changeNumberType(f32, bo_l).? == @as(f32, 0.0));
+    try expect(changeNumberType(x, bo_l).? == @as(x, x.a));
+    try expect(changeNumberType(bool, bo_l).? == @as(bool, false));
+}
+
+/// Shorthand for changeNumberType
 pub inline fn tof32(value: anytype) f32 {
     return changeNumberType(f32, value) orelse 0;
 }
 
+/// Shorthand for changeNumberType
 pub fn toi32(value: anytype) i32 {
     return changeNumberType(i32, value) orelse 0;
 }
 
+// ^Raylib Shortcuts
+// --------------------------------------------------------------------------------
 pub fn Vec2(x: anytype, y: anytype) Vector2 {
     return Vector2{
         .x = tof32(x),
@@ -314,155 +507,8 @@ pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     return try cloned.toOwnedSlice();
 }
 
-pub fn AllocatorScene(comptime T: type) type {
-    return struct {
-        interface: ?T = null,
-        allocator: ?Allocator = null,
-    };
-}
-
-// ^GetAllocator ------------------------------------------------------------
-pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
-    return switch (T) {
-        .gpa => global_allocators.gpa.allocator orelse Blk: {
-            global_allocators.gpa.interface = std.heap.GeneralPurposeAllocator(.{}){};
-            global_allocators.gpa.allocator = global_allocators.gpa.interface.?.allocator();
-
-            break :Blk global_allocators.gpa.allocator.?;
-        },
-        .arena => global_allocators.arena.allocator orelse Blk: {
-            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.gpa));
-            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
-
-            break :Blk global_allocators.arena.allocator.?;
-        },
-        .page => global_allocators.page,
-        .Scene => Blk: {
-            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
-            break :Blk active_Scene.allocator();
-        },
-        .c => std.heap.c_allocator,
-        .raw_c => std.heap.raw_c_allocator,
-    };
-}
-
-test "getAllocator" {
-    try testing.expect(
-        std.meta.eql(
-            std.heap.raw_c_allocator,
-            getAllocator(.raw_c),
-        ),
-    );
-
-    try testing.expect(
-        std.meta.eql(
-            std.heap.c_allocator,
-            getAllocator(.c),
-        ),
-    );
-
-    try testing.expect(
-        std.meta.eql(
-            std.heap.page_allocator,
-            getAllocator(.page),
-        ),
-    );
-
-    _ = getAllocator(.gpa);
-    try testing.expect(global_allocators.gpa.allocator != null);
-
-    _ = getAllocator(.arena);
-    try testing.expect(global_allocators.arena.allocator != null);
-
-    global_allocators.arena.interface = null;
-    global_allocators.arena.allocator = null;
-
-    global_allocators.gpa.interface = null;
-    global_allocators.gpa.allocator = null;
-
-    _ = getAllocator(.arena);
-    try testing.expect(global_allocators.gpa.allocator != null);
-}
-
-pub fn assert(text: []const u8, statement: bool) void {
-    if (statement) {
-        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{text});
-        return;
-    }
-
-    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{text});
-    @panic("ASSERTON FAILIURE");
-}
-
-pub fn assertTitle(text: []const u8) void {
-    logTest("\n\n\n[ASSERT SECTION] {s}\n", .{text});
-}
-
-pub fn logTest(comptime text: []const u8, fmt: anytype) void {
-    const formatted = std.fmt.allocPrint(getAllocator(.gpa), text, fmt) catch "";
-    defer getAllocator(.gpa).free(formatted);
-    std.debug.print("test: {s}\n", .{formatted});
-}
-
-/// Can be used to set the path of the `assets/` directory. This is the path
-/// which will be used as the base of all asset requests. For Scene:
-/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
-pub inline fn useAssetDebugPath(comptime path: []const u8) void {
-    if (lib_info.build_mode != .Debug) return;
-    assets.overrideDevPath(path);
-}
-
-/// Sets the Scene with the given ID as the active Scene, unloading the current one.
-pub const useScene = eventloop.setActive;
-
-/// Created
-pub inline fn scene(comptime id: []const u8) *const fn (void) void {
-    _ = eventloop.new(id) catch {
-        std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
-    };
-
-    return struct {
-        pub fn callback(_: void) void {
-            eventloop.last_created_scene = null;
-        }
-    }.callback;
-}
-
-/// Set the default entities of the last created scene
-/// If an entity fn returns an error it will be ignored!
-pub fn entities(tuple: anytype) void {
-    const list = arrayAdvanced(
-        *Entity,
-        .{ .on_type_change_fail = .ignore },
-        tuple,
-    );
-    defer list.deinit();
-
-    const scene_ptr = activeOrLastScene() catch {
-        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
-        return;
-    };
-
-    for (list.items) |ptr| {
-        scene_ptr.addEntity(ptr) catch {
-            std.log.err("failed to add entity to scene!", .{});
-            continue;
-        };
-    }
-}
-
-pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
-    return try (try activeOrLastScene()).newEntity(id, component_tuple);
-}
-
-pub inline fn activeScene() !*Scene {
-    return eventloop.active_scene orelse error.NoScenesPresent;
-}
-
-pub inline fn activeOrLastScene() !*Scene {
-    return eventloop.active_scene orelse (eventloop.last_created_scene orelse error.NoScenesPresent);
-}
-
+// ^Utilities
+// --------------------------------------------------------------------------------
 pub const CacheCast = Behaviour.CacheCast;
 
 pub fn UUIDV7() u128 {

@@ -18,9 +18,9 @@ pub const Animator = struct {
 
     pub fn init() Self {
         return Self{
-            .alloc = fyr.getAllocator(.Scene),
-            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.Scene)),
-            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.Scene)),
+            .alloc = fyr.getAllocator(.scene),
+            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.scene)),
+            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.scene)),
         };
     }
 
