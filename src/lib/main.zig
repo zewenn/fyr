@@ -1,101 +1,67 @@
+// Imports
+// --------------------------------------------------------------------------------
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
-
 const testing = std.testing;
+const builtin = @import("builtin");
+const os = std.os;
+const target = builtin.target;
 
+// Library Info
+// --------------------------------------------------------------------------------
 pub const lib_info = struct {
     pub const lib_name = "fyr";
     pub const version_str = "v0.0.1-dev";
+    pub const build_mode = builtin.mode;
 };
 
-pub const builtin = @import("builtin");
-pub const os = std.os;
-pub const target = builtin.target;
-pub const BUILD_MODE = builtin.mode;
-
+// Dependencies
+// --------------------------------------------------------------------------------
 const deps = @import("./deps/export.zig");
-
 pub const rl = deps.raylib;
 pub const rgui = deps.raygui;
-
 pub const uuid = deps.uuid;
 
-pub const Vector2 = rl.Vector2;
-pub const Vector3 = rl.Vector3;
-pub const Vector4 = rl.Vector4;
-pub const Rectangle = rl.Rectangle;
-
+// Modules
+// --------------------------------------------------------------------------------
 pub const ecs = @import("libs/ecs/export.zig");
 pub const eventloop = @import("libs/eventloop/export.zig");
 pub const time = @import("libs/time.zig");
 pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
 pub const gui = @import("libs/gui/export.zig");
+pub const window = @import("libs/window.zig");
 
+// Raylib Types
+// --------------------------------------------------------------------------------
+pub const Vector2 = rl.Vector2;
+pub const Vector3 = rl.Vector3;
+pub const Vector4 = rl.Vector4;
+pub const Rectangle = rl.Rectangle;
+
+// Components
+// --------------------------------------------------------------------------------
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
 pub const DisplayCache = ecs.components.DisplayCache;
-pub const Renderer = ecs.components.Renderer;
 pub const Collider = ecs.components.Collider;
+pub const Animator = ecs.components.Animator;
+
+// ^Behaviours
+// --------------------------------------------------------------------------------
+pub const Renderer = ecs.components.Renderer;
 pub const ColliderBehaviour = ecs.components.ColliderBehaviour;
 pub const CameraTarget = ecs.components.CameraTarget;
-
 pub const AnimatorBehaviour = ecs.components.AnimatorBehaviour;
-pub const Animator = ecs.components.Animator;
+
+// ^Animator
+// --------------------------------------------------------------------------------
+pub const interpolation = ecs.components.interpolation;
 pub const Animation = ecs.components.Animation;
 pub const KeyFrame = ecs.components.KeyFrame;
 
-pub const interpolation = ecs.components.interpolation;
-
-pub const Scene = eventloop.Scene;
-pub const window = struct {
-    var _size = Vec2(860, 480);
-    pub var _temp_size = Vec2(860, 480);
-
-    var _inited = false;
-
-    pub const initalised = struct {
-        pub inline fn set(to: bool) void {
-            if (_inited) return;
-            _inited = to;
-        }
-
-        pub inline fn get() bool {
-            return _inited;
-        }
-    };
-
-    pub const size = struct {
-        inline fn update() void {
-            _size = Vec2(rl.getScreenWidth(), rl.getScreenHeight());
-        }
-
-        pub inline fn set(to: Vector2) void {
-            if (initalised.get()) {
-                rl.setWindowSize(toi32(to.x), toi32(to.y));
-                update();
-                return;
-            }
-            _temp_size = to;
-        }
-
-        pub inline fn get() Vector2 {
-            update();
-            return _size;
-        }
-    };
-
-    pub var _temp_title: [*:0]const u8 = "";
-
-    pub fn title(to: [*:0]const u8) void {
-        if (initalised.get()) {
-            rl.setWindowTitle(to);
-            return;
-        }
-        _temp_title = to;
-    }
-};
-
+// ^Allocators
+// --------------------------------------------------------------------------------
 const global_allocators = struct {
     pub var gpa: AllocatorScene(std.heap.GeneralPurposeAllocator(.{})) = .{};
     pub var arena: AllocatorScene(std.heap.ArenaAllocator) = .{};
@@ -119,6 +85,10 @@ const global_allocators = struct {
     };
 };
 
+// ^Fyr Types
+// --------------------------------------------------------------------------------
+pub const Scene = eventloop.Scene;
+
 pub const SharedPointer = @import("./.types/SharedPointer.zig").SharedPointer;
 pub fn SharetPtr(value: anytype) !*SharedPointer(@TypeOf(value)) {
     const ptr = try getAllocator(.gpa).create(SharedPointer(@TypeOf(value)));
@@ -127,7 +97,6 @@ pub fn SharetPtr(value: anytype) !*SharedPointer(@TypeOf(value)) {
 }
 
 const warray_lib = @import("./.types/WrappedArray.zig");
-
 pub const WrappedArray = warray_lib.WrappedArray;
 pub const WrappedArrayOptions = warray_lib.WrappedArrayOptions;
 pub const array = warray_lib.array;
@@ -139,6 +108,8 @@ pub const string = @import("./.types/strings/export.zig").string;
 pub const Entity = ecs.Entity;
 pub const Behaviour = ecs.Behaviour;
 
+// ^Camera2D
+// --------------------------------------------------------------------------------
 pub var camera: rl.Camera2D = .{
     .offset = Vec2(0, 0),
     .target = Vec2(0, 0),
@@ -154,111 +125,105 @@ pub fn worldToScreenPos(pos: Vector2) Vector2 {
     return rl.getWorldToScreen2D(pos, camera);
 }
 
+// ^Loop info
+// --------------------------------------------------------------------------------
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
     return loop_running;
 }
 
-pub fn init() !void {
-    rl.setTraceLogLevel(.warning);
-
-    rl.initWindow(
-        toi32(window.size.get().x),
-        toi32(window.size.get().y),
-        "fyr project - loading...",
-    );
-    rl.initAudioDevice();
-
-    window.initalised.set(true);
-
-    window.size.set(window._temp_size);
-    window.title(window._temp_title);
-
-    time.init();
-    try eventloop.init();
-
-    display.init();
-
-    try eventloop.setActive("engine");
-}
-
-pub fn loop() void {
-    if (eventloop.active_scene == null) {
-        try useScene("default");
-    }
-
-    while (!rl.windowShouldClose()) {
-        if (!loop_running)
-            loop_running = true;
-
-        camera.offset = Vec2(
-            tof32(rl.getScreenWidth()) / 2,
-            tof32(rl.getScreenHeight()) / 2,
-        );
-
-        time.update();
-
-        display.reset();
-
-        eventloop.execute() catch {
-            std.log.warn("eventloop.execute() failed!", .{});
-        };
-
-        rl.beginDrawing();
-        {
-            rl.clearBackground(rl.Color.white);
-            camera.begin();
-            {
-                display.render();
-            }
-            camera.end();
-        }
-        rl.endDrawing();
-    }
-}
-
+// ^Block-based control flow
+// --------------------------------------------------------------------------------
 pub fn project(_: void) *const fn (void) void {
-    init() catch panic("couldn't initalise window!", .{});
+    normal_control_flow.init() catch panic("couldn't initalise window!", .{});
 
     return struct {
         pub fn callback(_: void) void {
-            loop();
-            deinit();
+            normal_control_flow.loop();
+            normal_control_flow.deinit();
         }
     }.callback;
 }
 
 /// Shorthand for window.size.set()
-pub fn winSize(dimenstions: Vector2) void {
-    window.size.set(dimenstions);
-}
+pub const winSize = window.size.set;
 
 /// Shorthand for window.title()
-pub fn title(text: [*:0]const u8) void {
-    window.title(text);
-}
+pub const title = window.title;
 
-pub fn deinit() void {
-    defer if (global_allocators.gpa.interface) |*intf| {
-        const state = intf.deinit();
-        switch (state) {
-            .ok => std.log.info("GPA exited without memory leaks!", .{}),
-            .leak => std.log.warn("GPA exited with a memory leak!", .{}),
+// ^Normal control flow
+// --------------------------------------------------------------------------------
+pub const normal_control_flow = struct {
+    pub fn init() !void {
+        rl.setTraceLogLevel(.warning);
+
+        window.init();
+
+        window.initalised.set(true);
+
+        time.init();
+        try eventloop.init();
+
+        display.init();
+
+        try eventloop.setActive("engine");
+    }
+
+    pub fn loop() void {
+        if (eventloop.active_scene == null) {
+            try useScene("default");
         }
-    };
 
-    defer if (global_allocators.arena.interface) |*intf| {
-        intf.deinit();
-    };
+        while (!rl.windowShouldClose()) {
+            if (!loop_running)
+                loop_running = true;
 
-    eventloop.deinit();
-    display.deinit();
-    rl.closeWindow();
+            camera.offset = Vec2(
+                tof32(rl.getScreenWidth()) / 2,
+                tof32(rl.getScreenHeight()) / 2,
+            );
 
-    assets.deinit();
+            time.update();
 
-    rl.closeAudioDevice();
-}
+            display.reset();
+
+            eventloop.execute() catch {
+                std.log.warn("eventloop.execute() failed!", .{});
+            };
+
+            rl.beginDrawing();
+            {
+                rl.clearBackground(rl.Color.white);
+                camera.begin();
+                {
+                    display.render();
+                }
+                camera.end();
+            }
+            rl.endDrawing();
+        }
+    }
+
+    pub fn deinit() void {
+        defer if (global_allocators.gpa.interface) |*intf| {
+            const state = intf.deinit();
+            switch (state) {
+                .ok => std.log.info("GPA exited without memory leaks!", .{}),
+                .leak => std.log.warn("GPA exited with a memory leak!", .{}),
+            }
+        };
+
+        defer if (global_allocators.arena.interface) |*intf| {
+            intf.deinit();
+        };
+
+        eventloop.deinit();
+        display.deinit();
+        assets.deinit();
+
+        window.deinit();
+    }
+};
 
 pub inline fn changeNumberType(comptime T: type, value: anytype) ?T {
     const value_info = @typeInfo(@TypeOf(value));
@@ -443,7 +408,7 @@ pub fn logTest(comptime text: []const u8, fmt: anytype) void {
 /// which will be used as the base of all asset requests. For Scene:
 /// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
 pub inline fn useAssetDebugPath(comptime path: []const u8) void {
-    if (BUILD_MODE != .Debug) return;
+    if (lib_info.build_mode != .Debug) return;
     assets.overrideDevPath(path);
 }
 

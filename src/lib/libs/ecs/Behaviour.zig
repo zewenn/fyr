@@ -44,7 +44,7 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
     defer FreeingCAllocations: {
         if (event != .deinit) break :FreeingCAllocations;
 
-        if (fyr.BUILD_MODE == .Debug) {
+        if (fyr.lib_info.build_mode == .Debug) {
             const addr = @intFromPtr(self.cache);
 
             std.c.free(self.cache);

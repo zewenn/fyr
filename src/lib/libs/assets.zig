@@ -91,7 +91,7 @@ fn loadFromFile(rel_path: []const u8) ![]const u8 {
 }
 
 pub fn getAssetFullPath(rel_path: []const u8) ![]const u8 {
-    const path = switch (fyr.BUILD_MODE) {
+    const path = switch (fyr.lib_info.build_mode) {
         .Debug => try fs.path.join(fyr.getAllocator(.gpa), &[_][]const u8{
             ASSETS_PATH_DEBUG,
             rel_path,
