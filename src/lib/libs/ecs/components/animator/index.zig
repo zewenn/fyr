@@ -12,6 +12,7 @@ pub const Animator = struct {
     const Self = @This();
 
     alloc: Allocator,
+    alive: bool = false,
 
     animations: std.StringHashMap(*Animation),
     playing: std.ArrayList(*Animation),
@@ -21,6 +22,7 @@ pub const Animator = struct {
             .alloc = fyr.getAllocator(.scene),
             .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.scene)),
             .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.scene)),
+            .alive = true,
         };
     }
 
@@ -30,11 +32,15 @@ pub const Animator = struct {
             item.value_ptr.*.deinit();
         }
 
+        self.alive = false;
+
         self.playing.deinit();
         self.animations.deinit();
     }
 
     pub fn chain(self: *Self, anim: Animation) !void {
+        if (!self.alive) return;
+
         const ptr = try self.alloc.create(Animation);
         ptr.* = anim;
 
@@ -42,11 +48,15 @@ pub const Animator = struct {
     }
 
     pub fn isPlaying(self: *Self, name: []const u8) bool {
+        if (!self.alive) return false;
+
         const anim = self.animations.get(name) orelse return false;
         return anim.playing;
     }
 
     pub fn play(self: *Self, name: []const u8) !void {
+        if (!self.alive) return;
+
         const anim = self.animations.get(name) orelse return;
         if (anim.playing) return;
 
@@ -58,6 +68,8 @@ pub const Animator = struct {
     }
 
     pub fn stop(self: *Self, name: []const u8) void {
+        if (!self.alive) return;
+
         const anim = self.animations.get(name) orelse return;
         if (!anim.playing) return;
 
