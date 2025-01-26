@@ -27,6 +27,7 @@ pub const Animator = struct {
     }
 
     pub fn deinit(self: *Self) void {
+        if (!self.alive) return;
         var iterator = self.animations.iterator();
         while (iterator.next()) |item| {
             item.value_ptr.*.deinit();
@@ -157,8 +158,6 @@ pub const AnimatorBehaviour = struct {
         if (cache.animator) |animator| {
             animator.deinit();
         }
-
-        cache.animations.deinit();
     }
 
     pub fn behaviour(animations_tuple: anytype) !fyr.Behaviour {
