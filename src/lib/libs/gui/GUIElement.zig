@@ -22,7 +22,7 @@ uuid: u128,
 
 id: ?string = null,
 tags: ?string = null,
-style: ?Style = null,
+style: ?Style.StyleSheet = null,
 
 children: std.ArrayList(Child),
 

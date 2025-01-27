@@ -221,7 +221,7 @@ pub const get = struct {
         return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
-    pub fn font(rel_path: []const u8) !*rl.Sound {
+    pub fn font(rel_path: []const u8) !*rl.Font {
         const fc = &(font_cache orelse Blk: {
             audio_cache = AudioCache.init(fyr.getAllocator(.gpa));
             break :Blk audio_cache.?;

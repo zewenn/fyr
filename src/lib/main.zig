@@ -1,4 +1,4 @@
-// Imports
+// ^Imports
 // --------------------------------------------------------------------------------
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
@@ -7,7 +7,7 @@ const builtin = @import("builtin");
 const os = std.os;
 const target = builtin.target;
 
-// Library Info
+// ^Library Info
 // --------------------------------------------------------------------------------
 pub const lib_info = struct {
     pub const lib_name = "fyr";
@@ -15,14 +15,14 @@ pub const lib_info = struct {
     pub const build_mode = builtin.mode;
 };
 
-// Dependencies
+// ^Dependencies
 // --------------------------------------------------------------------------------
 const deps = @import("./deps/export.zig");
 pub const rl = deps.raylib;
 pub const rgui = deps.raygui;
 pub const uuid = deps.uuid;
 
-// Modules
+// ^Modules
 // --------------------------------------------------------------------------------
 pub const ecs = @import("libs/ecs/export.zig");
 pub const eventloop = @import("libs/eventloop/export.zig");
@@ -32,14 +32,14 @@ pub const display = @import("libs/display.zig");
 pub const gui = @import("libs/gui/export.zig");
 pub const window = @import("libs/window.zig");
 
-// Raylib Types
+// ^Raylib Types
 // --------------------------------------------------------------------------------
 pub const Vector2 = rl.Vector2;
 pub const Vector3 = rl.Vector3;
 pub const Vector4 = rl.Vector4;
 pub const Rectangle = rl.Rectangle;
 
-// Components
+// ^Components
 // --------------------------------------------------------------------------------
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
