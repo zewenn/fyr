@@ -12,7 +12,7 @@ pub fn Player() !*fyr.Entity {
             },
         },
         try MovementBehaviour(),
-        try fyr.Renderer(.{
+        try fyr.Renderer(fyr.Display{
             .img = "logo_small.png",
         }),
         try fyr.ColliderBehaviour(.{

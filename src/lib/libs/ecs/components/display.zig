@@ -32,19 +32,21 @@ pub const DisplayCache = struct {
     }
 };
 
-const DCCache = struct {
+pub const Renderer = fyr.Behaviour.factoryWithArgs(struct {
     const Self = @This();
 
     base: Display,
     display: ?*Display = null,
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
-};
 
-pub const Renderer = struct {
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(DCCache, cache_ptr);
+    pub fn create(args: Display) !Self {
+        return Self{
+            .base = args,
+        };
+    }
 
+    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
         try Entity.addComonent(cache.base);
         cache.display = Entity.getComponent(Display);
 
@@ -79,9 +81,7 @@ pub const Renderer = struct {
         cache.display_cache = Entity.getComponent(DisplayCache);
     }
 
-    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(DCCache, cache_ptr);
-
+    pub fn update(_: *fyr.Entity, cache: *Self) !void {
         const display_cache = cache.display_cache orelse return;
         const transform = cache.transform orelse return;
         const display = cache.display orelse return;
@@ -129,22 +129,9 @@ pub const Renderer = struct {
         // rl.drawTexture(texture.*, 0, 0, rl.Color.white);
     }
 
-    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(DCCache, cache_ptr);
+    pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
         const c_display_cache = cache.display_cache orelse return;
 
         c_display_cache.free();
     }
-
-    pub fn behaviour(base: Display) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(DCCache{
-            .base = base,
-        });
-
-        b.add(.awake, awake);
-        b.add(.update, update);
-        b.add(.deinit, deinit);
-
-        return b;
-    }
-}.behaviour;
+});

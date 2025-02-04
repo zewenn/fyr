@@ -75,7 +75,7 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
     };
 }
 
-pub fn make(comptime T: type) *const fn () anyerror!Self {
+pub fn factory(comptime T: type) *const fn () anyerror!Self {
     return (struct {
         fn t_awake(entity: *fyr.Entity, cache: *anyopaque) !void {
             try T.awake(entity, @ptrCast(@alignCast(cache)));
@@ -85,7 +85,7 @@ pub fn make(comptime T: type) *const fn () anyerror!Self {
             try T.init(entity, @ptrCast(@alignCast(cache)));
         }
         fn t_deinit(entity: *fyr.Entity, cache: *anyopaque) !void {
-            try T.init(entity, @ptrCast(@alignCast(cache)));
+            try T.deinit(entity, @ptrCast(@alignCast(cache)));
         }
 
         fn t_update(entity: *fyr.Entity, cache: *anyopaque) !void {
@@ -97,6 +97,59 @@ pub fn make(comptime T: type) *const fn () anyerror!Self {
 
         pub fn this() !Self {
             var b = try Self.init(T);
+
+            if (std.meta.hasFn(T, "awake")) {
+                b.add(.awake, t_awake);
+            }
+
+            if (std.meta.hasFn(T, "init")) {
+                b.add(.init, t_init);
+            }
+            if (std.meta.hasFn(T, "deinit")) {
+                b.add(.deinit, t_deinit);
+            }
+
+            if (std.meta.hasFn(T, "update")) {
+                b.add(.update, t_update);
+            }
+            if (std.meta.hasFn(T, "tick")) {
+                b.add(.tick, t_tick);
+            }
+
+            return b;
+        }
+    }).this;
+}
+
+pub fn factoryWithArgs(comptime T: type) *const fn (anytype) anyerror!Self {
+    return (struct {
+        fn t_awake(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try T.awake(entity, @ptrCast(@alignCast(cache)));
+        }
+
+        fn t_init(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try T.init(entity, @ptrCast(@alignCast(cache)));
+        }
+        fn t_deinit(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try T.deinit(entity, @ptrCast(@alignCast(cache)));
+        }
+
+        fn t_update(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try T.update(entity, @ptrCast(@alignCast(cache)));
+        }
+        fn t_tick(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try T.tick(entity, @ptrCast(@alignCast(cache)));
+        }
+
+        pub fn this(arg: anytype) !Self {
+            var b: Self = undefined;
+
+            if (std.meta.hasFn(T, "create")) {
+                const t_instance = try T.create(arg);
+                b = try Self.initWithDefaultValue(t_instance);
+            } else {
+                b = try Self.init(T);
+            }
 
             if (std.meta.hasFn(T, "awake")) {
                 b.add(.awake, t_awake);
