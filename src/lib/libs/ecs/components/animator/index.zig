@@ -85,7 +85,7 @@ pub const Animator = struct {
     }
 };
 
-pub const AnimatorBehaviour = fyr.Behaviour.factoryWithArgs(struct {
+pub const AnimatorBehaviour = fyr.Behaviour.factoryAutoInferArgument(struct {
     const Self = @This();
 
     animations: fyr.WrappedArray(Animation),
@@ -93,9 +93,9 @@ pub const AnimatorBehaviour = fyr.Behaviour.factoryWithArgs(struct {
     transform: ?*fyr.Transform = null,
     display: ?*fyr.Display = null,
 
-    pub fn create(arg: anytype) !Self {
+    pub fn create(arg: fyr.WrappedArray(Animation)) Self {
         return Self{
-            .animations = fyr.array(Animation, arg),
+            .animations = arg,
         };
     }
 

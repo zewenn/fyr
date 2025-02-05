@@ -210,7 +210,7 @@ pub const ColliderBehaviour = struct {
     }
 
     pub fn behaviour(base: Collider) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
+        var b = try fyr.Behaviour.initWithValue(Cache{
             .base = base,
         });
 

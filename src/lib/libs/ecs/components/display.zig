@@ -32,7 +32,9 @@ pub const DisplayCache = struct {
     }
 };
 
-pub const Renderer = fyr.Behaviour.factoryWithArgs(struct {
+/// ## USE: `Renderer(arg: Display)`,
+/// *Since zls does not infer types, we need this docstring.*
+pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
     const Self = @This();
 
     base: Display,
@@ -40,7 +42,7 @@ pub const Renderer = fyr.Behaviour.factoryWithArgs(struct {
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
 
-    pub fn create(args: Display) !Self {
+    pub fn create(args: Display) Self {
         return Self{
             .base = args,
         };
