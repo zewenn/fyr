@@ -128,7 +128,6 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
             .transform = transform.*,
             .display = display.*,
         });
-        // rl.drawTexture(texture.*, 0, 0, rl.Color.white);
     }
 
     pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
