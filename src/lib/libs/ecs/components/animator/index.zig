@@ -85,17 +85,21 @@ pub const Animator = struct {
     }
 };
 
-pub const AnimatorBehaviour = struct {
-    const Cache = struct {
-        animations: fyr.WrappedArray(Animation),
-        animator: ?*Animator = null,
-        transform: ?*fyr.Transform = null,
-        display: ?*fyr.Display = null,
-    };
+pub const AnimatorBehaviour = fyr.Behaviour.factoryAutoInferArgument(struct {
+    const Self = @This();
 
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    animations: fyr.WrappedArray(Animation),
+    animator: ?*Animator = null,
+    transform: ?*fyr.Transform = null,
+    display: ?*fyr.Display = null,
 
+    pub fn create(arg: fyr.WrappedArray(Animation)) Self {
+        return Self{
+            .animations = arg,
+        };
+    }
+
+    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
         var animator = Animator.init();
         for (cache.animations.items) |item| {
             try animator.chain(item);
@@ -110,9 +114,7 @@ pub const AnimatorBehaviour = struct {
         cache.display = Entity.getComponent(fyr.Display) orelse return;
     }
 
-    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-
+    pub fn update(_: *fyr.Entity, cache: *Self) !void {
         const transform = cache.transform orelse return;
         const display = cache.display orelse return;
         const animator = cache.animator orelse return;
@@ -152,23 +154,9 @@ pub const AnimatorBehaviour = struct {
         }
     }
 
-    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-
+    pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
         if (cache.animator) |animator| {
             animator.deinit();
         }
     }
-
-    pub fn behaviour(animations_tuple: anytype) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
-            .animations = fyr.array(Animation, animations_tuple),
-        });
-
-        b.add(.awake, awake);
-        b.add(.update, update);
-        b.add(.deinit, deinit);
-
-        return b;
-    }
-}.behaviour;
+});

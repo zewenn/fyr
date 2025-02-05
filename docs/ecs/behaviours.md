@@ -1,39 +1,74 @@
-const std = @import("std");
-const fyr = @import("../../../main.zig");
-const rl = fyr.rl;
-const assets = fyr.assets;
+> [!WARNING]
+> The docs are still under construction, they might be incomplete or out of date.
 
-const Transform = @import("../components.zig").Transform;
+# Behaviours
 
-pub const Display = struct {
-    img: []const u8,
-    tint: rl.Color = rl.Color.white,
-};
+> [docs](../README.md) / [ecs](./README.md) / behaviours
 
-pub const DisplayCache = struct {
+Behaviours are [Components](./components.md) with hooks to the eventloop. This allows them to handle engine events like `awake`, `init`, `update`, `tick`, and `deinit`.
+
+## Standard Behaviour Creation
+
+If you want to use the modern, simple way to create Behaviours - _and your behaviour does not need arguments_ - use the `fyr.Behaviour.factory(comptime T: type)` function to map a type to the `fyr.Behaviour` interface.
+
+```zig
+pub const MovementBehaviour = fyr.Behaviour.factory(struct {
     const Self = @This();
 
-    transform: Transform,
-    path: []const u8,
-    img: ?*rl.Image = null,
-    texture: ?*rl.Texture = null,
+    transform: ?*fyr.Transform = null,
+    speed: f32 = 350,
 
-    pub fn free(self: *Self) void {
-        const i = self.img orelse return;
-
-        if (self.texture != null)
-            assets.rmref.texture(self.path, i.*, self.transform.rotation);
-
-        assets.rmref.image(
-            self.path,
-            self.transform.scale,
-            self.transform.rotation,
-        );
+    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
+        const transform = Entity.getComponent(fyr.Transform);
+        cache.transform = transform;
     }
-};
 
-/// ## USE: `Renderer(arg: Display)`,
-/// *Since zls does not infer types, we need this docstring.*
+    pub fn update(Entity: *fyr.Entity, cache: *Self) !void {
+        const transform = cache.transform orelse return;
+
+        var move_vec = fyr.Vec3(0, 0, 0);
+
+        if (fyr.rl.isKeyDown(.w)) {
+            move_vec.y -= 1;
+        }
+        if (fyr.rl.isKeyDown(.s)) {
+            move_vec.y += 1;
+        }
+        if (fyr.rl.isKeyDown(.a)) {
+            move_vec.x -= 1;
+        }
+        if (fyr.rl.isKeyDown(.d)) {
+            move_vec.x += 1;
+        }
+
+        move_vec = move_vec.normalize();
+
+        transform.position = transform.position.add(
+            move_vec.multiply(
+                fyr.Vec3(cache.speed, cache.speed, 0),
+            ).multiply(
+                fyr.Vec3(
+                    fyr.time.deltaTime(),
+                    fyr.time.deltaTime(),
+                    0,
+                ),
+            ),
+        );
+
+        if (move_vec.length() < 0.5) return;
+        const animator = Entity.getComponent(fyr.Animator) orelse return;
+
+        try animator.play("test");
+    }
+});
+```
+
+## Behaviours with an Argument
+
+If you need to pass an argument to a Behaviour (e.i.: start position), you can use the `fyr.Behaviour.factoryAutoInferArgument()` function.
+When a new Behaviour of your type is initalised the `T.create()` function will be called with one argument.
+
+```zig
 pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
     const Self = @This();
 
@@ -136,3 +171,4 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
         c_display_cache.free();
     }
 });
+```

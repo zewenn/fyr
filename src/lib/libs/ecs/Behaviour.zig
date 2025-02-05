@@ -15,10 +15,10 @@ tick: FnType = null,
 deinit: FnType = null,
 
 pub fn init(comptime T: type) !Self {
-    return initWithDefaultValue(T{});
+    return initWithValue(T{});
 }
 
-pub fn initWithDefaultValue(value: anytype) !Self {
+pub fn initWithValue(value: anytype) !Self {
     const T: type = comptime @TypeOf(value);
 
     const c_ptr = std.c.malloc(@sizeOf(T)) orelse return AllocationError;
@@ -73,6 +73,130 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
             // zig fmt: on
         }});
     };
+}
+
+fn attachEvents(b: *Self, comptime T: type) void {
+    const t = struct {
+        pub fn awake(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try @field(T, "awake")(entity, @ptrCast(@alignCast(cache)));
+        }
+
+        pub fn init(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try @field(T, "init")(entity, @ptrCast(@alignCast(cache)));
+        }
+        pub fn deinit(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try @field(T, "deinit")(entity, @ptrCast(@alignCast(cache)));
+        }
+
+        pub fn update(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try @field(T, "update")(entity, @ptrCast(@alignCast(cache)));
+        }
+        pub fn tick(entity: *fyr.Entity, cache: *anyopaque) !void {
+            try @field(T, "tick")(entity, @ptrCast(@alignCast(cache)));
+        }
+    };
+
+    if (std.meta.hasFn(T, "awake")) {
+        b.add(.awake, t.awake);
+    }
+
+    if (std.meta.hasFn(T, "init")) {
+        b.add(.init, t.init);
+    }
+    if (std.meta.hasFn(T, "deinit")) {
+        b.add(.deinit, t.deinit);
+    }
+
+    if (std.meta.hasFn(T, "update")) {
+        b.add(.update, t.update);
+    }
+    if (std.meta.hasFn(T, "tick")) {
+        b.add(.tick, t.tick);
+    }
+}
+
+pub fn factory(comptime T: type) *const fn () anyerror!Self {
+    return (struct {
+        pub fn this() !Self {
+            var b = try Self.init(T);
+
+            b.attachEvents(T);
+
+            return b;
+        }
+    }).this;
+}
+
+pub fn factoryAutoInferArgument(comptime T: type) *const fn (if (@typeInfo(@TypeOf(@field(T, "create"))).Fn.params[0].type) |t| t else @TypeOf(null)) anyerror!Self {
+    return (struct {
+        const can_create = Blk: {
+            if (!std.meta.hasFn(T, "create")) break :Blk false;
+            const typeinfo = @typeInfo(@TypeOf(@field(T, "create")));
+            if (typeinfo != .Fn)
+                break :Blk false;
+
+            if (typeinfo.Fn.return_type != T)
+                break :Blk false;
+
+            break :Blk true;
+        };
+
+        const argstype = @typeInfo(@TypeOf(@field(T, "create"))).Fn.params[0].type orelse @TypeOf(null);
+
+        pub fn this(argument: argstype) !Self {
+            var b: Self = undefined;
+
+            if (can_create) {
+                const Tinstance = @call(
+                    .auto,
+                    @field(T, "create"),
+                    .{argument},
+                );
+                b = try Self.initWithValue(Tinstance);
+            } else {
+                b = try Self.init(T);
+            }
+
+            b.attachEvents(T);
+
+            return b;
+        }
+    }).this;
+}
+
+pub fn factoryWithArgument(comptime A: type, comptime T: type) *const fn (A) anyerror!Self {
+    return (struct {
+        const can_create = Blk: {
+            if (!std.meta.hasFn(T, "create")) break :Blk false;
+            const typeinfo = @typeInfo(@TypeOf(@field(T, "create")));
+            if (typeinfo != .Fn)
+                break :Blk false;
+
+            if (typeinfo.Fn.return_type != T)
+                break :Blk false;
+
+            break :Blk true;
+        };
+
+        pub fn this(argument: A) !Self {
+            var b: Self = undefined;
+
+            if (can_create) {
+                const Tinstance = @call(
+                    .auto,
+                    @field(T, "create"),
+                    .{argument},
+                );
+                b = try Self.initWithValue(Tinstance);
+            } else {
+                b = try Self.init(T);
+            }
+
+            b.attachEvents(T);
+
+            return b;
+        }
+    }).this;
 }
 
 pub inline fn CacheCast(comptime T: type, ptr: *anyopaque) *T {

@@ -1,21 +1,18 @@
 const std = @import("std");
 const fyr = @import("fyr");
 
-pub const MovementBehaviour = struct {
-    const Cache = struct {
-        transform: ?*fyr.Transform = null,
-        speed: f32 = 10,
-    };
+pub const MovementBehaviour = fyr.Behaviour.factory(struct {
+    const Self = @This();
 
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    transform: ?*fyr.Transform = null,
+    speed: f32 = 350,
 
+    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
         const transform = Entity.getComponent(fyr.Transform);
         cache.transform = transform;
     }
 
-    fn update(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    pub fn update(Entity: *fyr.Entity, cache: *Self) !void {
         const transform = cache.transform orelse return;
 
         var move_vec = fyr.Vec3(0, 0, 0);
@@ -52,14 +49,4 @@ pub const MovementBehaviour = struct {
 
         try animator.play("test");
     }
-
-    pub fn behaviour() !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
-            .speed = 300,
-        });
-        b.add(.awake, awake);
-        b.add(.update, update);
-
-        return b;
-    }
-}.behaviour;
+});
