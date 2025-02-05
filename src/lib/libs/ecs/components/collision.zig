@@ -23,10 +23,10 @@ pub const RectangleVertices = struct {
     delta_bottom_left: rl.Vector2,
     delta_bottom_right: rl.Vector2,
 
-    top_left: rl.Vector2 = fyr.newVec2(),
-    top_right: rl.Vector2 = fyr.newVec2(),
-    bottom_left: rl.Vector2 = fyr.newVec2(),
-    bottom_right: rl.Vector2 = fyr.newVec2(),
+    top_left: rl.Vector2 = fyr.vec2(),
+    top_right: rl.Vector2 = fyr.vec2(),
+    bottom_left: rl.Vector2 = fyr.vec2(),
+    bottom_right: rl.Vector2 = fyr.vec2(),
 
     x_min: f32 = 0,
     x_max: f32 = 0,

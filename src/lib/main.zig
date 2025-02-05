@@ -526,6 +526,14 @@ pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
     @panic("ENGINE PANIC!");
 }
 
-pub fn newVec2() Vector2 {
+pub fn vec2() Vector2 {
     return Vec2(0, 0);
+}
+
+pub fn vec3() Vector3 {
+    return Vec3(0, 0, 0);
+}
+
+pub fn vec4() Vector4 {
+    return Vec4(0, 0, 0, 0);
 }
