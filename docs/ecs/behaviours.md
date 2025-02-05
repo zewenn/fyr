@@ -66,6 +66,7 @@ pub const MovementBehaviour = fyr.Behaviour.factory(struct {
 ## Behaviours with an Argument
 
 If you need to pass an argument to a Behaviour (e.i.: start position), you can use the `fyr.Behaviour.factoryAutoInferArgument()` function.
+When a new Behaviour of your type is initalised the `T.create()` function will be called with one argument.
 
 ```zig
 pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
