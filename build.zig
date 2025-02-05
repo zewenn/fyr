@@ -52,6 +52,8 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    lib.linkLibC();
+
     lib.root_module.addImport("raylib", raylib);
     lib.root_module.addImport("raygui", raygui);
     lib.root_module.linkLibrary(raylib_artifact);
@@ -69,6 +71,8 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
         .target = target,
     });
+
+    demo_exe.linkLibC();
 
     demo_exe.root_module.addImport("fyr", &lib.root_module);
 
