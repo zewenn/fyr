@@ -8,6 +8,7 @@ var is_alive = false;
 pub var _title: [*:0]const u8 = "";
 
 pub var clear_color: rl.Color = rl.Color.black;
+pub var use_debug_lines = false;
 
 pub fn init() void {
     defer is_alive = true;
@@ -30,6 +31,10 @@ pub fn deinit() void {
 
 pub fn clearBackground() void {
     rl.clearBackground(clear_color);
+}
+
+pub fn toggleDebugLines() void {
+    use_debug_lines = !use_debug_lines;
 }
 
 pub const size = struct {

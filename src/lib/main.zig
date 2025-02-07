@@ -323,6 +323,9 @@ pub const normal_control_flow = struct {
                 std.log.warn("eventloop.execute() failed!", .{});
             };
 
+            if (rl.isKeyPressed(.f3) and lib_info.build_mode == .Debug)
+                window.toggleDebugLines();
+
             rl.beginDrawing();
             {
                 window.clearBackground();

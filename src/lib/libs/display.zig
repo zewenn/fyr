@@ -42,17 +42,19 @@ pub fn render() void {
     std.sort.insertion(Renderer, buf.items, {}, sort);
 
     for (buf.items) |item| {
-        rl.drawRectanglePro(
-            fyr.Rect(
-                item.transform.position.x,
-                item.transform.position.y,
-                item.transform.scale.x,
-                item.transform.scale.y,
-            ),
-            fyr.Vec2(item.transform.scale.x / 2, item.transform.scale.y / 2),
-            item.transform.rotation,
-            rl.Color.red,
-        );
+        if (fyr.lib_info.build_mode == .Debug and fyr.window.use_debug_lines)
+            rl.drawRectanglePro(
+                fyr.Rect(
+                    item.transform.position.x - 2,
+                    item.transform.position.y - 2,
+                    item.transform.scale.x + 4,
+                    item.transform.scale.y + 4,
+                ),
+                fyr.Vec2(item.transform.scale.x / 2, item.transform.scale.y / 2),
+                item.transform.rotation,
+                rl.Color.lime,
+            );
+
         rl.drawTexturePro(
             item.texture,
             fyr.Rect(
