@@ -69,13 +69,13 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
         display_cache.img = try assets.get.image(
             display_cache.path,
             display_cache.transform.scale,
-            display_cache.transform.rotation,
+            0,
         );
         if (display_cache.img) |i| {
             display_cache.texture = try assets.get.texture(
                 display_cache.path,
                 i.*,
-                c_transform.rotation,
+                0,
             );
         }
 
@@ -104,7 +104,7 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
             display_cache.img = assets.get.image(
                 display_cache.path,
                 display_cache.transform.scale,
-                display_cache.transform.rotation,
+                0,
             ) catch {
                 std.log.err("Image error!", .{});
                 return;
@@ -114,7 +114,7 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
                 display_cache.texture = assets.get.texture(
                     display_cache.path,
                     i.*,
-                    transform.rotation,
+                    0,
                 ) catch {
                     std.log.err("Texture error!", .{});
                     return;
@@ -126,7 +126,7 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
         try fyr.display.add(.{
             .texture = texture.*,
             .transform = transform.*,
-            .display = display.*,
+            .display = display.*
         });
     }
 

@@ -35,7 +35,7 @@ pub fn Player() !*fyr.Entity {
             .{
                 try fyr.Animation.create("test", 2, fyr.interpolation.lerp, .{
                     fyr.KeyFrame{ .rotation = 0 },
-                    fyr.KeyFrame{ .rotation = 2 },
+                    fyr.KeyFrame{ .rotation = 10 },
                     fyr.KeyFrame{ .rotation = 0 },
                 }),
             },

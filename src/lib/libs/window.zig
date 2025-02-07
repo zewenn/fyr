@@ -7,6 +7,8 @@ pub var _temp_size = fyr.Vec2(860, 480);
 var is_alive = false;
 pub var _title: [*:0]const u8 = "";
 
+pub var clear_color: rl.Color = rl.Color.black;
+
 pub fn init() void {
     defer is_alive = true;
     const start_size = size.get();
@@ -24,6 +26,10 @@ pub fn deinit() void {
 
     rl.closeAudioDevice();
     rl.closeWindow();
+}
+
+pub fn clearBackground() void {
+    rl.clearBackground(clear_color);
 }
 
 pub const size = struct {
