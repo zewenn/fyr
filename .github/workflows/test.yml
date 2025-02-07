@@ -3,6 +3,10 @@ name: Run Zig Tests
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+      - master
+      - stable
     paths:
       - 'src/**'
       - 'build.zig'
