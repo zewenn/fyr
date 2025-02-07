@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     // dependencies
-
+    // ----------------------------------------------------------------------
     const raylib_dep = b.dependency("raylib-zig", .{
         .target = target,
         .optimize = optimize,
@@ -29,8 +29,8 @@ pub fn build(b: *std.Build) !void {
             .{ .cwd_relative = "/System/Library/Frameworks" },
         );
 
-    // fyr library
-
+    // module
+    // ----------------------------------------------------------------------
     const fyr_module = b.addModule("fyr", .{
         .root_source_file = b.path("./src/lib/main.zig"),
         .link_libc = true,
@@ -45,6 +45,8 @@ pub fn build(b: *std.Build) !void {
 
     try b.modules.put(b.dupe("fyr"), fyr_module);
 
+    // library
+    // ----------------------------------------------------------------------
     const lib = b.addStaticLibrary(.{
         .name = "fyr",
         .root_source_file = b.path("src/lib/main.zig"),
@@ -63,25 +65,26 @@ pub fn build(b: *std.Build) !void {
 
     b.installArtifact(lib);
 
-    // demo-exe
-
+    // demo.exe
+    // ----------------------------------------------------------------------
     const demo_exe = b.addExecutable(.{
         .name = "fyr-demo",
         .root_source_file = b.path("src/demo/main.zig"),
         .optimize = optimize,
         .target = target,
     });
-
     demo_exe.linkLibC();
-
     demo_exe.root_module.addImport("fyr", &lib.root_module);
-
     b.installArtifact(demo_exe);
 
+    // Run Step
+    // ----------------------------------------------------------------------
     const run_cmd = b.addRunArtifact(demo_exe);
     const run_step = b.step("run", "run demo");
     run_step.dependOn(&run_cmd.step);
 
+    // Unit tests
+    // ----------------------------------------------------------------------
     const exe_unit_tests = b.addTest(.{
         .root_source_file = b.path("src/lib/main.zig"),
         .target = target,

@@ -77,98 +77,28 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
 
+    // This function takes the initalisation argument, so when `Renderer(Display{...})` is called it equates to `.create(Display{...})`
     pub fn create(args: Display) Self {
         return Self{
             .base = args,
         };
     }
 
+    // Runs at the spawn of the entity, but before `.init()`
     pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
-        try Entity.addComonent(cache.base);
-        cache.display = Entity.getComponent(Display);
-
-        cache.transform = Entity.getComponent(Transform);
-        if (cache.transform == null) {
-            try Entity.addComonent(Transform{});
-            cache.transform = Entity.getComponent(Transform);
-        }
-
-        const c_transform = cache.transform.?;
-        const c_display = cache.display.?;
-
-        var display_cache = DisplayCache{
-            .path = c_display.img,
-            .transform = c_transform.*,
-        };
-
-        display_cache.img = try assets.get.image(
-            display_cache.path,
-            display_cache.transform.scale,
-            display_cache.transform.rotation,
-        );
-        if (display_cache.img) |i| {
-            display_cache.texture = try assets.get.texture(
-                display_cache.path,
-                i.*,
-                c_transform.rotation,
-            );
-        }
-
-        try Entity.addComonent(display_cache);
-        cache.display_cache = Entity.getComponent(DisplayCache);
+        // Code would go here...
     }
 
+    // You could add a `.init()` function here, which would run after awake, but you don't have to, in fact all of these functions can be skipped.
+
+    // Runs every frame
     pub fn update(_: *fyr.Entity, cache: *Self) !void {
-        const display_cache = cache.display_cache orelse return;
-        const transform = cache.transform orelse return;
-        const display = cache.display orelse return;
-
-        const has_to_be_updated = Blk: {
-            if (!transform.eqlSkipPosition(display_cache.transform)) break :Blk true;
-            if (!std.mem.eql(u8, display.img, display_cache.path)) break :Blk true;
-            break :Blk false;
-        };
-
-        if (has_to_be_updated) {
-            display_cache.free();
-
-            display_cache.* = DisplayCache{
-                .path = display.img,
-                .transform = transform.*,
-            };
-            display_cache.img = assets.get.image(
-                display_cache.path,
-                display_cache.transform.scale,
-                display_cache.transform.rotation,
-            ) catch {
-                std.log.err("Image error!", .{});
-                return;
-            };
-
-            if (display_cache.img) |i| {
-                display_cache.texture = assets.get.texture(
-                    display_cache.path,
-                    i.*,
-                    transform.rotation,
-                ) catch {
-                    std.log.err("Texture error!", .{});
-                    return;
-                };
-            }
-        }
-
-        const texture = display_cache.texture orelse return;
-        try fyr.display.add(.{
-            .texture = texture.*,
-            .transform = transform.*,
-            .display = display.*,
-        });
+        // Code would go here...
     }
 
+    // Runs when the entity gets deinitalised
     pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
-        const c_display_cache = cache.display_cache orelse return;
-
-        c_display_cache.free();
+        // Code would go here...
     }
 });
 ```

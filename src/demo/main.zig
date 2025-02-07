@@ -9,6 +9,8 @@ pub fn main() !void {
         fyr.title("fyr-demo");
         fyr.winSize(fyr.Vec2(1280, 720));
 
+        fyr.rl.setConfigFlags(.{ .window_resizable = true });
+
         fyr.useDebugAssetPath("./src/demo/assets/");
     })({
         fyr.scene("default")({
