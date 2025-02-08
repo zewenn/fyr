@@ -19,16 +19,6 @@ pub const ElementType = enum {
     button,
 };
 
-pub const ChildTag = enum {
-    element,
-    text,
-};
-
-pub const Child = union(ChildTag) {
-    element: *Self,
-    text: string,
-};
-
 const Self = @This();
 
 uuid: u128,
@@ -39,13 +29,16 @@ id: ?string = null,
 tags: ?string = null,
 style: ?Style = null,
 
-children: std.ArrayList(Child),
+rect: ?fyr.Rectangle = null,
+
+parent: ?*Self = null,
+children: std.ArrayList(*Self),
 text: ?[*:0]const u8 = null,
 
 pub fn create() Self {
     return Self{
         .uuid = fyr.UUIDV7(),
-        .children = std.ArrayList(Child).init(fyr.getAllocator(.gpa)),
+        .children = std.ArrayList(*Self).init(fyr.getAllocator(.gpa)),
     };
 }
 

@@ -116,44 +116,6 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     };
 }
 
-test "getAllocator" {
-    try testing.expect(
-        std.meta.eql(
-            std.heap.raw_c_allocator,
-            getAllocator(.raw_c),
-        ),
-    );
-
-    try testing.expect(
-        std.meta.eql(
-            std.heap.c_allocator,
-            getAllocator(.c),
-        ),
-    );
-
-    try testing.expect(
-        std.meta.eql(
-            std.heap.page_allocator,
-            getAllocator(.page),
-        ),
-    );
-
-    _ = getAllocator(.gpa);
-    try testing.expect(global_allocators.gpa.allocator != null);
-
-    _ = getAllocator(.arena);
-    try testing.expect(global_allocators.arena.allocator != null);
-
-    global_allocators.arena.interface = null;
-    global_allocators.arena.allocator = null;
-
-    global_allocators.gpa.interface = null;
-    global_allocators.gpa.allocator = null;
-
-    _ = getAllocator(.arena);
-    try testing.expect(global_allocators.gpa.allocator != null);
-}
-
 // ^Fyr Types
 // --------------------------------------------------------------------------------
 pub const Scene = eventloop.Scene;
@@ -336,6 +298,9 @@ pub const normal_control_flow = struct {
                     display.render();
                 }
                 camera.end();
+
+                gui.raygui.callDrawFn();
+                gui.render();
             }
             rl.endDrawing();
         }

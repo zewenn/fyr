@@ -3,7 +3,9 @@ const fyr = @import("fyr");
 const ui = fyr.gui;
 
 pub fn UIDrawer() !*fyr.Entity {
-    return try fyr.entity("Player", .{});
+    return try fyr.entity("Player", .{
+        try UIDrawBehaviour(),
+    });
 }
 
 const UIDrawBehaviour = fyr.Behaviour.factory(struct {
@@ -22,8 +24,10 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
             ui.element({
                 ui.id("heading1");
                 ui.elementType(.h1);
+
+                ui.style(.{});
             })({
-                ui.text("This is the greatest ui ever!", .{});
+                try ui.text("This is the greatest ui ever!", .{});
             });
         });
     }

@@ -7,7 +7,9 @@ const rg = @import("raygui");
 pub const Element = @import("Element.zig");
 pub const Style = @import("Style.zig");
 
-const raygui = struct {
+const renderer = @import("./renderer.zig");
+
+pub const raygui = struct {
     var fnptr: ?(*const fn () anyerror!void) = null;
 
     pub fn loadStyle(filename: []const u8) !void {
@@ -19,7 +21,24 @@ const raygui = struct {
 
         rg.guiLoadStyle(cpath);
     }
+
+    pub fn setRayGuiFunction(ptr: *const fn () anyerror!void) void {
+        fnptr = ptr;
+    }
+
+    pub fn callDrawFn() void {
+        (fnptr orelse return)() catch {
+            std.log.warn("Failed to call raygui fn", .{});
+            return;
+        };
+    }
 };
+
+pub fn render() void {
+    renderer.render(&elements) catch {
+        std.log.err("gui render failed", .{});
+    };
+}
 
 const string = []const u8;
 var _arena: ?std.heap.ArenaAllocator = null;
@@ -28,7 +47,7 @@ var _alloc: ?std.mem.Allocator = null;
 var elements: [512]?Element = [_]?Element{null} ** 512;
 var parent_indexes: [512]?usize = [_]?usize{null} ** 512;
 var length: usize = 0;
-var parent_indexer: usize = 0;
+var parent_index: usize = 0;
 var current_index: usize = 0;
 
 pub fn init() void {
@@ -37,14 +56,15 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
+    reset();
     arena().deinit();
 }
 
-fn arena() *std.heap.ArenaAllocator {
+pub fn arena() *std.heap.ArenaAllocator {
     return &(_arena orelse fyr.panic("UI arena allocator wasn't initalised!", .{}));
 }
 
-fn alloc() std.mem.Allocator {
+pub fn alloc() std.mem.Allocator {
     return _alloc orelse fyr.panic("UI arena allocator wasn't initalised!", .{});
 }
 
@@ -60,7 +80,7 @@ pub fn reset() void {
     parent_indexes = [_]?usize{null} ** 512;
 
     current_index = 0;
-    parent_indexer = 0;
+    parent_index = 0;
 }
 
 fn len() usize {
@@ -108,28 +128,28 @@ pub fn text(comptime fmt: []const u8, args: anytype) !void {
 
 pub fn element(_: void) *const fn (void) void {
     const ptr = current();
-    if (parent_indexes[parent_indexer]) |pi| Blk: {
+    if (parent_indexes[parent_index]) |pi| Blk: {
         const parent_or_null = &(elements[pi]);
         if (parent_or_null.* == null) break :Blk;
 
         const parent = &(parent_or_null.*.?);
-        parent.children.append(.{ .element = ptr }) catch {
+        parent.children.append(ptr) catch {
             std.log.warn("Out of memory! Couldn't add GUI child!", .{});
             break :Blk;
         };
     }
 
     if (parent_indexes[0] != null)
-        parent_indexer += 1;
+        parent_index += 1;
 
-    parent_indexes[parent_indexer] = current_index;
+    parent_indexes[parent_index] = current_index;
     current_index += 1;
 
     return struct {
         pub fn c(_: void) void {
-            if (parent_indexer >= 1) {
-                parent_indexes[parent_indexer] = null;
-                parent_indexer -= 1;
+            if (parent_index >= 1) {
+                parent_indexes[parent_index] = null;
+                parent_index -= 1;
             }
         }
     }.c;

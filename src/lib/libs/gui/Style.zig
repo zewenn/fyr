@@ -13,13 +13,18 @@ const UnitTag = enum {
     fill,
 };
 
-const Unit = union(UnitTag) {
+pub const Unit = union(UnitTag) {
     px: f32,
     percent: f32,
     vw: f32,
     vh: f32,
     fit,
     fill,
+};
+
+const Flow = enum {
+    horizontal,
+    vertical,
 };
 
 pub const BackgroundStyle = struct {
@@ -29,7 +34,7 @@ pub const BackgroundStyle = struct {
 
 pub const FontStyle = struct {
     family: []const u8 = "press_play.ttf",
-    size: usize = 12,
+    size: f32 = 12,
     color: rl.Color = rl.Color.white,
 };
 
@@ -40,3 +45,5 @@ height: ?Unit = null,
 
 background: BackgroundStyle = .{},
 font: FontStyle = .{},
+
+flow: Flow = .vertical,
