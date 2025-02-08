@@ -7,7 +7,7 @@ const rl = @import("raylib");
 
 /// 512 MB
 const MAX_FILE_SIZE: comptime_int = 1024 * 1024 * 512;
-var ASSETS_PATH_DEBUG: []const u8 = "./src/assets/";
+pub var ASSETS_PATH_DEBUG: []const u8 = "./src/assets/";
 
 // ------------------------------------- Caches -------------------------------------
 
@@ -114,19 +114,6 @@ pub fn getAssetFullPath(rel_path: []const u8) ![]const u8 {
 
 pub inline fn overrideDevPath(comptime path: []const u8) void {
     ASSETS_PATH_DEBUG = path;
-}
-
-test "override dev path" {
-    const expect = std.testing.expect;
-
-    overrideDevPath("test");
-    try expect(
-        std.mem.eql(
-            u8,
-            ASSETS_PATH_DEBUG,
-            "test",
-        ),
-    );
 }
 
 pub const get = struct {

@@ -86,12 +86,13 @@ pub fn build(b: *std.Build) !void {
     // Unit tests
     // ----------------------------------------------------------------------
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/lib/main.zig"),
+        .root_source_file = b.path("src/libtest/root.zig"),
         .target = target,
         .optimize = optimize,
     });
     exe_unit_tests.linkLibC();
-
+    exe_unit_tests.root_module.addImport("fyr", &lib.root_module);
+    
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
     const test_step = b.step("test", "Run unit tests");

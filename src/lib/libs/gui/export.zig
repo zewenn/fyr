@@ -4,7 +4,7 @@ const fyr = @import("../../main.zig");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
-pub const GUIElement = @import("GUIElement.zig");
+pub const Element = @import("Element.zig");
 pub const Style = @import("Style.zig");
 
 const raygui = struct {
@@ -22,20 +22,45 @@ const raygui = struct {
 };
 
 const string = []const u8;
+var _arena: ?std.heap.ArenaAllocator = null;
+var _alloc: ?std.mem.Allocator = null;
 
-var elements: [512]?GUIElement = [_]?GUIElement{null} ** 512;
+var elements: [512]?Element = [_]?Element{null} ** 512;
 var parent_indexes: [512]?usize = [_]?usize{null} ** 512;
 var length: usize = 0;
 var parent_indexer: usize = 0;
 var current_index: usize = 0;
 
-pub fn clear() void {
+pub fn init() void {
+    _arena = std.heap.ArenaAllocator.init(fyr.getAllocator(.gpa));
+    _alloc = _arena.?.allocator();
+}
+
+pub fn deinit() void {
+    arena().deinit();
+}
+
+fn arena() *std.heap.ArenaAllocator {
+    return &(_arena orelse fyr.panic("UI arena allocator wasn't initalised!", .{}));
+}
+
+fn alloc() std.mem.Allocator {
+    return _alloc orelse fyr.panic("UI arena allocator wasn't initalised!", .{});
+}
+
+pub fn reset() void {
+    _ = arena().reset(.free_all);
+
     for (elements, 0..) |elem, i| {
         if (elem == null) continue;
         const ptr = &(elements[i].?);
         ptr.destroy();
     }
-    elements = [_]?GUIElement{null} ** 512;
+    elements = [_]?Element{null} ** 512;
+    parent_indexes = [_]?usize{null} ** 512;
+
+    current_index = 0;
+    parent_indexer = 0;
 }
 
 fn len() usize {
@@ -48,29 +73,40 @@ fn len() usize {
     return length;
 }
 
-fn current() *GUIElement {
+fn current() *Element {
     const ptr = &(elements[current_index]);
-    if (ptr.* == null) ptr.* = GUIElement.create();
+    if (ptr.* == null) ptr.* = Element.create();
 
     return &(ptr.*.?);
 }
 
-pub fn ID(str: string) void {
+pub fn id(str: string) void {
     const ptr = current();
     ptr.id = str;
 }
 
-pub fn STYLE(style: Style) void {
+pub fn style(_style: Style) void {
     const ptr = current();
-    ptr.style = style;
+    ptr.style = _style;
 }
 
-pub fn TAGS(str: string) void {
+pub fn tags(str: string) void {
     const ptr = current();
     ptr.tags = str;
 }
 
-pub fn Element(_: void) *const fn (void) void {
+pub fn elementType(T: Element.ElementType) void {
+    const ptr = current();
+    ptr.type = T;
+}
+
+pub fn text(comptime fmt: []const u8, args: anytype) !void {
+    const ptr = current();
+    const t: [*:0]u8 = try std.fmt.allocPrintZ(alloc(), fmt, args);
+    ptr.text = t;
+}
+
+pub fn element(_: void) *const fn (void) void {
     const ptr = current();
     if (parent_indexes[parent_indexer]) |pi| Blk: {
         const parent_or_null = &(elements[pi]);
