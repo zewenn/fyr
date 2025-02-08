@@ -189,6 +189,6 @@ pub fn render(arr: []?Element) !void {
 
         const rect = element.rect orelse continue;
 
-        rl.drawRectanglePro(rect, fyr.vec2(), 0, rl.Color.red);
+        rl.drawRectanglePro(rect, fyr.vec2(), 0, fyr.randColor());
     }
 }

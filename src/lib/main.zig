@@ -7,6 +7,8 @@ const builtin = @import("builtin");
 const os = std.os;
 const target = builtin.target;
 
+var random: std.Random = undefined;
+
 // ^Library Inf
 // --------------------------------------------------------------------------------
 pub const lib_info = struct {
@@ -251,6 +253,13 @@ pub inline fn activeOrOpenScene() !*Scene {
 // --------------------------------------------------------------------------------
 pub const normal_control_flow = struct {
     pub fn init() !void {
+        var seed: u64 = undefined;
+        std.posix.getrandom(std.mem.asBytes(&seed)) catch {
+            seed = changeNumberType(u64, rl.getTime()).?;
+        };
+        var x = std.rand.DefaultPrng.init(seed);
+        random = x.random();
+
         rl.setTraceLogLevel(.warning);
 
         window.init();
@@ -448,4 +457,13 @@ pub fn vec3() Vector3 {
 
 pub fn vec4() Vector4 {
     return Vec4(0, 0, 0, 0);
+}
+
+pub fn randColor() rl.Color {
+    return rl.Color.init(
+        random.int(u8),
+        random.int(u8),
+        random.int(u8),
+        random.int(u8),
+    );
 }

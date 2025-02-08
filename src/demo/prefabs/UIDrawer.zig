@@ -17,17 +17,20 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
             ui.id("body");
 
             ui.style(.{
-                .width = .{ .vw = 100 },
-                .height = .{ .vh = 100 },
+                .width = .{ .vw = 10 },
+                .height = .{ .vh = 10 },
             });
         })({
             ui.element({
                 ui.id("heading1");
                 ui.elementType(.h1);
 
-                ui.style(.{});
+                ui.style(.{
+                    .width = .{ .px = 400 },
+                    .height = .{ .px = 10 },
+                });
             })({
-                try ui.text("This is the greatest ui ever!", .{});
+                // try ui.text("This is the greatest ui ever!", .{});
             });
         });
     }
