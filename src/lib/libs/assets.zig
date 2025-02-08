@@ -230,7 +230,7 @@ pub const get = struct {
             const f = rl.loadFontFromMemory(
                 ".ttf",
                 data,
-                12,
+                94,
                 &font_chars,
             );
 
@@ -291,12 +291,25 @@ pub const rmref = struct {
 
         while (it.next()) |entry| {
             const ptrint: usize = @intFromPtr(entry.value_ptr.*.ptr());
-            defer entry.value_ptr.*.rmref();
+            const sptr = entry.value_ptr.*;
+            sptr.rmref();
 
             if (optrint != ptrint) continue;
 
-            entry.value_ptr.*.rmref();
-            break;
+            if (!sptr.isAlive()) return;
+
+            if (sptr.ref_count == 1) {
+                const txtr = sptr.ptr().?;
+
+                rl.unloadFont(txtr.*);
+
+                sptr.deinit();
+                fyr.getAllocator(.gpa).destroy(sptr);
+                _ = fc.remove(entry.key_ptr.*);
+                return;
+            }
+            sptr.rmref();
+            return;
         }
     }
 };

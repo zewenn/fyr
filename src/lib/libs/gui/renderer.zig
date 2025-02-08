@@ -54,7 +54,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
 
     const winsize = fyr.window.size.get();
 
-    const style = element.style orelse return rect;
+    const style = element.style;
 
     if (style.width) |width| switch (width) {
         .fit => {
@@ -174,7 +174,7 @@ pub fn render(arr: []?Element) !void {
         winsize.x,
         winsize.y,
     );
-    std.log.debug("{any}\n\n", .{arr});
+
     for (arr) |*el| {
         const element = &(el.* orelse continue);
 
@@ -190,5 +190,41 @@ pub fn render(arr: []?Element) !void {
         const rect = element.rect orelse continue;
 
         rl.drawRectanglePro(rect, fyr.vec2(), 0, fyr.randColor());
+
+        var fontpointers = std.ArrayList(*Font).init(fyr.getAllocator(.gpa));
+        defer {
+            for (fontpointers.items) |ptr| {
+                fyr.assets.rmref.fontByPtr(ptr);
+            }
+            fontpointers.deinit();
+        }
+
+        const style = element.style;
+        if (element.text) |text| {
+            const fontptr = fyr.assets.get.font(style.font.family) catch {
+                std.log.err("Failed to get font", .{});
+                continue;
+            };
+            fontpointers.append(fontptr) catch continue;
+
+            // rl.drawText(
+            //     text,
+            //     fyr.toi32(rect.x),
+            //     fyr.toi32(rect.y),
+            //     fyr.toi32(style.font.size),
+            //     style.font.color,
+            // );
+
+            rl.drawTextPro(
+                fontptr.*,
+                text,
+                fyr.Vec2(rect.x, rect.y),
+                fyr.vec2(),
+                0,
+                style.font.size,
+                1,
+                style.font.color,
+            );
+        }
     }
 }

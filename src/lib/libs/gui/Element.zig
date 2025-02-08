@@ -27,7 +27,7 @@ type: ElementType = .div,
 
 id: ?string = null,
 tags: ?string = null,
-style: ?Style = null,
+style: Style = .{},
 
 rect: ?fyr.Rectangle = null,
 

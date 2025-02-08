@@ -26,11 +26,14 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                 ui.elementType(.h1);
 
                 ui.style(.{
+                    .font = .{
+                        .size = 0.1,
+                    },
                     .width = .{ .px = 400 },
                     .height = .{ .px = 10 },
                 });
             })({
-                // try ui.text("This is the greatest ui ever!", .{});
+                try ui.text("This is the greatest ui ever!", .{});
             });
         });
     }
