@@ -463,6 +463,10 @@ pub fn vec4() Vector4 {
     return Vec4(0, 0, 0, 0);
 }
 
+pub fn rect() Rectangle {
+    return Rect(0, 0, 0, 0);
+}
+
 pub fn randColor() rl.Color {
     return rl.Color.init(
         random.int(u8),

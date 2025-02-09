@@ -71,6 +71,7 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                 })({
                     ui.text("Text1", .{});
                 });
+                
                 ui.element({
                     ui.id("p2");
                     ui.elementType(.p);
