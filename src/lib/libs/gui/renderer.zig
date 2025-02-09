@@ -82,6 +82,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     continue;
                 }
 
+                child.rect.?.x = rect.width;
                 rect.width += cwidth;
             }
         },

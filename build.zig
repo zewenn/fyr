@@ -92,7 +92,7 @@ pub fn build(b: *std.Build) !void {
     });
     exe_unit_tests.linkLibC();
     exe_unit_tests.root_module.addImport("fyr", &lib.root_module);
-    
+
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
     const test_step = b.step("test", "Run unit tests");
