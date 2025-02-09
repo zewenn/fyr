@@ -56,6 +56,16 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
 
     const style = element.style;
 
+    if (style.top) |top| {
+        rect.y += switch (top) {
+            .fill, .fit => 0,
+            .percent => (parent.rect orelse empty).height * top.percent * 0.01,
+            .px => top.px,
+            .vw => winsize.x * top.vw * 0.01,
+            .vh => winsize.y * top.vh * 0.01,
+        };
+    }
+
     if (style.width) |width| switch (width) {
         .fit => {
             for (element.children.items) |child| {
@@ -146,14 +156,10 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
         .vh => rect.height = winsize.y * height.vh * 0.01,
     };
 
-    const fontptr = fyr.assets.get.font(style.font.family) catch {
-        std.log.err("Failed to get font", .{});
-        return rect;
-    };
-    defer fyr.assets.rmref.fontByPtr(fontptr);
+    const fontptr = style.font.family orelse rl.getFontDefault();
 
     const text_size = measureText(
-        fontptr.*,
+        fontptr,
         style.font.size,
         std.mem.span(element.text orelse ""),
     );
@@ -191,21 +197,9 @@ pub fn render(arr: []?Element) !void {
 
         rl.drawRectanglePro(rect, fyr.vec2(), 0, fyr.randColor());
 
-        var fontpointers = std.ArrayList(*Font).init(fyr.getAllocator(.gpa));
-        defer {
-            for (fontpointers.items) |ptr| {
-                fyr.assets.rmref.fontByPtr(ptr);
-            }
-            fontpointers.deinit();
-        }
-
         const style = element.style;
         if (element.text) |text| {
-            const fontptr = fyr.assets.get.font(style.font.family) catch {
-                std.log.err("Failed to get font", .{});
-                continue;
-            };
-            fontpointers.append(fontptr) catch continue;
+            std.log.debug("fs: {d} | ID: {s} | text: {s}", .{style.font.size, element.id orelse "NOID", text});
 
             // rl.drawText(
             //     text,
@@ -216,13 +210,13 @@ pub fn render(arr: []?Element) !void {
             // );
 
             rl.drawTextPro(
-                fontptr.*,
+                style.font.family orelse rl.getFontDefault(),
                 text,
                 fyr.Vec2(rect.x, rect.y),
                 fyr.vec2(),
                 0,
                 style.font.size,
-                1,
+                0,
                 style.font.color,
             );
         }

@@ -33,13 +33,13 @@ pub const BackgroundStyle = struct {
 };
 
 pub const FontStyle = struct {
-    family: []const u8 = "press_play.ttf",
+    family: ?rl.Font = null,
     size: f32 = 12,
     color: rl.Color = rl.Color.white,
 };
 
-left: ?f32 = null,
-top: ?f32 = null,
+left: ?Unit = null,
+top: ?Unit = null,
 width: ?Unit = null,
 height: ?Unit = null,
 

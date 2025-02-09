@@ -296,8 +296,9 @@ pub const normal_control_flow = struct {
                 std.log.warn("eventloop.execute() failed!", .{});
             };
 
-            if (rl.isKeyPressed(.f3) and lib_info.build_mode == .Debug)
+            if (rl.isKeyPressed(.f3) and lib_info.build_mode == .Debug) {
                 window.toggleDebugLines();
+            }
 
             rl.beginDrawing();
             {
@@ -310,6 +311,9 @@ pub const normal_control_flow = struct {
 
                 gui.raygui.callDrawFn();
                 gui.render();
+
+                if (window.use_debug_lines)
+                    rl.drawFPS(10, 10);
             }
             rl.endDrawing();
         }

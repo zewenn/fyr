@@ -121,7 +121,7 @@ pub fn elementType(T: Element.ElementType) void {
 }
 
 pub fn text(comptime fmt: []const u8, args: anytype) !void {
-    const ptr = current();
+    const ptr = &(elements[current_index - 1] orelse current().*);
     const t: [*:0]u8 = try std.fmt.allocPrintZ(alloc(), fmt, args);
     ptr.text = t;
 }
@@ -133,6 +133,7 @@ pub fn element(_: void) *const fn (void) void {
         if (parent_or_null.* == null) break :Blk;
 
         const parent = &(parent_or_null.*.?);
+        ptr.parent = parent;
         parent.children.append(ptr) catch {
             std.log.warn("Out of memory! Couldn't add GUI child!", .{});
             break :Blk;

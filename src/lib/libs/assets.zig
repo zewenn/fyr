@@ -208,37 +208,24 @@ pub const get = struct {
         return Entityd.ptr() orelse error.AlreadyFreed;
     }
 
-    pub fn font(rel_path: []const u8) !*rl.Font {
-        const fc = &(font_cache orelse Blk: {
-            font_cache = FontCache.init(fyr.getAllocator(.gpa));
-            break :Blk font_cache.?;
-        });
-        const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
+    pub fn font(rel_path: []const u8) !rl.Font {
+        const data = try loadFromFile(rel_path);
+        defer fyr.getAllocator(.gpa).free(data);
 
-        var Entityd = fc.get(hash) orelse Blk: {
-            const data = try loadFromFile(rel_path);
-            defer fyr.getAllocator(.gpa).free(data);
-
-            var font_chars = [_]i32{
-                48, 49, 50, 51, 52, 53, 54, 55, 56, 57, // 0-9
-                65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, // A-Z
-                97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, // a-z
-                33, 34, 35, 36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  58,  59,  60,  61,  62,  63,  64,  91,  92,  93,  94,
-                95, 96, 123, 124, 125, 126, // !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, _, `, {, |, }, ~
-            };
-
-            const f = rl.loadFontFromMemory(
-                ".ttf",
-                data,
-                94,
-                &font_chars,
-            );
-
-            try fc.put(hash, try fyr.SharetPtr(f));
-            break :Blk fc.get(hash).?;
+        var font_chars = [_]i32{
+            48, 49, 50, 51, 52, 53, 54, 55, 56, 57, // 0-9
+            65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, // A-Z
+            97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, // a-z
+            33, 34, 35, 36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  58,  59,  60,  61,  62,  63,  64,  91,  92,  93,  94,
+            95, 96, 123, 124, 125, 126, // !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, _, `, {, |, }, ~
         };
 
-        return Entityd.ptr() orelse error.AlreadyFreed;
+        return rl.loadFontFromMemory(
+            ".ttf",
+            data,
+            94,
+            &font_chars,
+        );
     }
 };
 
