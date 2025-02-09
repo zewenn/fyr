@@ -189,36 +189,25 @@ pub fn render(arr: []?Element) !void {
                 element,
                 element.parent orelse &root,
             ) catch {
-                std.log.warn("Couldn't get rect ID: {s}", .{element.id orelse "NOID"});
+                std.log.warn("Couldn't get rectangle of ID: {s}", .{element.id orelse "NOID"});
                 continue;
             };
 
         const rect = element.rect orelse continue;
-
-        rl.drawRectanglePro(rect, fyr.vec2(), 0, fyr.randColor());
-
         const style = element.style;
-        if (element.text) |text| {
-            std.log.debug("fs: {d} | ID: {s} | text: {s}", .{style.font.size, element.id orelse "NOID", text});
 
-            // rl.drawText(
-            //     text,
-            //     fyr.toi32(rect.x),
-            //     fyr.toi32(rect.y),
-            //     fyr.toi32(style.font.size),
-            //     style.font.color,
-            // );
+        if (style.background.color) |color|
+            rl.drawRectanglePro(rect, fyr.vec2(), 0, color);
 
-            rl.drawTextPro(
-                style.font.family orelse rl.getFontDefault(),
-                text,
-                fyr.Vec2(rect.x, rect.y),
-                fyr.vec2(),
-                0,
-                style.font.size,
-                0,
-                style.font.color,
-            );
-        }
+        if (element.text) |text| rl.drawTextPro(
+            style.font.family orelse rl.getFontDefault(),
+            text,
+            fyr.Vec2(rect.x, rect.y),
+            fyr.vec2(),
+            0,
+            style.font.size,
+            0,
+            style.font.color,
+        );
     }
 }

@@ -11,7 +11,7 @@ pub fn UIDrawer() !*fyr.Entity {
 const UIDrawBehaviour = fyr.Behaviour.factory(struct {
     const Self = @This();
 
-    font: ?fyr.rl.Font = null, 
+    font: ?fyr.rl.Font = null,
 
     pub fn awake(_: *fyr.Entity, self: *Self) !void {
         self.font = try fyr.assets.get.font("press_play.ttf");
@@ -23,13 +23,16 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
             ui.id("body");
 
             ui.style(.{
-                .width = .{ .vw = 10 },
-                .height = .{ .vh = 10 },
+                .width = .{ .vw = 100 },
+                .height = .{ .vh = 100 },
             });
         })({
             ui.element({
                 ui.id("heading1");
                 ui.style(.{
+                    .background = .{
+                        .color = fyr.rl.Color.red,
+                    },
                     .font = .{
                         .family = self.font,
                         .size = 12,
