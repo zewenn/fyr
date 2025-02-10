@@ -120,9 +120,12 @@ pub fn elementType(T: Element.ElementType) void {
     ptr.type = T;
 }
 
-pub fn text(comptime fmt: []const u8, args: anytype) !void {
-    const ptr = &(elements[current_index - 1] orelse current().*);
-    const t: [*:0]u8 = try std.fmt.allocPrintZ(alloc(), fmt, args);
+pub fn text(comptime fmt: []const u8, args: anytype) void {
+    const ptr = &(elements[parent_indexes[parent_index] orelse 511] orelse current().*);
+    const t: [*:0]const u8 = std.fmt.allocPrintZ(alloc(), fmt, args) catch AllocFail: {
+        std.log.err("Failed to allocate formatted text!", .{});
+        break :AllocFail "";
+    };
     ptr.text = t;
 }
 
