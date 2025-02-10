@@ -171,9 +171,9 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
 }
 
 pub fn render(arr: []?Element) !void {
-    var root = Element.create();
-
     const winsize = fyr.window.size.get();
+
+    var root = Element.create();
     root.rect = fyr.Rect(
         0,
         0,
@@ -184,7 +184,7 @@ pub fn render(arr: []?Element) !void {
     for (arr) |*el| {
         const element = &(el.* orelse continue);
 
-        if (element.rect == null)
+        const rect = element.rect orelse Blk: {
             element.rect = getElementRect(
                 element,
                 element.parent orelse &root,
@@ -192,8 +192,8 @@ pub fn render(arr: []?Element) !void {
                 std.log.warn("Couldn't get rectangle of ID: {s}", .{element.id orelse "NOID"});
                 continue;
             };
-
-        const rect = element.rect orelse continue;
+            break :Blk element.rect.?;
+        };
         const style = element.style;
 
         if (style.background.color) |color|
