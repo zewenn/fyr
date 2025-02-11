@@ -53,6 +53,7 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                     .background = .{ .color = fyr.rl.Color.blue },
                     .flow = .vertical,
                     .height = .fit,
+                    .width = .fit,
 
                     .left = .{ .px = 50 },
                 });
@@ -83,6 +84,8 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                             .color = fyr.rl.Color.pink,
                         },
                         .width = .{ .vw = 20 },
+                        .left = .{ .vw = 15 },
+                        .top = .{ .px = 5 },
                     });
                 })({
                     ui.text("Text2", .{});

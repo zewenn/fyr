@@ -38,10 +38,16 @@ pub const FontStyle = struct {
     color: rl.Color = rl.Color.white,
 };
 
+pub const Position = enum {
+    super,
+    relative,
+};
+
 left: ?Unit = null,
 top: ?Unit = null,
 width: ?Unit = null,
 height: ?Unit = null,
+position: Position = .relative,
 
 background: BackgroundStyle = .{},
 font: FontStyle = .{},

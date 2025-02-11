@@ -82,7 +82,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     element,
                 ) catch empty;
 
-                const cwidth = (child.rect orelse continue).width;
+                const cwidth = child.rect.?.width + child.rect.?.x - element.rect.?.x;
 
                 if (style.flow == .vertical) {
                     if (rect.width >= cwidth) continue;
@@ -91,7 +91,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                 }
 
                 child.rect.?.x += rect.width;
-                rect.width += cwidth;
+                rect.width += child.rect.?.width;
             }
         },
         .fill => switch (style.flow) {
@@ -128,7 +128,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     element,
                 ) catch empty;
 
-                const cheight = (child.rect orelse continue).height;
+                const cheight = child.rect.?.height + child.rect.?.y - element.rect.?.y;
 
                 if (style.flow == .horizontal) {
                     if (rect.height >= cheight) continue;
