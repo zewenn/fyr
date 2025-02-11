@@ -77,6 +77,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
     if (style.width) |width| switch (width) {
         .fit => {
             for (element.children.items) |child| {
+                if (child.style.position == .super) continue;
                 child.rect = getElementRect(
                     child,
                     element,
@@ -123,6 +124,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
     if (style.height) |height| switch (height) {
         .fit => {
             for (element.children.items) |child| {
+                if (child.style.position == .super) continue;
                 child.rect = getElementRect(
                     child,
                     element,

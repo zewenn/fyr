@@ -83,6 +83,7 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                         .background = .{
                             .color = fyr.rl.Color.pink,
                         },
+
                         .width = .{ .vw = 20 },
                         .left = .{ .vw = 15 },
                         .top = .{ .px = 5 },
