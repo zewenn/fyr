@@ -78,7 +78,7 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
         const display = cache.display orelse return;
 
         const has_to_be_updated = Blk: {
-            if (!transform.eqlSkipPosition(display_cache.transform)) break :Blk true;
+            if (transform.scale.equals(display_cache.transform.scale) == 0) break :Blk true;
             if (!std.mem.eql(u8, display.img, display_cache.path)) break :Blk true;
             break :Blk false;
         };
