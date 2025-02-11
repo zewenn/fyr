@@ -56,15 +56,23 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
 
     const style = element.style;
 
-    if (style.top) |top| {
-        rect.y += switch (top) {
-            .fill, .fit => 0,
-            .percent => (parent.rect orelse empty).height * top.percent * 0.01,
-            .px => top.px,
-            .vw => winsize.x * top.vw * 0.01,
-            .vh => winsize.y * top.vh * 0.01,
-        };
-    }
+    if (style.top) |top| rect.y += switch (top) {
+        .fill, .fit => 0,
+        .percent => (parent.rect orelse empty).height * top.percent * 0.01,
+        .px => top.px,
+        .vw => winsize.x * top.vw * 0.01,
+        .vh => winsize.y * top.vh * 0.01,
+    };
+
+    if (style.left) |left| rect.x += switch (left) {
+        .fill, .fit => 0,
+        .percent => (parent.rect orelse empty).width * left.percent * 0.01,
+        .px => left.px,
+        .vw => winsize.x * left.vw * 0.01,
+        .vh => winsize.y * left.vh * 0.01,
+    };
+
+    element.rect = rect;
 
     if (style.width) |width| switch (width) {
         .fit => {
@@ -82,7 +90,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     continue;
                 }
 
-                child.rect.?.x = rect.width;
+                child.rect.?.x += rect.width;
                 rect.width += cwidth;
             }
         },
@@ -128,7 +136,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     continue;
                 }
 
-                child.rect.?.y = rect.height;
+                child.rect.?.y += rect.height;
                 rect.height += cheight;
             }
         },

@@ -3,7 +3,7 @@ const fyr = @import("fyr");
 const ui = fyr.gui;
 
 pub fn UIDrawer() !*fyr.Entity {
-    return try fyr.entity("Player", .{
+    return try fyr.entity("uidrawer", .{
         try UIDrawBehaviour(),
     });
 }
@@ -53,6 +53,8 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                     .background = .{ .color = fyr.rl.Color.blue },
                     .flow = .vertical,
                     .height = .fit,
+
+                    .left = .{ .px = 50 },
                 });
             })({
                 ui.element({
