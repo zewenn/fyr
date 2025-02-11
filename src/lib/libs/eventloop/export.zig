@@ -137,6 +137,8 @@ pub fn execute() !void {
 
     if (!_unload) return;
     _unload = false;
+    fyr.gui.sceneUnload();
+
     defer active_scene = next_Scene;
     const ai = active_scene orelse return;
 

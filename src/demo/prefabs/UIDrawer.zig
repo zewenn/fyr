@@ -65,7 +65,7 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                         },
                         .width = .{ .vw = 25 },
                         .font = .{
-                            // .family = self.font,
+                            .family = "press_play.ttf",
                         },
                     });
                 })({

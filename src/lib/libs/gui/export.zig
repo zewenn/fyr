@@ -74,6 +74,10 @@ pub fn reset() void {
     for (elements, 0..) |elem, i| {
         if (elem == null) continue;
         const ptr = &(elements[i].?);
+
+        if (ptr.style.font.family) |ff|
+            fyr.assets.font.release(ff, .{});
+
         ptr.destroy();
     }
     elements = [_]?Element{null} ** 512;
@@ -81,6 +85,17 @@ pub fn reset() void {
 
     current_index = 0;
     parent_index = 0;
+}
+
+pub fn sceneUnload() void {
+    for (elements, 0..) |elem, i| {
+        if (elem == null) continue;
+        const ptr = &(elements[i].?);
+
+        if (ptr.style.font.family) |ff|
+            fyr.assets.font.release(ff, .{});
+    }
+    reset();
 }
 
 fn len() usize {

@@ -90,7 +90,7 @@ fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const 
                 break :Blk res;
             };
 
-            return STRING_SUM * mod * RANDOM_PRIME;
+            return STRING_SUM + mod * RANDOM_PRIME;
         }
 
         fn parseModAndGetHash(rel_path: []const u8, modifiers: anytype) u64 {
@@ -197,7 +197,34 @@ pub const texture = AssetType(
     }.callback,
 );
 
+pub const font = AssetType(
+    Font,
+    struct {
+        pub fn callback(data: []const u8, filetype: []const u8, _: anytype) Font {
+            const str: [*:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
+            defer fyr.getAllocator(.gpa).free(std.mem.span(str));
+
+            var font_chars = [_]i32{
+                48, 49, 50, 51, 52, 53, 54, 55, 56, 57, // 0-9
+                65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, // A-Z
+                97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, // a-z
+                33, 34, 35, 36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  58,  59,  60,  61,  62,  63,  64,  91,  92,  93,  94,
+                95, 96, 123, 124, 125, 126, // !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, _, `, {, |, }, ~
+            };
+
+            const fnt = fyr.rl.loadFontFromMemory(str, data, fyr.toi32(font_chars.len), &font_chars);
+            return fnt;
+        }
+    }.callback,
+    struct {
+        pub fn callback(data: Font) void {
+            fyr.rl.unloadFont(data);
+        }
+    }.callback,
+);
+
 pub fn deinit() void {
     texture.deinit();
     image.deinit();
+    font.deinit();
 }

@@ -33,7 +33,7 @@ pub const BackgroundStyle = struct {
 };
 
 pub const FontStyle = struct {
-    family: ?rl.Font = null,
+    family: ?[]const u8 = null,
     size: f32 = 12,
     color: rl.Color = rl.Color.white,
 };

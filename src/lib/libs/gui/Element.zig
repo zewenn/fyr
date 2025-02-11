@@ -30,6 +30,7 @@ tags: ?string = null,
 style: Style = .{},
 
 rect: ?fyr.Rectangle = null,
+font: ?*rl.Font = null,
 
 parent: ?*Self = null,
 children: std.ArrayList(*Self),

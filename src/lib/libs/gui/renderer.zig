@@ -157,7 +157,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
         .vh => rect.height = winsize.y * height.vh * 0.01,
     };
 
-    const fontptr = style.font.family orelse rl.getFontDefault();
+    const fontptr = (element.font orelse &rl.getFontDefault()).*;
 
     const text_size = measureText(
         fontptr,
@@ -200,8 +200,13 @@ pub fn render(arr: []?Element) !void {
         if (style.background.color) |color|
             rl.drawRectanglePro(rect, fyr.vec2(), 0, color);
 
+        if (style.font.family) |ff| {
+            const loaded = fyr.assets.font.get(ff, .{});
+            element.font = loaded;
+        }
+
         if (element.text) |text| rl.drawTextPro(
-            style.font.family orelse rl.getFontDefault(),
+            (element.font orelse &rl.getFontDefault()).*,
             text,
             fyr.Vec2(rect.x, rect.y),
             fyr.vec2(),
