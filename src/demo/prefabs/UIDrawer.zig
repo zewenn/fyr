@@ -51,8 +51,8 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
 
                 ui.style(.{
                     .background = .{ .color = fyr.rl.Color.blue },
-                    .flow = .horizontal,
-                    .width = .fit,
+                    .flow = .vertical,
+                    .height = .fit,
                 });
             })({
                 ui.element({
@@ -71,7 +71,7 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                 })({
                     ui.text("Text1", .{});
                 });
-                
+
                 ui.element({
                     ui.id("p2");
                     ui.elementType(.p);

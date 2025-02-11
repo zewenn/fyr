@@ -128,6 +128,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     continue;
                 }
 
+                child.rect.?.y = rect.height;
                 rect.height += cheight;
             }
         },
