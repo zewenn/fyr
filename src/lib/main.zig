@@ -122,11 +122,9 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
 // --------------------------------------------------------------------------------
 pub const Scene = eventloop.Scene;
 
-pub const SharedPointer = @import("./.types/SharedPointer.zig").SharedPointer;
-pub fn SharetPtr(value: anytype) !*SharedPointer(@TypeOf(value)) {
-    const ptr = try getAllocator(.gpa).create(SharedPointer(@TypeOf(value)));
-    ptr.* = try SharedPointer(@TypeOf(value)).init(getAllocator(.gpa), value);
-    return ptr;
+pub const SharedPtr = @import("./.types/SharedPointer.zig").SharedPtr;
+pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
+    return try SharedPtr(@TypeOf(value)).create(getAllocator(.gpa), value);
 }
 
 const warray_lib = @import("./.types/WrappedArray.zig");
@@ -189,7 +187,7 @@ pub const title = window.title;
 /// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
 pub inline fn useDebugAssetPath(comptime path: []const u8) void {
     if (lib_info.build_mode != .Debug) return;
-    assets.overrideDevPath(path);
+    assets.fs.debug = path;
 }
 
 /// Sets the Scene with the given ID as the active Scene, unloading the current one.

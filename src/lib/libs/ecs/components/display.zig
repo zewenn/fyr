@@ -15,20 +15,14 @@ pub const DisplayCache = struct {
 
     transform: Transform,
     path: []const u8,
-    img: ?*rl.Image = null,
     texture: ?*rl.Texture = null,
 
     pub fn free(self: *Self) void {
-        const i = self.img orelse return;
-
         if (self.texture != null)
-            assets.rmref.texture(self.path, i.*, self.transform.rotation);
-
-        assets.rmref.image(
-            self.path,
-            self.transform.scale,
-            self.transform.rotation,
-        );
+            assets.texture.release(
+                self.path,
+                .{ self.transform.scale.x, self.transform.scale.y },
+            );
     }
 };
 
@@ -66,18 +60,13 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
             .transform = c_transform.*,
         };
 
-        display_cache.img = try assets.get.image(
+        display_cache.texture = assets.texture.get(
             display_cache.path,
-            display_cache.transform.scale,
-            0,
+            .{
+                c_transform.scale.x,
+                c_transform.scale.y,
+            },
         );
-        if (display_cache.img) |i| {
-            display_cache.texture = try assets.get.texture(
-                display_cache.path,
-                i.*,
-                0,
-            );
-        }
 
         try Entity.addComonent(display_cache);
         cache.display_cache = Entity.getComponent(DisplayCache);
@@ -101,32 +90,21 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
                 .path = display.img,
                 .transform = transform.*,
             };
-            display_cache.img = assets.get.image(
-                display_cache.path,
-                display_cache.transform.scale,
-                0,
-            ) catch {
-                std.log.err("Image error!", .{});
-                return;
-            };
 
-            if (display_cache.img) |i| {
-                display_cache.texture = assets.get.texture(
-                    display_cache.path,
-                    i.*,
-                    0,
-                ) catch {
-                    std.log.err("Texture error!", .{});
-                    return;
-                };
-            }
+            display_cache.texture = assets.texture.get(
+                display_cache.path,
+                .{
+                    transform.scale.x,
+                    transform.scale.y,
+                },
+            );
         }
 
         const texture = display_cache.texture orelse return;
         try fyr.display.add(.{
             .texture = texture.*,
             .transform = transform.*,
-            .display = display.*
+            .display = display.*,
         });
     }
 

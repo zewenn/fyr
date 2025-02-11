@@ -1,45 +1,61 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
-pub fn SharedPointer(comptime T: type) type {
+pub fn SharedPtr(comptime T: type) type {
     return struct {
         const Self = @This();
 
+        self_ptr: ?*Self = null,
+
         alloc: Allocator,
+        value: ?T = null,
         ref_count: usize = 0,
-        _ptr: ?*T,
 
-        pub fn init(alloc: Allocator, value: T) !Self {
-            const p = try alloc.create(T);
-            p.* = value;
-
+        pub fn init(allocator: Allocator, val: T) !Self {
             return Self{
-                .alloc = alloc,
-                ._ptr = p,
+                .self_ptr = null,
+                .value = val,
+                .alloc = allocator,
             };
         }
 
-        pub fn ptr(self: *Self) ?*T {
-            if (self._ptr != null)
-                self.ref_count += 1;
-            return self._ptr;
-        }
+        pub fn create(allocator: Allocator, val: T) !*Self {
+            const ptr = try allocator.create(Self);
 
-        pub fn isAlive(self: *Self) bool {
-            return self._ptr != null;
-        }
+            var self = try Self.init(allocator, val);
+            self.self_ptr = ptr;
+            ptr.* = self;
 
-        pub fn rmref(self: *Self) void {
-            self.ref_count -= if (self.ref_count > 0) 1 else 0;
-            if (self.ref_count > 0) return;
-
-            self.deinit();
+            return ptr;
         }
 
         pub fn deinit(self: *Self) void {
-            const p = self._ptr orelse return;
-            self.alloc.destroy(p);
-            self._ptr = null;
+            if (self.ref_count == 0) return;
+            self.ref_count -= 1;
+        }
+
+        pub fn destroy(self: *Self) void {
+            if (self.ref_count > 0) return;
+            self.destroyUnsafe();
+        }
+
+        /// Destroys this object, no references will be valid after this is called
+        pub fn destroyUnsafe(self: *Self) void {
+            const alloc = self.alloc;
+
+            alloc.destroy(self);
+        }
+
+        pub fn isAlive(self: *Self) bool {
+            return self.value != null;
+        }
+
+        pub fn valueptr(self: *Self) ?*T {
+            return &(self.value orelse return null);
+        }
+
+        pub fn this(self: *Self) *Self {
+            return self.this();
         }
     };
 }
