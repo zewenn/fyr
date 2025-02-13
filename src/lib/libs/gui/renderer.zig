@@ -97,22 +97,47 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
         },
         .fill => switch (style.flow) {
             .horizontal => {
-                rect.width = (parent.rect orelse empty).width;
+                rect.width = (parent.rect orelse empty).width + (parent.rect orelse empty).x - rect.x;
+                var after_self: bool = false;
 
-                for (parent.children.items) |child| {
-                    if (child.uuid == element.uuid) continue;
-
-                    child.rect = getElementRect(
-                        child,
+                for (parent.children.items) |sibling| {
+                    if (sibling.uuid == element.uuid) {
+                        after_self = true;
+                        continue;
+                    }
+                    const srect: fyr.Rectangle = getElementRect(
+                        sibling,
                         parent,
                     ) catch empty;
-                    const cwidth = (child.rect orelse continue).width;
 
-                    rect.width -= cwidth;
+                    if (!after_self) {
+                        sibling.rect = srect;
+                    } else sibling.rect = null;
+
+                    rect.x += if (!after_self) srect.x - (parent.rect orelse empty).x + srect.width else 0;
+                    rect.width -= srect.width + (srect.x - parent.rect.?.x);
+                }
+
+                const parent_rect = parent.rect orelse empty;
+                var base_rect = fyr.Rect(parent_rect.x, parent_rect.y, 0, parent_rect.height);
+
+                for (parent.children.items) |child| {
+                    if (child.style.position == .super) continue;
+                    child.rect = if (child.uuid != element.uuid) getElementRect(
+                        child,
+                        element,
+                    ) catch empty else rect;
+
+                    const cwidth = child.rect.?.width + child.rect.?.x - rect.x;
+
+                    if (style.flow == .vertical) break;
+
+                    child.rect.?.x += base_rect.width;
+                    base_rect.width += cwidth;
                 }
             },
             .vertical => {
-                rect.width = (parent.rect orelse rect).width;
+                rect.width = (parent.rect orelse rect).width + (parent.rect orelse empty).x - rect.x;
             },
         },
         .percent => rect.width = (parent.rect orelse empty).width * width.percent * 0.01,
@@ -120,6 +145,8 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
         .vw => rect.width = winsize.x * width.vw * 0.01,
         .vh => rect.width = winsize.y * width.vh * 0.01,
     };
+
+    element.rect = rect;
 
     if (style.height) |height| switch (height) {
         .fit => {
@@ -144,22 +171,51 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
         },
         .fill => switch (style.flow) {
             .vertical => {
-                rect.width = (parent.rect orelse empty).width;
+                rect.height = (parent.rect orelse empty).height + (parent.rect orelse empty).y - rect.y;
+                var after_self: bool = false;
 
                 for (parent.children.items) |sibling| {
-                    if (sibling.uuid == element.uuid) continue;
-
-                    sibling.rect = getElementRect(
+                    if (sibling.uuid == element.uuid) {
+                        after_self = true;
+                        continue;
+                    }
+                    const srect: fyr.Rectangle = getElementRect(
                         sibling,
                         parent,
                     ) catch empty;
-                    const sibling_height = (sibling.rect orelse continue).height;
 
-                    rect.height -= sibling_height;
+                    sibling.rect = null;
+
+                    if (!after_self) {
+                        sibling.rect = srect;
+                    }
+
+                    std.log.debug("id: {s} srect: {any}", .{ sibling.id orelse "NOID", sibling.rect });
+
+                    rect.y += if (!after_self) srect.y - (parent.rect orelse empty).y + srect.height else 0;
+                    rect.height -= srect.height + (srect.y - parent.rect.?.y);
+                }
+
+                const parent_rect = parent.rect orelse empty;
+                var base_rect = fyr.Rect(parent_rect.x, parent_rect.y, parent_rect.width, 0);
+
+                for (parent.children.items) |child| {
+                    if (child.style.position == .super) continue;
+                    child.rect = if (child.uuid != element.uuid) getElementRect(
+                        child,
+                        parent,
+                    ) catch empty else rect;
+
+                    const cheight = child.rect.?.height + child.rect.?.y - base_rect.y;
+
+                    if (style.flow == .horizontal) break;
+
+                    child.rect.?.y += base_rect.height - child.rect.?.height;
+                    base_rect.height += cheight;
                 }
             },
             .horizontal => {
-                rect.height = (parent.rect orelse rect).height;
+                rect.height = (parent.rect orelse rect).height + (parent.rect orelse empty).y - rect.y;
             },
         },
         .percent => rect.height = (parent.rect orelse rect).height * height.percent * 0.01,
@@ -167,6 +223,8 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
         .vw => rect.height = winsize.x * height.vw * 0.01,
         .vh => rect.height = winsize.y * height.vh * 0.01,
     };
+
+    element.rect = rect;
 
     const fontptr = (element.font orelse &rl.getFontDefault()).*;
 
@@ -202,7 +260,7 @@ pub fn render(arr: []?Element) !void {
                 element.parent orelse &root,
             ) catch {
                 std.log.warn("Couldn't get rectangle of ID: {s}", .{element.id orelse "NOID"});
-                continue;
+                break :Blk fyr.rect();
             };
             break :Blk element.rect.?;
         };

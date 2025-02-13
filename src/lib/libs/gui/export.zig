@@ -85,9 +85,7 @@ pub fn reset() void {
 
     current_index = 0;
     parent_index = 0;
-}
 
-pub fn sceneUnload() void {
     for (elements, 0..) |elem, i| {
         if (elem == null) continue;
         const ptr = &(elements[i].?);
@@ -95,6 +93,9 @@ pub fn sceneUnload() void {
         if (ptr.style.font.family) |ff|
             fyr.assets.font.release(ff, .{});
     }
+}
+
+pub fn sceneUnload() void {
     reset();
 }
 
