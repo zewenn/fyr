@@ -49,6 +49,8 @@ width: ?Unit = null,
 height: ?Unit = null,
 position: Position = .relative,
 
+gap: ?Unit = null,
+
 background: BackgroundStyle = .{},
 font: FontStyle = .{},
 

@@ -51,10 +51,11 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
 
                 ui.style(.{
                     .background = .{ .color = fyr.rl.Color.blue },
-                    .flow = .vertical,
-                    .height = .{ .px = 300 },
+                    .flow = .horizontal,
+                    // .height = .{ .px = 300 },
+                    .height = .{ .px = 50 },
                     // .width = .fit,
-                    .width = .{ .vw = 20 },
+                    .width = .{ .px = 600 },
 
                     .left = .{ .px = 50 },
                     .top = .{ .px = 40 },
@@ -68,7 +69,7 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                         .background = .{
                             .color = fyr.rl.Color.lime,
                         },
-                        .width = .fill,
+                        .width = .{ .px = 100 },
                         .left = .{ .px = 5 },
                         .font = .{
                             .family = "press_play.ttf",
@@ -88,11 +89,11 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                         },
 
                         // .height = .fill,
-                        .height = .fill,
+                        // .height = .fill,
 
                         .width = .fill,
                         .left = .{ .vw = 15 },
-                        .top = .{ .px = 10 },
+                        // .top = .{ .px = 10 },
                     });
                 })({
                     ui.text("Text2", .{});
@@ -107,9 +108,9 @@ const UIDrawBehaviour = fyr.Behaviour.factory(struct {
                             .color = fyr.rl.Color.pink,
                         },
 
-                        .width = .{ .vw = 20 },
+                        // .width = .{ .vw = 20 },
                         // .left = .{ .vw = 0 },
-                        .top = .{ .px = 5 },
+                        // .top = .{ .px = 5 },
                     });
                 })({
                     ui.text("Text3", .{});

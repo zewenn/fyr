@@ -110,9 +110,11 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                         parent,
                     ) catch empty;
 
+                    sibling.rect = null;
+
                     if (!after_self) {
                         sibling.rect = srect;
-                    } else sibling.rect = null;
+                    }
 
                     rect.x += if (!after_self) srect.x - (parent.rect orelse empty).x + srect.width else 0;
                     rect.width -= srect.width + (srect.x - parent.rect.?.x);
@@ -125,14 +127,14 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
                     if (child.style.position == .super) continue;
                     child.rect = if (child.uuid != element.uuid) getElementRect(
                         child,
-                        element,
+                        parent,
                     ) catch empty else rect;
 
-                    const cwidth = child.rect.?.width + child.rect.?.x - rect.x;
+                    const cwidth = child.rect.?.width + child.rect.?.x - base_rect.x;
 
                     if (style.flow == .vertical) break;
 
-                    child.rect.?.x += base_rect.width;
+                    child.rect.?.x += base_rect.width - child.rect.?.width;
                     base_rect.width += cwidth;
                 }
             },
