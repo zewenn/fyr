@@ -1,7 +1,7 @@
 const std = @import("std");
 const fyr = @import("fyr");
 
-pub const MovementBehaviour = fyr.Behaviour.factory(struct {
+pub const MovementBehaviour = fyr.Behaviour.impl(struct {
     const Self = @This();
 
     transform: ?*fyr.Transform = null,

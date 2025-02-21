@@ -8,7 +8,7 @@ pub fn UIDrawer() !*fyr.Entity {
     });
 }
 
-const UIDrawBehaviour = fyr.Behaviour.factory(struct {
+const UIDrawBehaviour = fyr.Behaviour.impl(struct {
     const Self = @This();
 
     // font: ?fyr.rl.Font = null,

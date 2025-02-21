@@ -115,7 +115,7 @@ fn attachEvents(b: *Self, comptime T: type) void {
     }
 }
 
-pub fn factory(comptime T: type) *const fn () anyerror!Self {
+pub fn impl(comptime T: type) *const fn () anyerror!Self {
     return (struct {
         pub fn this() !Self {
             var b = try Self.init(T);

@@ -9,10 +9,10 @@ Behaviours are [Components](./components.md) with hooks to the eventloop. This a
 
 ## Standard Behaviour Creation
 
-If you want to use the modern, simple way to create Behaviours - _and your behaviour does not need arguments_ - use the `fyr.Behaviour.factory(comptime T: type)` function to map a type to the `fyr.Behaviour` interface.
+If you want to use the modern, simple way to create Behaviours - _and your behaviour does not need arguments_ - use the `fyr.Behaviour.impl(comptime T: type)` function to map a type to the `fyr.Behaviour` interface.
 
 ```zig
-pub const MovementBehaviour = fyr.Behaviour.factory(struct {
+pub const MovementBehaviour = fyr.Behaviour.impl(struct {
     const Self = @This();
 
     transform: ?*fyr.Transform = null,
