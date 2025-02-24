@@ -152,7 +152,7 @@ pub fn execute() !void {
 }
 
 fn executeEntityBehaviour(Entity: *fyr.Entity, do_tick: bool) void {
-    const behaviours = Entity.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
+    const behaviours = Entity.getBehaviours() catch &[_]*fyr.Behaviour{};
     for (behaviours) |b| {
         b.callSafe(.update, Entity);
 

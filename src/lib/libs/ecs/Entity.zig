@@ -42,28 +42,20 @@ pub inline fn allocator(self: *Self) Allocator {
     return self.arena_alloc.?;
 }
 
-/// Adds a component to the Entity.
-///
-/// This function takes a value of any type and attempts to add it to the Entity's list.
-/// If the addition fails, it returns a `ComponentErrors.ItemCreationError`.
-///
-/// Parameters:
-/// - `self`: A pointer to the Entity Scene.
-/// - `value`: The component value to be added.
-///
-/// Returns:
-/// - `void`: If the component is successfully added.
-/// - `ComponentErrors.ItemCreationError`: If the component creation fails.
 pub fn addComonent(self: *Self, value: anytype) !void {
-    const isBehaviour = fyr.Behaviour.is(value);
+    const isBehaviour = fyr.Behaviour.isBehaviourBase(value);
     try self.list.append(
-        Entry.init(
-            if (isBehaviour)
-                try fyr.asBehaviour(value)
-            else
+        if (isBehaviour)
+            Entry.initBehaviour(
+                @TypeOf(value),
+                try fyr.asBehaviour(value),
+            ) orelse
+                return ComponentErrors.ItemCreationError
+        else
+            Entry.init(
                 value,
-        ) orelse
-            return ComponentErrors.ItemCreationError,
+            ) orelse
+                return ComponentErrors.ItemCreationError,
     );
 }
 
@@ -90,6 +82,20 @@ pub fn getComponents(self: *Self, T: type) ![]*T {
 
         const ptr = item.castBack(T) orelse continue;
 
+        try arr.append(ptr);
+    }
+
+    return arr.toOwnedSlice();
+}
+
+pub fn getBehaviours(self: *Self) ![]*fyr.Behaviour {
+    var arr = std.ArrayList(*fyr.Behaviour).init(self.allocator());
+    defer arr.deinit();
+
+    for (self.list.items) |item| {
+        if (!item.is_behaviour) continue;
+
+        const ptr = item.castBack(fyr.Behaviour) orelse continue;
         try arr.append(ptr);
     }
 

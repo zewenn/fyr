@@ -1,12 +1,16 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
+const fyr = @import("../../main.zig");
+
 const Self = @This();
 
 ptr: *anyopaque,
-hash: usize,
+hash: u64,
+store_hash: u64,
+is_behaviour: bool = false,
 
-pub inline fn calculateHash(comptime T: type) usize {
+pub inline fn calculateHash(comptime T: type) u64 {
     const b: comptime_int = comptime get: {
         break :get switch (@typeInfo(T)) {
             .Struct, .Enum => Blk: {
@@ -33,7 +37,7 @@ pub inline fn calculateHash(comptime T: type) usize {
 
     return @max(1, @sizeOf(T)) * @max(1, @alignOf(T)) +
         @max(1, @bitSizeOf(T)) * @max(1, @alignOf(T)) +
-        b * @max(1, @alignOf(T));
+        b * @max(1, @alignOf(T)) * 13;
 }
 
 pub fn init(x: anytype) ?Self {
@@ -48,7 +52,26 @@ pub fn init(x: anytype) ?Self {
 
     return Self{
         .ptr = @ptrCast(@alignCast(ptr)),
-        .hash = calculateHash(T),
+        .hash = comptime calculateHash(T),
+        .store_hash = comptime calculateHash(T),
+        .is_behaviour = T == fyr.Behaviour,
+    };
+}
+
+/// Use the original type as key for a behaviour
+pub fn initBehaviour(comptime T: type, b: fyr.Behaviour) ?Self {
+    const allocated = @as(?*fyr.Behaviour, @ptrCast(@alignCast(std.c.malloc(@sizeOf(T)))));
+
+    if (allocated == null) return null;
+    const ptr = allocated.?;
+
+    ptr.* = b;
+
+    return Self{
+        .ptr = @ptrCast(@alignCast(ptr)),
+        .hash = comptime calculateHash(T),
+        .store_hash = comptime calculateHash(fyr.Behaviour),
+        .is_behaviour = true,
     };
 }
 
@@ -57,6 +80,13 @@ pub fn deinit(self: Self) void {
 }
 
 pub fn castBack(self: Self, comptime T: type) ?*T {
-    if (self.hash != comptime calculateHash(T)) return null;
+    if ((self.hash != comptime calculateHash(T)) and (self.store_hash != comptime calculateHash(T))) return null;
     return @ptrCast(@alignCast(self.ptr));
+}
+
+pub fn castBackBehaviour(self: Self, comptime T: type) ?*T {
+    if (self.hash != comptime calculateHash(fyr.Behaviour)) return null;
+    const behaviour: *fyr.Behaviour = @ptrCast(@alignCast(self.ptr));
+
+    return @ptrCast(@alignCast(behaviour.cache));
 }

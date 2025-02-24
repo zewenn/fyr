@@ -124,8 +124,12 @@ pub fn from(obj: anytype) !Self {
     return self;
 }
 
-pub inline fn is(value: anytype) bool {
+pub inline fn isBehaviourBase(value: anytype) bool {
     return comptime @hasDecl(@TypeOf(value), "FYR_BEHAVIOUR");
+}
+
+pub inline fn isBehvaiourBaseType(T: type) bool {
+    return comptime @hasDecl(T, "FYR_BEHAVIOUR");
 }
 
 pub fn impl(comptime T: type) *const fn () anyerror!Self {

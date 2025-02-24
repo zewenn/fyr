@@ -127,7 +127,7 @@ pub fn newEntity(self: *Self, id: []const u8, components: anytype) !*Entity {
 }
 
 pub fn addEntity(self: *Self, entity: *Entity) !void {
-    const behaviours = try entity.getComponents(fyr.Behaviour);
+    const behaviours = try entity.getBehaviours();
     for (behaviours) |b| {
         b.callSafe(.awake, entity);
         b.callSafe(.init, entity);
@@ -142,7 +142,7 @@ pub fn removeEntity(self: *Self, entity: *Entity) void {
     for (entities.items, 0..) |it, index| {
         if (@intFromPtr(entity) != @intFromPtr(it)) continue;
 
-        const behaviours = entity.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
+        const behaviours = entity.getBehaviours() catch &[_]*fyr.Behaviour{};
         for (behaviours) |b| {
             b.callSafe(.deinit, entity);
         }
