@@ -124,14 +124,14 @@ pub const RectangleVertices = struct {
     }
 };
 
-var collidable: ?std.ArrayList(*ColliderBehaviour) = null;
+var collidables_or_null: ?std.ArrayList(*ColliderBehaviour) = null;
 pub const ColliderBehaviour = struct {
     pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
     base: Collider,
 
-    Entity: ?*fyr.Entity = null,
+    entity: ?*fyr.Entity = null,
     transform: ?*Transform = null,
     collider: ?*Collider = null,
 
@@ -152,20 +152,20 @@ pub const ColliderBehaviour = struct {
 
         self.transform = transform;
         self.collider = collider;
-        self.Entity = entity;
+        self.entity = entity;
 
-        const c = &(collidable orelse Blk: {
-            collidable = std.ArrayList(*Self).init(fyr.getAllocator(.gpa));
-            break :Blk collidable.?;
+        const collidables = &(collidables_or_null orelse Blk: {
+            collidables_or_null = std.ArrayList(*Self).init(fyr.getAllocator(.gpa));
+            break :Blk collidables_or_null.?;
         });
 
-        try c.append(self);
+        try collidables.append(self);
     }
 
     pub fn Update(self: *Self, _: *fyr.Entity) !void {
-        const c = collidable orelse return;
+        const collidables = collidables_or_null orelse return;
 
-        const a_Entity = self.Entity orelse return;
+        const a_entity = self.entity orelse return;
         const a_transform = self.transform orelse return;
 
         const a_collider = self.collider orelse return;
@@ -173,9 +173,9 @@ pub const ColliderBehaviour = struct {
 
         var a_vertices = RectangleVertices.init(a_transform, a_collider);
 
-        for (c.items) |b| {
-            const b_Entity = b.Entity orelse continue;
-            if (a_Entity.uuid == b_Entity.uuid) continue;
+        for (collidables.items) |b| {
+            const b_entity = b.entity orelse continue;
+            if (a_entity.uuid == b_entity.uuid) continue;
 
             const b_transform = b.transform orelse return;
             const b_collider = b.collider orelse continue;
@@ -199,13 +199,13 @@ pub const ColliderBehaviour = struct {
     }
 
     pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
-        const c = &(collidable orelse return);
-        for (c.items, 0..) |item, index| {
+        const collidables = &(collidables_or_null orelse return);
+        for (collidables.items, 0..) |item, index| {
             if (item != self) continue;
-            _ = c.swapRemove(index);
+            _ = collidables.swapRemove(index);
             break;
         }
 
-        if (c.items.len == 0) c.deinit();
+        if (collidables.items.len == 0) collidables.deinit();
     }
 };

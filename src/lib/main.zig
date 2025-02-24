@@ -466,6 +466,14 @@ pub fn rect() Rectangle {
     return Rect(0, 0, 0, 0);
 }
 
+pub fn vec2ToVec3(v2: Vector2) Vector3 {
+    return Vec3(v2.x, v2.y, 0);
+}
+
+pub fn vec3ToVec2(v3: Vector3) Vector2 {
+    return Vec2(v3.x, v3.y);
+}
+
 pub fn randColor() rl.Color {
     return rl.Color.init(
         random.int(u8),
