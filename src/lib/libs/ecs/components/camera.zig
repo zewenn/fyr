@@ -37,7 +37,8 @@ pub const CameraTarget = struct {
 
         const movement = delta
             .normalize()
-            .multiply(fyr.Vec2(self.follow_speed * fyr.time.deltaTime(), self.follow_speed * fyr.time.deltaTime()));
+            .multiply(fyr.Vec2(self.follow_speed, self.follow_speed))
+            .multiply(fyr.time.deltaTimeVector2());
 
         if (movement.length() > delta.length()) {
             fyr.camera.target = fyr.camera.target.add(delta);
