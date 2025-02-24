@@ -8,6 +8,7 @@ const AllocationError = error.OutOfMemory;
 const Self = @This();
 
 cache: *anyopaque,
+_name: []const u8 = "[UNNAMED]",
 awake: FnType = null,
 init: FnType = null,
 update: FnType = null,
@@ -27,6 +28,7 @@ pub fn initWithValue(value: anytype) !Self {
 
     return Self{
         .cache = @ptrCast(@alignCast(ptr)),
+        ._name = @typeName(T),
     };
 }
 

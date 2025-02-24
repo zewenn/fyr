@@ -64,6 +64,9 @@ pub fn getComponent(self: *Self, T: type) ?*T {
 
     for (self.list.items) |item| {
         if (item.hash != hash) continue;
+        if (item.is_behaviour and fyr.Behaviour.isBehvaiourBaseType(T)) {
+            return item.castBackBehaviour(T);
+        }
 
         return item.castBack(T);
     }

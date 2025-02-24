@@ -60,7 +60,7 @@ pub fn init(x: anytype) ?Self {
 
 /// Use the original type as key for a behaviour
 pub fn initBehaviour(comptime T: type, b: fyr.Behaviour) ?Self {
-    const allocated = @as(?*fyr.Behaviour, @ptrCast(@alignCast(std.c.malloc(@sizeOf(T)))));
+    const allocated = @as(?*fyr.Behaviour, @ptrCast(@alignCast(std.c.malloc(@sizeOf(fyr.Behaviour)))));
 
     if (allocated == null) return null;
     const ptr = allocated.?;
