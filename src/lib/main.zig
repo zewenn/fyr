@@ -439,6 +439,7 @@ pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
 // ^Utilities
 // --------------------------------------------------------------------------------
 pub const CacheCast = Behaviour.CacheCast;
+pub const asBehaviour = Behaviour.from;
 
 pub fn UUIDV7() u128 {
     return uuid.v7.new();

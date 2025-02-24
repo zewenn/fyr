@@ -1,11 +1,19 @@
 const std = @import("std");
 const fyr = @import("fyr");
 
-pub const MovementBehaviour = fyr.Behaviour.impl(struct {
+pub const MovementBehaviour = struct {
+    pub const FYR_BEHAVIOUR = {};
+
     const Self = @This();
 
     transform: ?*fyr.Transform = null,
     speed: f32 = 350,
+
+    pub fn new(speed: f32) Self {
+        return Self{
+            .speed = speed,
+        };
+    }
 
     pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
         const transform = Entity.getComponent(fyr.Transform);
@@ -49,4 +57,4 @@ pub const MovementBehaviour = fyr.Behaviour.impl(struct {
 
         try animator.play("test");
     }
-});
+};

@@ -55,7 +55,16 @@ pub inline fn allocator(self: *Self) Allocator {
 /// - `void`: If the component is successfully added.
 /// - `ComponentErrors.ItemCreationError`: If the component creation fails.
 pub fn addComonent(self: *Self, value: anytype) !void {
-    try self.list.append(Entry.init(value) orelse return ComponentErrors.ItemCreationError);
+    const isBehaviour = fyr.Behaviour.is(value);
+    try self.list.append(
+        Entry.init(
+            if (isBehaviour)
+                try fyr.asBehaviour(value)
+            else
+                value,
+        ) orelse
+            return ComponentErrors.ItemCreationError,
+    );
 }
 
 pub fn getComponent(self: *Self, T: type) ?*T {

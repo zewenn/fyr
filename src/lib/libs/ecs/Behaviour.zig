@@ -115,6 +115,19 @@ fn attachEvents(b: *Self, comptime T: type) void {
     }
 }
 
+pub fn from(obj: anytype) !Self {
+    const T: type = @TypeOf(obj);
+
+    var self = try Self.initWithValue(obj);
+    self.attachEvents(T);
+
+    return self;
+}
+
+pub inline fn is(value: anytype) bool {
+    return comptime @hasDecl(@TypeOf(value), "FYR_BEHAVIOUR");
+}
+
 pub fn impl(comptime T: type) *const fn () anyerror!Self {
     return (struct {
         pub fn this() !Self {

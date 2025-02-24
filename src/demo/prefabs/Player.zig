@@ -11,12 +11,9 @@ pub fn Player() !*fyr.Entity {
                 .z = 0,
             },
         },
-        try MovementBehaviour(),
-        // try fyr.Renderer(
-        //     fyr.Display{
-        //         .img = "logo_small.png",
-        //     },
-        // ),
+
+        MovementBehaviour.new(400),
+
         try fyr.Renderer(fyr.Display{
             .img = "logo_small.png",
         }),
