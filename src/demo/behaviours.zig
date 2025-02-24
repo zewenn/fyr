@@ -15,12 +15,12 @@ pub const MovementBehaviour = struct {
         };
     }
 
-    pub fn awake(cache: *Self, entity: *fyr.Entity) !void {
+    pub fn Awake(cache: *Self, entity: *fyr.Entity) !void {
         const transform = entity.getComponent(fyr.Transform);
         cache.transform = transform;
     }
 
-    pub fn update(cache: *Self, entity: *fyr.Entity) !void {
+    pub fn Update(cache: *Self, entity: *fyr.Entity) !void {
         const transform = cache.transform orelse return;
 
         var move_vec = fyr.Vec3(0, 0, 0);

@@ -10,7 +10,7 @@ pub const CameraTarget = struct {
 
     transform: ?*Transform = null,
 
-    pub fn awake(cache: *Self, entity: *fyr.Entity) !void {
+    pub fn Awake(cache: *Self, entity: *fyr.Entity) !void {
         const transform = entity.getComponent(Transform) orelse Blk: {
             try entity.addComonent(Transform{});
             break :Blk entity.getComponent(Transform).?;
@@ -19,7 +19,7 @@ pub const CameraTarget = struct {
         cache.transform = transform;
     }
 
-    pub fn update(cache: *Self, _: *fyr.Entity) !void {
+    pub fn Update(cache: *Self, _: *fyr.Entity) !void {
         const transform = cache.transform orelse return;
         defer fyr.camera.target = fyr.Vec2(
             transform.position.x,

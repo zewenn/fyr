@@ -41,7 +41,7 @@ pub const Renderer = struct {
         };
     }
 
-    pub fn awake(self: *Self, entity: *fyr.Entity) !void {
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
         try entity.addComonent(self.base);
         self.display = entity.getComponent(Display);
 
@@ -71,7 +71,7 @@ pub const Renderer = struct {
         self.display_cache = entity.getComponent(DisplayCache);
     }
 
-    pub fn update(self: *Self, _: *fyr.Entity) !void {
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
         const display_cache = self.display_cache orelse return;
         const transform = self.transform orelse return;
         const display = self.display orelse return;
@@ -107,7 +107,7 @@ pub const Renderer = struct {
         });
     }
 
-    pub fn deinit(self: *Self, _: *fyr.Entity) !void {
+    pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
         const c_display_cache = self.display_cache orelse return;
 
         c_display_cache.free();

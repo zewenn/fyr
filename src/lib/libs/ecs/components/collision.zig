@@ -139,7 +139,7 @@ pub const ColliderBehaviour = struct {
         return .{ .base = base };
     }
 
-    pub fn awake(self: *Self, entity: *fyr.Entity) !void {
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
         const transform = entity.getComponent(Transform) orelse Blk: {
             try entity.addComonent(Transform{});
             break :Blk entity.getComponent(Transform).?;
@@ -162,7 +162,7 @@ pub const ColliderBehaviour = struct {
         try c.append(self);
     }
 
-    pub fn update(self: *Self, _: *fyr.Entity) !void {
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
         const c = collidable orelse return;
 
         const a_Entity = self.Entity orelse return;
@@ -198,7 +198,7 @@ pub const ColliderBehaviour = struct {
         }
     }
 
-    pub fn deinit(self: *Self, _: *fyr.Entity) !void {
+    pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
         const c = &(collidable orelse return);
         for (c.items, 0..) |item, index| {
             if (item != self) continue;

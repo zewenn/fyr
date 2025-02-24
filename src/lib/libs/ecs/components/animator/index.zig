@@ -100,7 +100,7 @@ pub const AnimatorBehaviour = struct {
         };
     }
 
-    pub fn awake(self: *Self, entity: *fyr.Entity) !void {
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
         var animator = Animator.init();
         for (self.animations.items) |item| {
             try animator.chain(item);
@@ -115,7 +115,7 @@ pub const AnimatorBehaviour = struct {
         self.display = entity.getComponent(fyr.Display) orelse return;
     }
 
-    pub fn update(self: *Self, _: *fyr.Entity) !void {
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
         const transform = self.transform orelse return;
         const display = self.display orelse return;
         const animator = self.animator orelse return;
@@ -155,7 +155,7 @@ pub const AnimatorBehaviour = struct {
         }
     }
 
-    pub fn deinit(self: *Self, _: *fyr.Entity) !void {
+    pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
         if (self.animator) |animator| {
             animator.deinit();
         }

@@ -12,7 +12,7 @@ const UIDrawBehaviour = struct {
     pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
-    pub fn update(_: *Self, _: *fyr.Entity) !void {
+    pub fn Update(_: *Self, _: *fyr.Entity) !void {
         ui.element({
             ui.elementType(.body);
             ui.id("body");

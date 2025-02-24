@@ -8,7 +8,8 @@ const AllocationError = error.OutOfMemory;
 const Self = @This();
 
 cache: *anyopaque,
-_name: []const u8 = "[UNNAMED]",
+name: []const u8 = "[UNNAMED]",
+
 awake: FnType = null,
 init: FnType = null,
 update: FnType = null,
@@ -28,7 +29,7 @@ pub fn initWithValue(value: anytype) !Self {
 
     return Self{
         .cache = @ptrCast(@alignCast(ptr)),
-        ._name = @typeName(T),
+        .name = @typeName(T),
     };
 }
 
@@ -55,64 +56,63 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
     }
 
     const func = switch (event) {
-        // zig fmt: off
-        .awake  => self.awake,
-        .init   => self.init,
+        .awake => self.awake,
+        .init => self.init,
         .update => self.update,
-        .tick   => self.tick,
+        .tick => self.tick,
         .deinit => self.deinit,
-        // zig fmt: on
     } orelse return;
 
     func(self.cache, entity) catch {
-        std.log.err("failed to call behaviour event ({s})", .{switch (event) {
-            // zig fmt: off
-            .awake  => "awake",
-            .init   => "init",
-            .deinit => "deinit",
-            .update => "update",
-            .tick   => "tick",
-            // zig fmt: on
-        }});
+        std.log.err("failed to call behaviour event ({s}.{s})", .{
+            self.name,
+            switch (event) {
+                .awake => "Awake",
+                .init => "Init",
+                .deinit => "Deinit",
+                .update => "Update",
+                .tick => "Tick",
+            },
+        });
     };
 }
 
 fn attachEvents(b: *Self, comptime T: type) void {
     const t = struct {
         pub fn awake(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "awake")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "Awake")(@ptrCast(@alignCast(cache)), entity);
         }
 
         pub fn init(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "init")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "Init")(@ptrCast(@alignCast(cache)), entity);
         }
         pub fn deinit(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "deinit")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "Deinit")(@ptrCast(@alignCast(cache)), entity);
         }
 
         pub fn update(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "update")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "Update")(@ptrCast(@alignCast(cache)), entity);
         }
         pub fn tick(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "tick")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "Tick")(@ptrCast(@alignCast(cache)), entity);
         }
     };
 
-    if (std.meta.hasFn(T, "awake")) {
+    if (std.meta.hasFn(T, "Awake")) {
         b.add(.awake, t.awake);
     }
 
-    if (std.meta.hasFn(T, "init")) {
+    if (std.meta.hasFn(T, "Init")) {
         b.add(.init, t.init);
     }
-    if (std.meta.hasFn(T, "deinit")) {
+    if (std.meta.hasFn(T, "Deinit")) {
         b.add(.deinit, t.deinit);
     }
 
-    if (std.meta.hasFn(T, "update")) {
+    if (std.meta.hasFn(T, "Update")) {
         b.add(.update, t.update);
     }
-    if (std.meta.hasFn(T, "tick")) {
+    if (std.meta.hasFn(T, "Tick")) {
         b.add(.tick, t.tick);
     }
 }
