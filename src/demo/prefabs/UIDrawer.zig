@@ -4,20 +4,15 @@ const ui = fyr.gui;
 
 pub fn UIDrawer() !*fyr.Entity {
     return try fyr.entity("uidrawer", .{
-        try UIDrawBehaviour(),
+        UIDrawBehaviour{},
     });
 }
 
-const UIDrawBehaviour = fyr.Behaviour.impl(struct {
+const UIDrawBehaviour = struct {
+    pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
-    // font: ?fyr.rl.Font = null,
-
-    // pub fn awake(_: *fyr.Entity, self: *Self) !void {
-    //     self.font = try fyr.assets.get.font("press_play.ttf");
-    // }
-
-    pub fn update(_: *fyr.Entity, _: *Self) !void {
+    pub fn update(_: *Self, _: *fyr.Entity) !void {
         ui.element({
             ui.elementType(.body);
             ui.id("body");
@@ -128,4 +123,4 @@ const UIDrawBehaviour = fyr.Behaviour.impl(struct {
             })({});
         });
     }
-});
+};

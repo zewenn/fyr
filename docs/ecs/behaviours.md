@@ -18,12 +18,12 @@ pub const MovementBehaviour = fyr.Behaviour.impl(struct {
     transform: ?*fyr.Transform = null,
     speed: f32 = 350,
 
-    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
+    pub fn awake(cache: *Self, entity: *fyr.Entity) !void {
         const transform = Entity.getComponent(fyr.Transform);
         cache.transform = transform;
     }
 
-    pub fn update(Entity: *fyr.Entity, cache: *Self) !void {
+    pub fn update(cache: *Self, entity: *fyr.Entity) !void {
         const transform = cache.transform orelse return;
 
         var move_vec = fyr.Vec3(0, 0, 0);
@@ -85,19 +85,19 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
     }
 
     // Runs at the spawn of the entity, but before `.init()`
-    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
+    pub fn awake(cache: *Self, entity: *fyr.Entity) !void {
         // Code would go here...
     }
 
     // You could add a `.init()` function here, which would run after awake, but you don't have to, in fact all of these functions can be skipped.
 
     // Runs every frame
-    pub fn update(_: *fyr.Entity, cache: *Self) !void {
+    pub fn update(cache: *Self, _: *fyr.Entity) !void {
         // Code would go here...
     }
 
     // Runs when the entity gets deinitalised
-    pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
+    pub fn deinit(cache: *Self, _: *fyr.Entity) !void {
         // Code would go here...
     }
 });

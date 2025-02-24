@@ -85,7 +85,8 @@ pub const Animator = struct {
     }
 };
 
-pub const AnimatorBehaviour = fyr.Behaviour.factoryAutoInferArgument(struct {
+pub const AnimatorBehaviour = struct {
+    pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
     animations: fyr.WrappedArray(Animation),
@@ -93,31 +94,31 @@ pub const AnimatorBehaviour = fyr.Behaviour.factoryAutoInferArgument(struct {
     transform: ?*fyr.Transform = null,
     display: ?*fyr.Display = null,
 
-    pub fn create(arg: fyr.WrappedArray(Animation)) Self {
+    pub fn new(arg: fyr.WrappedArray(Animation)) Self {
         return Self{
             .animations = arg,
         };
     }
 
-    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
+    pub fn awake(self: *Self, entity: *fyr.Entity) !void {
         var animator = Animator.init();
-        for (cache.animations.items) |item| {
+        for (self.animations.items) |item| {
             try animator.chain(item);
         }
 
-        cache.animations.deinit();
+        self.animations.deinit();
 
-        try Entity.addComonent(animator);
+        try entity.addComonent(animator);
 
-        cache.animator = Entity.getComponent(fyr.Animator) orelse return;
-        cache.transform = Entity.getComponent(fyr.Transform) orelse return;
-        cache.display = Entity.getComponent(fyr.Display) orelse return;
+        self.animator = entity.getComponent(fyr.Animator) orelse return;
+        self.transform = entity.getComponent(fyr.Transform) orelse return;
+        self.display = entity.getComponent(fyr.Display) orelse return;
     }
 
-    pub fn update(_: *fyr.Entity, cache: *Self) !void {
-        const transform = cache.transform orelse return;
-        const display = cache.display orelse return;
-        const animator = cache.animator orelse return;
+    pub fn update(self: *Self, _: *fyr.Entity) !void {
+        const transform = self.transform orelse return;
+        const display = self.display orelse return;
+        const animator = self.animator orelse return;
 
         for (animator.playing.items) |animation| {
             const current = animation.current();
@@ -154,9 +155,9 @@ pub const AnimatorBehaviour = fyr.Behaviour.factoryAutoInferArgument(struct {
         }
     }
 
-    pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
-        if (cache.animator) |animator| {
+    pub fn deinit(self: *Self, _: *fyr.Entity) !void {
+        if (self.animator) |animator| {
             animator.deinit();
         }
     }
-});
+};

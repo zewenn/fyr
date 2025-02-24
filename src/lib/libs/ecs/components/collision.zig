@@ -124,49 +124,51 @@ pub const RectangleVertices = struct {
     }
 };
 
+var collidable: ?std.ArrayList(*ColliderBehaviour) = null;
 pub const ColliderBehaviour = struct {
-    const Cache = struct {
-        base: Collider,
+    pub const FYR_BEHAVIOUR = {};
+    const Self = @This();
 
-        Entity: ?*fyr.Entity = null,
-        transform: ?*Transform = null,
-        collider: ?*Collider = null,
-    };
-    var collidable: ?std.ArrayList(*Cache) = null;
+    base: Collider,
 
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    Entity: ?*fyr.Entity = null,
+    transform: ?*Transform = null,
+    collider: ?*Collider = null,
 
-        const transform = Entity.getComponent(Transform) orelse Blk: {
-            try Entity.addComonent(Transform{});
-            break :Blk Entity.getComponent(Transform).?;
+    pub fn new(base: Collider) Self {
+        return .{ .base = base };
+    }
+
+    pub fn awake(self: *Self, entity: *fyr.Entity) !void {
+        const transform = entity.getComponent(Transform) orelse Blk: {
+            try entity.addComonent(Transform{});
+            break :Blk entity.getComponent(Transform).?;
         };
 
-        const collider = Entity.getComponent(Collider) orelse Blk: {
-            try Entity.addComonent(cache.base);
-            break :Blk Entity.getComponent(Collider).?;
+        const collider = entity.getComponent(Collider) orelse Blk: {
+            try entity.addComonent(self.base);
+            break :Blk entity.getComponent(Collider).?;
         };
 
-        cache.transform = transform;
-        cache.collider = collider;
-        cache.Entity = Entity;
+        self.transform = transform;
+        self.collider = collider;
+        self.Entity = entity;
 
         const c = &(collidable orelse Blk: {
-            collidable = std.ArrayList(*Cache).init(fyr.getAllocator(.gpa));
+            collidable = std.ArrayList(*Self).init(fyr.getAllocator(.gpa));
             break :Blk collidable.?;
         });
 
-        try c.append(cache);
+        try c.append(self);
     }
 
-    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    pub fn update(self: *Self, _: *fyr.Entity) !void {
         const c = collidable orelse return;
 
-        const a_Entity = cache.Entity orelse return;
-        const a_transform = cache.transform orelse return;
+        const a_Entity = self.Entity orelse return;
+        const a_transform = self.transform orelse return;
 
-        const a_collider = cache.collider orelse return;
+        const a_collider = self.collider orelse return;
         if (!a_collider.dynamic) return;
 
         var a_vertices = RectangleVertices.init(a_transform, a_collider);
@@ -196,28 +198,14 @@ pub const ColliderBehaviour = struct {
         }
     }
 
-    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-
+    pub fn deinit(self: *Self, _: *fyr.Entity) !void {
         const c = &(collidable orelse return);
         for (c.items, 0..) |item, index| {
-            if (item != cache) continue;
+            if (item != self) continue;
             _ = c.swapRemove(index);
             break;
         }
 
         if (c.items.len == 0) c.deinit();
     }
-
-    pub fn behaviour(base: Collider) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithValue(Cache{
-            .base = base,
-        });
-
-        b.add(.awake, awake);
-        b.add(.update, update);
-        b.add(.deinit, deinit);
-
-        return b;
-    }
-}.behaviour;
+};

@@ -26,9 +26,8 @@ pub const DisplayCache = struct {
     }
 };
 
-/// ## USE: `Renderer(arg: Display)`,
-/// *Since zls does not infer types, we need this docstring.*
-pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
+pub const Renderer = struct {
+    pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
     base: Display,
@@ -36,24 +35,24 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
 
-    pub fn create(args: Display) Self {
+    pub fn new(args: Display) Self {
         return Self{
             .base = args,
         };
     }
 
-    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
-        try Entity.addComonent(cache.base);
-        cache.display = Entity.getComponent(Display);
+    pub fn awake(self: *Self, entity: *fyr.Entity) !void {
+        try entity.addComonent(self.base);
+        self.display = entity.getComponent(Display);
 
-        cache.transform = Entity.getComponent(Transform);
-        if (cache.transform == null) {
-            try Entity.addComonent(Transform{});
-            cache.transform = Entity.getComponent(Transform);
+        self.transform = entity.getComponent(Transform);
+        if (self.transform == null) {
+            try entity.addComonent(Transform{});
+            self.transform = entity.getComponent(Transform);
         }
 
-        const c_transform = cache.transform.?;
-        const c_display = cache.display.?;
+        const c_transform = self.transform.?;
+        const c_display = self.display.?;
 
         var display_cache = DisplayCache{
             .path = c_display.img,
@@ -68,14 +67,14 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
             },
         );
 
-        try Entity.addComonent(display_cache);
-        cache.display_cache = Entity.getComponent(DisplayCache);
+        try entity.addComonent(display_cache);
+        self.display_cache = entity.getComponent(DisplayCache);
     }
 
-    pub fn update(_: *fyr.Entity, cache: *Self) !void {
-        const display_cache = cache.display_cache orelse return;
-        const transform = cache.transform orelse return;
-        const display = cache.display orelse return;
+    pub fn update(self: *Self, _: *fyr.Entity) !void {
+        const display_cache = self.display_cache orelse return;
+        const transform = self.transform orelse return;
+        const display = self.display orelse return;
 
         const has_to_be_updated = Blk: {
             if (transform.scale.equals(display_cache.transform.scale) == 0) break :Blk true;
@@ -108,9 +107,9 @@ pub const Renderer = fyr.Behaviour.factoryAutoInferArgument(struct {
         });
     }
 
-    pub fn deinit(_: *fyr.Entity, cache: *Self) !void {
-        const c_display_cache = cache.display_cache orelse return;
+    pub fn deinit(self: *Self, _: *fyr.Entity) !void {
+        const c_display_cache = self.display_cache orelse return;
 
         c_display_cache.free();
     }
-});
+};

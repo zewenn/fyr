@@ -1,7 +1,7 @@
 const std = @import("std");
 const fyr = @import("../../main.zig");
 
-const FnType = ?(*const fn (*fyr.Entity, *anyopaque) anyerror!void);
+const FnType = ?(*const fn (self: *anyopaque, entity: *fyr.Entity) anyerror!void);
 const Events = enum { awake, init, update, tick, deinit };
 const AllocationError = error.OutOfMemory;
 
@@ -62,7 +62,7 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
         // zig fmt: on
     } orelse return;
 
-    func(entity, self.cache) catch {
+    func(self.cache, entity) catch {
         std.log.err("failed to call behaviour event ({s})", .{switch (event) {
             // zig fmt: off
             .awake  => "awake",
@@ -77,22 +77,22 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
 
 fn attachEvents(b: *Self, comptime T: type) void {
     const t = struct {
-        pub fn awake(entity: *fyr.Entity, cache: *anyopaque) !void {
-            try @field(T, "awake")(entity, @ptrCast(@alignCast(cache)));
+        pub fn awake(cache: *anyopaque, entity: *fyr.Entity) !void {
+            try @field(T, "awake")(@ptrCast(@alignCast(cache)), entity);
         }
 
-        pub fn init(entity: *fyr.Entity, cache: *anyopaque) !void {
-            try @field(T, "init")(entity, @ptrCast(@alignCast(cache)));
+        pub fn init(cache: *anyopaque, entity: *fyr.Entity) !void {
+            try @field(T, "init")(@ptrCast(@alignCast(cache)), entity);
         }
-        pub fn deinit(entity: *fyr.Entity, cache: *anyopaque) !void {
-            try @field(T, "deinit")(entity, @ptrCast(@alignCast(cache)));
+        pub fn deinit(cache: *anyopaque, entity: *fyr.Entity) !void {
+            try @field(T, "deinit")(@ptrCast(@alignCast(cache)), entity);
         }
 
-        pub fn update(entity: *fyr.Entity, cache: *anyopaque) !void {
-            try @field(T, "update")(entity, @ptrCast(@alignCast(cache)));
+        pub fn update(cache: *anyopaque, entity: *fyr.Entity) !void {
+            try @field(T, "update")(@ptrCast(@alignCast(cache)), entity);
         }
-        pub fn tick(entity: *fyr.Entity, cache: *anyopaque) !void {
-            try @field(T, "tick")(entity, @ptrCast(@alignCast(cache)));
+        pub fn tick(cache: *anyopaque, entity: *fyr.Entity) !void {
+            try @field(T, "tick")(@ptrCast(@alignCast(cache)), entity);
         }
     };
 
@@ -130,92 +130,4 @@ pub inline fn isBehaviourBase(value: anytype) bool {
 
 pub inline fn isBehvaiourBaseType(T: type) bool {
     return comptime @hasDecl(T, "FYR_BEHAVIOUR");
-}
-
-pub fn impl(comptime T: type) *const fn () anyerror!Self {
-    return (struct {
-        pub fn this() !Self {
-            var b = try Self.init(T);
-
-            b.attachEvents(T);
-
-            return b;
-        }
-    }).this;
-}
-
-pub fn factoryAutoInferArgument(comptime T: type) *const fn (if (@typeInfo(@TypeOf(@field(T, "create"))).Fn.params[0].type) |t| t else @TypeOf(null)) anyerror!Self {
-    return (struct {
-        const can_create = Blk: {
-            if (!std.meta.hasFn(T, "create")) break :Blk false;
-            const typeinfo = @typeInfo(@TypeOf(@field(T, "create")));
-            if (typeinfo != .Fn)
-                break :Blk false;
-
-            if (typeinfo.Fn.return_type != T)
-                break :Blk false;
-
-            break :Blk true;
-        };
-
-        const argstype = @typeInfo(@TypeOf(@field(T, "create"))).Fn.params[0].type orelse @TypeOf(null);
-
-        pub fn this(argument: argstype) !Self {
-            var b: Self = undefined;
-
-            if (can_create) {
-                const Tinstance = @call(
-                    .auto,
-                    @field(T, "create"),
-                    .{argument},
-                );
-                b = try Self.initWithValue(Tinstance);
-            } else {
-                b = try Self.init(T);
-            }
-
-            b.attachEvents(T);
-
-            return b;
-        }
-    }).this;
-}
-
-pub fn factoryWithArgument(comptime A: type, comptime T: type) *const fn (A) anyerror!Self {
-    return (struct {
-        const can_create = Blk: {
-            if (!std.meta.hasFn(T, "create")) break :Blk false;
-            const typeinfo = @typeInfo(@TypeOf(@field(T, "create")));
-            if (typeinfo != .Fn)
-                break :Blk false;
-
-            if (typeinfo.Fn.return_type != T)
-                break :Blk false;
-
-            break :Blk true;
-        };
-
-        pub fn this(argument: A) !Self {
-            var b: Self = undefined;
-
-            if (can_create) {
-                const Tinstance = @call(
-                    .auto,
-                    @field(T, "create"),
-                    .{argument},
-                );
-                b = try Self.initWithValue(Tinstance);
-            } else {
-                b = try Self.init(T);
-            }
-
-            b.attachEvents(T);
-
-            return b;
-        }
-    }).this;
-}
-
-pub inline fn CacheCast(comptime T: type, ptr: *anyopaque) *T {
-    return @ptrCast(@alignCast(ptr));
 }

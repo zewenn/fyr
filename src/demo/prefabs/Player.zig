@@ -13,11 +13,12 @@ pub fn Player() !*fyr.Entity {
         },
 
         MovementBehaviour.new(400),
-
-        try fyr.Renderer(fyr.Display{
+        fyr.CameraTarget{},
+        fyr.Renderer.new(fyr.Display{
             .img = "logo_small.png",
         }),
-        try fyr.ColliderBehaviour(.{
+
+        fyr.ColliderBehaviour.new(.{
             .dynamic = true,
             .rect = fyr.Rect(
                 0,
@@ -26,8 +27,8 @@ pub fn Player() !*fyr.Entity {
                 64,
             ),
         }),
-        try fyr.CameraTarget(),
-        try fyr.AnimatorBehaviour(fyr.array(
+
+        fyr.AnimatorBehaviour.new(fyr.array(
             fyr.Animation,
             .{
                 try fyr.Animation.create("test", 2, fyr.interpolation.lerp, .{

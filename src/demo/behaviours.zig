@@ -15,12 +15,12 @@ pub const MovementBehaviour = struct {
         };
     }
 
-    pub fn awake(Entity: *fyr.Entity, cache: *Self) !void {
-        const transform = Entity.getComponent(fyr.Transform);
+    pub fn awake(cache: *Self, entity: *fyr.Entity) !void {
+        const transform = entity.getComponent(fyr.Transform);
         cache.transform = transform;
     }
 
-    pub fn update(Entity: *fyr.Entity, cache: *Self) !void {
+    pub fn update(cache: *Self, entity: *fyr.Entity) !void {
         const transform = cache.transform orelse return;
 
         var move_vec = fyr.Vec3(0, 0, 0);
@@ -53,7 +53,7 @@ pub const MovementBehaviour = struct {
         );
 
         if (move_vec.length() < 0.5) return;
-        const animator = Entity.getComponent(fyr.Animator) orelse return;
+        const animator = entity.getComponent(fyr.Animator) orelse return;
 
         try animator.play("test");
     }
