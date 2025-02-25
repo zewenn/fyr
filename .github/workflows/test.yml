@@ -17,8 +17,8 @@ env:
 
 jobs:
   test:
-    name: Tests on Linux
-    runs-on: ubuntu-latest
+    name: Tests on macOS
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - uses: goto-bus-stop/setup-zig@v2

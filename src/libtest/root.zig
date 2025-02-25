@@ -1,5 +1,4 @@
 const std = @import("std");
-
 const fyr = @import("fyr");
 
 const testing = std.testing;
