@@ -11,10 +11,10 @@ cache: *anyopaque,
 name: []const u8 = "[UNNAMED]",
 
 awake: FnType = null,
-init: FnType = null,
+start: FnType = null,
 update: FnType = null,
 tick: FnType = null,
-deinit: FnType = null,
+end: FnType = null,
 
 pub fn init(comptime T: type) !Self {
     return initWithValue(T{});
@@ -36,10 +36,10 @@ pub fn initWithValue(value: anytype) !Self {
 pub fn add(self: *Self, event: Events, callback: FnType) void {
     switch (event) {
         .awake => self.awake = callback,
-        .init => self.init = callback,
+        .init => self.start = callback,
         .update => self.update = callback,
         .tick => self.tick = callback,
-        .deinit => self.deinit = callback,
+        .deinit => self.end = callback,
     }
 }
 
@@ -57,10 +57,10 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
 
     const func = switch (event) {
         .awake => self.awake,
-        .init => self.init,
+        .init => self.start,
         .update => self.update,
         .tick => self.tick,
-        .deinit => self.deinit,
+        .deinit => self.end,
     } orelse return;
 
     func(self.cache, entity) catch {
@@ -68,8 +68,8 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
             self.name,
             switch (event) {
                 .awake => "Awake",
-                .init => "Init",
-                .deinit => "Deinit",
+                .init => "Start",
+                .deinit => "End",
                 .update => "Update",
                 .tick => "Tick",
             },
@@ -84,10 +84,10 @@ fn attachEvents(b: *Self, comptime T: type) void {
         }
 
         pub fn init(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "Init")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "Start")(@ptrCast(@alignCast(cache)), entity);
         }
         pub fn deinit(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "Deinit")(@ptrCast(@alignCast(cache)), entity);
+            try @field(T, "End")(@ptrCast(@alignCast(cache)), entity);
         }
 
         pub fn update(cache: *anyopaque, entity: *fyr.Entity) !void {
@@ -102,10 +102,10 @@ fn attachEvents(b: *Self, comptime T: type) void {
         b.add(.awake, t.awake);
     }
 
-    if (std.meta.hasFn(T, "Init")) {
+    if (std.meta.hasFn(T, "Start")) {
         b.add(.init, t.init);
     }
-    if (std.meta.hasFn(T, "Deinit")) {
+    if (std.meta.hasFn(T, "End")) {
         b.add(.deinit, t.deinit);
     }
 

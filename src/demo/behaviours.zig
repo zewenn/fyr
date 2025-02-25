@@ -9,7 +9,7 @@ pub const MovementBehaviour = struct {
     transform: ?*fyr.Transform = null,
     speed: f32 = 350,
 
-    pub fn new(speed: f32) Self {
+    pub fn init(speed: f32) Self {
         return Self{
             .speed = speed,
         };

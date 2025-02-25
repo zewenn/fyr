@@ -12,13 +12,17 @@ pub fn Player() !*fyr.Entity {
             },
         },
 
-        MovementBehaviour.new(400),
-        fyr.CameraTarget{},
-        fyr.Renderer.new(fyr.Display{
+        MovementBehaviour.init(400),
+        fyr.CameraTarget{
+            .max_distance = 400,
+            .min_distance = 50,
+            .follow_speed = 360,
+        },
+        fyr.Renderer.init(fyr.Display{
             .img = "logo_small.png",
         }),
 
-        fyr.ColliderBehaviour.new(.{
+        fyr.ColliderBehaviour.init(.{
             .dynamic = true,
             .rect = fyr.Rect(
                 0,
@@ -28,10 +32,10 @@ pub fn Player() !*fyr.Entity {
             ),
         }),
 
-        fyr.AnimatorBehaviour.new(fyr.array(
+        fyr.AnimatorBehaviour.init(fyr.array(
             fyr.Animation,
             .{
-                try fyr.Animation.create("test", 2, fyr.interpolation.lerp, .{
+                try fyr.Animation.create("test", 1, fyr.interpolation.lerp, .{
                     fyr.KeyFrame{ .rotation = 0 },
                     fyr.KeyFrame{ .rotation = 10 },
                     fyr.KeyFrame{ .rotation = 0 },

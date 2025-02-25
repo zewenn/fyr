@@ -35,7 +35,7 @@ pub const Renderer = struct {
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
 
-    pub fn new(args: Display) Self {
+    pub fn init(args: Display) Self {
         return Self{
             .base = args,
         };
@@ -107,7 +107,7 @@ pub const Renderer = struct {
         });
     }
 
-    pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
+    pub fn End(self: *Self, _: *fyr.Entity) !void {
         const c_display_cache = self.display_cache orelse return;
 
         c_display_cache.free();

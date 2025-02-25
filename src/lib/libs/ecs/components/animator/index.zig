@@ -94,7 +94,7 @@ pub const AnimatorBehaviour = struct {
     transform: ?*fyr.Transform = null,
     display: ?*fyr.Display = null,
 
-    pub fn new(arg: fyr.WrappedArray(Animation)) Self {
+    pub fn init(arg: fyr.WrappedArray(Animation)) Self {
         return Self{
             .animations = arg,
         };
@@ -155,7 +155,7 @@ pub const AnimatorBehaviour = struct {
         }
     }
 
-    pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
+    pub fn End(self: *Self, _: *fyr.Entity) !void {
         if (self.animator) |animator| {
             animator.deinit();
         }

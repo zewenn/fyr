@@ -135,7 +135,7 @@ pub const ColliderBehaviour = struct {
     transform: ?*Transform = null,
     collider: ?*Collider = null,
 
-    pub fn new(base: Collider) Self {
+    pub fn init(base: Collider) Self {
         return .{ .base = base };
     }
 
@@ -198,7 +198,7 @@ pub const ColliderBehaviour = struct {
         }
     }
 
-    pub fn Deinit(self: *Self, _: *fyr.Entity) !void {
+    pub fn End(self: *Self, _: *fyr.Entity) !void {
         const collidables = &(collidables_or_null orelse return);
         for (collidables.items, 0..) |item, index| {
             if (item != self) continue;
