@@ -101,7 +101,7 @@ test "reseting" {
                 ui.id("heading1");
                 ui.elementType(.h1);
             })({
-                try ui.text("This is the greatest ui ever!", .{});
+                ui.text("This is the greatest ui ever!", .{});
             });
         });
     }
