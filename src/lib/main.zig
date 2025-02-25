@@ -482,3 +482,5 @@ pub fn randColor() rl.Color {
         random.int(u8),
     );
 }
+
+pub const setTickTarget = eventloop.setTickTarget;
