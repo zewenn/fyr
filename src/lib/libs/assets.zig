@@ -12,7 +12,7 @@ const Sound = fyr.rl.Sound;
 const Font = fyr.rl.Font;
 
 pub const fs = struct {
-    pub var debug: []const u8 = "src/assets";
+    pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
     pub var release: []const u8 = "assets";
 
     pub fn getBase() ![]const u8 {
@@ -22,7 +22,7 @@ pub const fs = struct {
         };
         defer fyr.getAllocator(.gpa).free(exepath);
 
-        const path = try std.fmt.allocPrint(fyr.getAllocator(.gpa), "{s}/{s}", .{ exepath, switch (fyr.lib_info.build_mode) {
+        const path = try std.fmt.allocPrint(fyr.getAllocator(.gpa), "{s}{s}{s}", .{ exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
             .Debug => debug,
             else => release,
         } });
@@ -34,7 +34,7 @@ pub const fs = struct {
         const basepath = try fs.getBase();
         defer fyr.getAllocator(.gpa).free(basepath);
 
-        return try std.fmt.allocPrint(fyr.getAllocator(.gpa), "{s}/{s}", .{ basepath, rel_path });
+        return try std.fmt.allocPrint(fyr.getAllocator(.gpa), "{s}{s}{s}", .{ basepath, std.fs.path.sep_str, rel_path });
     }
 
     pub fn getFileExt(rel_path: []const u8) ![]const u8 {
