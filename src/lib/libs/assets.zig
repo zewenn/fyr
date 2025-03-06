@@ -54,7 +54,7 @@ pub const fs = struct {
     }
 };
 
-fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const u8, mod: anytype) T, releasefn: fn (data: T) void) type {
+fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const u8, mod: anytype) anyerror!T, releasefn: fn (data: T) void) type {
     return struct {
         const HashMapType = std.AutoHashMap(u64, *SharedPtr(T));
         var hash_map: ?HashMapType = null;
@@ -112,7 +112,7 @@ fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const 
 
             const filetype = fs.getFileExt(rel_path);
 
-            const parsed: T = parsefn(data, filetype, modifiers);
+            const parsed: T = try parsefn(data, filetype, modifiers);
 
             try hmap.put(HASH, try sharedPtr(parsed));
         }
@@ -151,14 +151,14 @@ fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const 
 pub const image = AssetType(
     Image,
     struct {
-        pub fn callback(data: []const u8, filetype: []const u8, modifiers: anytype) Image {
+        pub fn callback(data: []const u8, filetype: []const u8, modifiers: anytype) !Image {
             const mods = fyr.array(i32, modifiers);
             defer mods.deinit();
 
-            const str: [*:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
+            const str: [:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
             defer fyr.getAllocator(.gpa).free(std.mem.span(str));
 
-            var img = fyr.rl.loadImageFromMemory(str, data);
+            var img = try fyr.rl.loadImageFromMemory(str, data);
             fyr.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
 
             return img;
@@ -174,19 +174,19 @@ pub const image = AssetType(
 pub const texture = AssetType(
     Texture,
     struct {
-        pub fn callback(data: []const u8, filetype: []const u8, modifiers: anytype) Texture {
+        pub fn callback(data: []const u8, filetype: []const u8, modifiers: anytype) !Texture {
             const mods = fyr.array(i32, modifiers);
             defer mods.deinit();
 
-            const str: [*:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
+            const str: [:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
             defer fyr.getAllocator(.gpa).free(std.mem.span(str));
 
-            var img = fyr.rl.loadImageFromMemory(str, data);
+            var img = try fyr.rl.loadImageFromMemory(str, data);
             defer fyr.rl.unloadImage(img);
 
             fyr.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
 
-            const txtr = fyr.rl.loadTextureFromImage(img);
+            const txtr = try fyr.rl.loadTextureFromImage(img);
             return txtr;
         }
     }.callback,
@@ -200,8 +200,8 @@ pub const texture = AssetType(
 pub const font = AssetType(
     Font,
     struct {
-        pub fn callback(data: []const u8, filetype: []const u8, _: anytype) Font {
-            const str: [*:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
+        pub fn callback(data: []const u8, filetype: []const u8, _: anytype) !Font {
+            const str: [:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
             defer fyr.getAllocator(.gpa).free(std.mem.span(str));
 
             var font_chars = [_]i32{
@@ -212,7 +212,7 @@ pub const font = AssetType(
                 95, 96, 123, 124, 125, 126, // !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, _, `, {, |, }, ~
             };
 
-            const fnt = fyr.rl.loadFontFromMemory(str, data, fyr.toi32(font_chars.len), &font_chars);
+            const fnt = try fyr.rl.loadFontFromMemory(str, data, fyr.toi32(font_chars.len), &font_chars);
             return fnt;
         }
     }.callback,

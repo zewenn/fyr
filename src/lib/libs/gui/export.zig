@@ -16,7 +16,7 @@ pub const raygui = struct {
         const full_path = try fyr.assets.fs.getFilePath(filename);
         defer fyr.getAllocator(.gpa).free(full_path);
 
-        const cpath = @as([*:0]const u8, try fyr.getAllocator(.gpa).dupeZ(u8, full_path));
+        const cpath = @as([:0]const u8, try fyr.getAllocator(.gpa).dupeZ(u8, full_path));
         defer fyr.getAllocator(.gpa).free(std.mem.span(cpath));
 
         rg.guiLoadStyle(cpath);
@@ -138,7 +138,7 @@ pub fn elementType(T: Element.ElementType) void {
 
 pub fn text(comptime fmt: []const u8, args: anytype) void {
     const ptr = &(elements[parent_indexes[parent_index] orelse 511] orelse current().*);
-    const t: [*:0]const u8 = std.fmt.allocPrintZ(alloc(), fmt, args) catch AllocFail: {
+    const t: [:0]const u8 = std.fmt.allocPrintZ(alloc(), fmt, args) catch AllocFail: {
         std.log.err("Failed to allocate formatted text!", .{});
         break :AllocFail "";
     };
