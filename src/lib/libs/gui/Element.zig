@@ -34,7 +34,7 @@ font: ?*rl.Font = null,
 
 parent: ?*Self = null,
 children: std.ArrayList(*Self),
-text: ?[*:0]const u8 = null,
+text: ?[:0]const u8 = null,
 
 pub fn create() Self {
     return Self{

@@ -5,7 +5,7 @@ var _size = fyr.Vec2(860, 480);
 pub var _temp_size = fyr.Vec2(860, 480);
 
 var is_alive = false;
-pub var _title: [*:0]const u8 = "";
+pub var _title: [:0]const u8 = "";
 
 pub var clear_color: rl.Color = rl.Color.black;
 pub var use_debug_lines = false;
@@ -61,7 +61,7 @@ pub const size = struct {
     }
 };
 
-pub fn title(to: [*:0]const u8) void {
+pub fn title(to: [:0]const u8) void {
     if (is_alive) {
         rl.setWindowTitle(to);
         return;

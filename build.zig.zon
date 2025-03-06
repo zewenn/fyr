@@ -1,14 +1,15 @@
 .{
-    .name = "fyr",
+    .name = .fyr,
     .version = "0.0.1-dev.2",
+    .fingerprint = 0xf3edbc2fefcce355,
     .dependencies = .{
-        .@"raylib-zig" = .{
-            .url = "git+https://github.com/Not-Nik/raylib-zig.git#845af357e4bc5ed8d008a8bb64bd7c4b4906851d",
-            .hash = "122081321a9b6653f90fee325553c9f64934f94b789e7ddbadf27f754a5e42537c4d",
-        },
         .uuid = .{
             .url = "https://github.com/r4gus/uuid-zig/archive/refs/tags/0.2.1.tar.gz",
             .hash = "1220b4deeb4ec1ec3493ea934905356384561b725dba69d1fbf6a25cb398716dd05b",
+        },
+        .raylib_zig = .{
+            .url = "git+https://github.com/Not-Nik/raylib-zig?ref=devel#57a8a21b486af47d62cb8ce39a0c7902019a86d2",
+            .hash = "raylib_zig-5.6.0-dev-KE8RELUtBQD9ynf9BONdwukHlR4Ib8k_hZZUkqUPO7uJ",
         },
     },
     .paths = .{

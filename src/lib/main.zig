@@ -72,7 +72,7 @@ fn AllocatorInstance(comptime T: type) type {
 }
 
 const global_allocators = struct {
-    pub var gpa: AllocatorInstance(std.heap.GeneralPurposeAllocator(.{})) = .{};
+    pub var gpa: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
     pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
     pub var page: Allocator = std.heap.page_allocator;
 
@@ -97,7 +97,7 @@ const global_allocators = struct {
 pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     return switch (T) {
         .gpa => global_allocators.gpa.allocator orelse Blk: {
-            global_allocators.gpa.interface = std.heap.GeneralPurposeAllocator(.{}){};
+            global_allocators.gpa.interface = std.heap.DebugAllocator(.{}){};
             global_allocators.gpa.allocator = global_allocators.gpa.interface.?.allocator();
 
             break :Blk global_allocators.gpa.allocator.?;
@@ -255,7 +255,7 @@ pub const normal_control_flow = struct {
         std.posix.getrandom(std.mem.asBytes(&seed)) catch {
             seed = changeNumberType(u64, rl.getTime()).?;
         };
-        var x = std.rand.DefaultPrng.init(seed);
+        var x = std.Random.DefaultPrng.init(seed);
         random = x.random();
 
         rl.setTraceLogLevel(.warning);
@@ -346,32 +346,32 @@ pub const normal_control_flow = struct {
 pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeTarget {
     const value_info = @typeInfo(@TypeOf(value));
     return switch (@typeInfo(TypeTarget)) {
-        .Int, .ComptimeInt => switch (value_info) {
-            .Int, .ComptimeInt => @as(TypeTarget, @intCast(value)),
-            .Float, .ComptimeFloat => @as(TypeTarget, @intFromFloat(@round(value))),
-            .Bool => @as(TypeTarget, @intFromBool(value)),
-            .Enum => @as(TypeTarget, @intFromEnum(value)),
+        .int, .comptime_int => switch (value_info) {
+            .int, .comptime_int => @as(TypeTarget, @intCast(value)),
+            .float, .comptime_float => @as(TypeTarget, @intFromFloat(@round(value))),
+            .bool => @as(TypeTarget, @intFromBool(value)),
+            .@"enum" => @as(TypeTarget, @intFromEnum(value)),
             else => null,
         },
-        .Float, .ComptimeFloat => switch (value_info) {
-            .Int, .ComptimeInt => @as(TypeTarget, @floatFromInt(value)),
-            .Float, .ComptimeFloat => @as(TypeTarget, @floatCast(value)),
-            .Bool => @as(TypeTarget, @floatFromInt(@intFromBool(value))),
-            .Enum => @as(TypeTarget, @floatFromInt(@intFromEnum(value))),
+        .float, .comptime_float => switch (value_info) {
+            .int, .comptime_int => @as(TypeTarget, @floatFromInt(value)),
+            .float, .comptime_float => @as(TypeTarget, @floatCast(value)),
+            .bool => @as(TypeTarget, @floatFromInt(@intFromBool(value))),
+            .@"enum" => @as(TypeTarget, @floatFromInt(@intFromEnum(value))),
             else => null,
         },
-        .Bool => switch (value_info) {
-            .Int, .ComptimeInt => value != 0,
-            .Float, .ComptimeFloat => @as(isize, @intFromFloat(@round(value))) != 0,
-            .Bool => value,
-            .Enum => @as(isize, @intFromEnum(value)) != 0,
+        .bool => switch (value_info) {
+            .int, .comptime_int => value != 0,
+            .float, .comptime_float => @as(isize, @intFromFloat(@round(value))) != 0,
+            .bool => value,
+            .@"enum" => @as(isize, @intFromEnum(value)) != 0,
             else => null,
         },
-        .Enum => switch (value_info) {
-            .Int, .ComptimeInt => @enumFromInt(value),
-            .Float, .ComptimeFloat => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
-            .Bool => @enumFromInt(@intFromBool(value)),
-            .Enum => @enumFromInt(@as(isize, @intFromEnum(value))),
+        .@"enum" => switch (value_info) {
+            .int, .comptime_int => @enumFromInt(value),
+            .float, .comptime_float => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
+            .bool => @enumFromInt(@intFromBool(value)),
+            .@"enum" => @enumFromInt(@as(isize, @intFromEnum(value))),
             else => null,
         },
         else => Catch: {

@@ -1,5 +1,5 @@
 const std = @import("std");
-const rlz = @import("raylib-zig");
+const rlz = @import("raylib_zig");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -7,7 +7,7 @@ pub fn build(b: *std.Build) !void {
 
     // dependencies
     // ----------------------------------------------------------------------
-    const raylib_dep = b.dependency("raylib-zig", .{
+    const raylib_dep = b.dependency("raylib_zig", .{
         .target = target,
         .optimize = optimize,
     });
@@ -74,7 +74,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
     });
     demo_exe.linkLibC();
-    demo_exe.root_module.addImport("fyr", &lib.root_module);
+    demo_exe.root_module.addImport("fyr", lib.root_module);
     b.installArtifact(demo_exe);
 
     // Run Step
@@ -91,7 +91,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     exe_unit_tests.linkLibC();
-    exe_unit_tests.root_module.addImport("fyr", &lib.root_module);
+    exe_unit_tests.root_module.addImport("fyr", lib.root_module);
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
