@@ -13,7 +13,7 @@ is_behaviour: bool = false,
 pub inline fn calculateHash(comptime T: type) u64 {
     const b: comptime_int = comptime get: {
         break :get switch (@typeInfo(T)) {
-            .Struct, .Enum => Blk: {
+            .@"struct", .@"enum" => Blk: {
                 var fieldsum: comptime_int = 1;
 
                 for (std.meta.fields(T), 0..) |field, index| {

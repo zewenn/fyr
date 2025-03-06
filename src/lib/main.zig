@@ -255,7 +255,7 @@ pub const normal_control_flow = struct {
         std.posix.getrandom(std.mem.asBytes(&seed)) catch {
             seed = changeNumberType(u64, rl.getTime()).?;
         };
-        var x = std.rand.DefaultPrng.init(seed);
+        var x = std.Random.DefaultPrng.init(seed);
         random = x.random();
 
         rl.setTraceLogLevel(.warning);

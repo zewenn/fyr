@@ -156,7 +156,7 @@ pub const image = AssetType(
             defer mods.deinit();
 
             const str: [:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
-            defer fyr.getAllocator(.gpa).free(std.mem.span(str));
+            defer fyr.getAllocator(.gpa).free(str);
 
             var img = try fyr.rl.loadImageFromMemory(str, data);
             fyr.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
@@ -179,7 +179,7 @@ pub const texture = AssetType(
             defer mods.deinit();
 
             const str: [:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
-            defer fyr.getAllocator(.gpa).free(std.mem.span(str));
+            defer fyr.getAllocator(.gpa).free(str);
 
             var img = try fyr.rl.loadImageFromMemory(str, data);
             defer fyr.rl.unloadImage(img);
@@ -202,7 +202,7 @@ pub const font = AssetType(
     struct {
         pub fn callback(data: []const u8, filetype: []const u8, _: anytype) !Font {
             const str: [:0]const u8 = fyr.getAllocator(.gpa).dupeZ(u8, filetype) catch ".png";
-            defer fyr.getAllocator(.gpa).free(std.mem.span(str));
+            defer fyr.getAllocator(.gpa).free(str);
 
             var font_chars = [_]i32{
                 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, // 0-9

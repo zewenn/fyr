@@ -228,12 +228,12 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
 
     element.rect = rect;
 
-    const fontptr = (element.font orelse &rl.getFontDefault()).*;
+    const fontptr = (element.font orelse &(try rl.getFontDefault())).*;
 
     const text_size = measureText(
         fontptr,
         style.font.size,
-        std.mem.span(element.text orelse ""),
+        element.text orelse "",
     );
 
     rect.width = @max(rect.width, text_size.x);
@@ -277,7 +277,7 @@ pub fn render(arr: []?Element) !void {
         }
 
         if (element.text) |text| rl.drawTextPro(
-            (element.font orelse &rl.getFontDefault()).*,
+            (element.font orelse &(try rl.getFontDefault())).*,
             text,
             fyr.Vec2(rect.x, rect.y),
             fyr.vec2(),
