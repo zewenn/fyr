@@ -243,6 +243,7 @@ fn getElementRect(element: *Element, parent: *Element) !fyr.Rectangle {
 }
 
 pub fn render(arr: []?Element) !void {
+    // _ = arr;
     const winsize = fyr.window.size.get();
 
     var root = Element.create();
@@ -266,6 +267,7 @@ pub fn render(arr: []?Element) !void {
             };
             break :Blk element.rect.?;
         };
+
         const style = element.style;
 
         if (style.background.color) |color|

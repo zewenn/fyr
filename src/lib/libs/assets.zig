@@ -22,25 +22,27 @@ pub const fs = struct {
         };
         defer fyr.getAllocator(.gpa).free(exepath);
 
-        return try std.fs.path.join(fyr.getAllocator(.gpa), switch (fyr.lib_info.build_mode) {
-            .Debug => @constCast(&[_][]const u8{ exepath, debug }),
-            else => @constCast(&[_][]const u8{ exepath, release }),
-        });
+        const path = try std.fmt.allocPrint(fyr.getAllocator(.gpa), "{s}/{s}", .{ exepath, switch (fyr.lib_info.build_mode) {
+            .Debug => debug,
+            else => release,
+        } });
+
+        return path;
     }
 
     pub fn getFilePath(rel_path: []const u8) ![]const u8 {
         const basepath = try fs.getBase();
         defer fyr.getAllocator(.gpa).free(basepath);
 
-        return try std.fs.path.join(
-            fyr.getAllocator(.gpa),
-            @constCast(&[_][]const u8{ basepath, rel_path }),
-        );
+        return try std.fmt.allocPrint(fyr.getAllocator(.gpa), "{s}/{s}", .{ basepath, rel_path });
     }
 
-    pub fn getFileExt(rel_path: []const u8) []const u8 {
+    pub fn getFileExt(rel_path: []const u8) ![]const u8 {
         const index = std.mem.lastIndexOf(u8, rel_path, ".") orelse 0;
-        return rel_path[index..];
+        const buf = try fyr.getAllocator(.gpa).alloc(u8, rel_path.len - index);
+        std.mem.copyForwards(u8, buf, rel_path[index..]);
+
+        return buf;
     }
 
     pub fn getData(pth: []const u8) ![]const u8 {
@@ -54,7 +56,7 @@ pub const fs = struct {
     }
 };
 
-fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const u8, mod: anytype) anyerror!T, releasefn: fn (data: T) void) type {
+fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: []const u8, mod: anytype) anyerror!T, releasefn: *const fn (data: T) void) type {
     return struct {
         const HashMapType = std.AutoHashMap(u64, *SharedPtr(T));
         var hash_map: ?HashMapType = null;
@@ -72,6 +74,8 @@ fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const 
 
             while (iter.next()) |entry| {
                 const value = entry.value_ptr.*;
+                if (value.*.value) |v|
+                    releasefn(v);
                 value.destroyUnsafe();
             }
 
@@ -110,7 +114,8 @@ fn AssetType(comptime T: type, parsefn: fn (data: []const u8, filetype: []const 
             const data = try fs.getData(rel_path);
             defer fyr.getAllocator(.gpa).free(data);
 
-            const filetype = fs.getFileExt(rel_path);
+            const filetype = try fs.getFileExt(rel_path);
+            defer fyr.getAllocator(.gpa).free(filetype);
 
             const parsed: T = try parsefn(data, filetype, modifiers);
 
