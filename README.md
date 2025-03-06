@@ -1,6 +1,9 @@
 <h1 align="center"><font style="font-size: 72pt;">FYR</font></h1>
 <p align="center"><a href="./docs/">Docs</a> | <a href="./src/demo/">Demo Project</a></p>
 
+> [!INFO]
+> This project uses zig version `0.14.0`.
+
 **fyr** is a custom **zig-based** wrapper of [Not-Nik](https://github.com/Not-Nik)'s [raylib-zig](https://github.com/Not-Nik/raylib-zig); containing an entity component system, asset loading, automatic rendering and many more features...
 
 > [!IMPORTANT]
