@@ -147,6 +147,35 @@ pub fn removeEntity(self: *Self, entity: *Entity) void {
             b.callSafe(.deinit, entity);
         }
         _ = entities.swapRemove(index);
+        break;
+    }
+}
+
+pub fn removeEntityByUuid(self: *Self, uuid: u128) void {
+    const entities = self.makeGetEntities();
+    for (entities.items, 0..) |it, index| {
+        if (it.uuid != uuid) continue;
+
+        const behaviours = it.getBehaviours() catch &[_]*fyr.Behaviour{};
+        for (behaviours) |b| {
+            b.callSafe(.deinit, it);
+        }
+        _ = entities.swapRemove(index);
+        break;
+    }
+}
+
+pub fn removeEntityById(self: *Self, id: []const u8) void {
+    const entities = self.makeGetEntities();
+    for (entities.items, 0..) |it, index| {
+        if (std.mem.eql(u8, id, it.id)) continue;
+
+        const behaviours = it.getBehaviours() catch &[_]*fyr.Behaviour{};
+        for (behaviours) |b| {
+            b.callSafe(.deinit, it);
+        }
+        _ = entities.swapRemove(index);
+        break;
     }
 }
 
@@ -158,4 +187,34 @@ pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
     }
 
     return null;
+}
+
+pub fn getEntityByUuid(self: *Self, uuid: u128) ?*Entity {
+    const Entitys = self.entities orelse return null;
+    for (Entitys.items) |entity| {
+        if (entity.uuid == uuid) continue;
+        return Entity;
+    }
+
+    return null;
+}
+
+pub fn isEntityAliveId(self: *Self, id: []const u8) bool {
+    const Entitys = self.entities orelse return false;
+    for (Entitys.items) |entity| {
+        if (!std.mem.eql(u8, entity.id, id)) continue;
+        return true;
+    }
+
+    return false;
+}
+
+pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
+    const Entitys = self.entities orelse return false;
+    for (Entitys.items) |entity| {
+        if (entity.uuid == uuid) continue;
+        return Entity;
+    }
+
+    return false;
 }
