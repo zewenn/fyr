@@ -155,7 +155,7 @@ pub const ColliderBehaviour = struct {
         self.entity = entity;
 
         const collidables = &(collidables_or_null orelse Blk: {
-            collidables_or_null = std.ArrayList(*Self).init(fyr.getAllocator(.gpa));
+            collidables_or_null = std.ArrayList(*Self).init(fyr.getAllocator(.generic));
             break :Blk collidables_or_null.?;
         });
 

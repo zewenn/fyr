@@ -73,13 +73,14 @@ fn AllocatorInstance(comptime T: type) type {
 }
 
 const global_allocators = struct {
-    pub var gpa: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
+    pub var generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
     pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
     pub var page: Allocator = std.heap.page_allocator;
 
     pub const types = enum {
         /// Generic allocator, warns at program exit if a memory leak happened.
-        gpa,
+        /// In debug mode this is a dbeug allocator, otherwise it is equivalent to the page allocator
+        generic,
         /// Global arena allocator, everything allocated will be freed at program end.
         arena,
         /// Shorthand for `std.heap.page_allocator`.
@@ -97,14 +98,18 @@ const global_allocators = struct {
 
 pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
     return switch (T) {
-        .gpa => global_allocators.gpa.allocator orelse Blk: {
-            global_allocators.gpa.interface = std.heap.DebugAllocator(.{}){};
-            global_allocators.gpa.allocator = global_allocators.gpa.interface.?.allocator();
-
-            break :Blk global_allocators.gpa.allocator.?;
+        .generic => global_allocators.generic.allocator orelse Blk: {
+            switch (lib_info.build_mode) {
+                .Debug => {
+                    global_allocators.generic.interface = std.heap.DebugAllocator(.{}){};
+                    global_allocators.generic.allocator = global_allocators.generic.interface.?.allocator();
+                },
+                else => global_allocators.generic.allocator = global_allocators.page,
+            }
+            break :Blk global_allocators.generic.allocator.?;
         },
         .arena => global_allocators.arena.allocator orelse Blk: {
-            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.gpa));
+            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.generic));
             global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
 
             break :Blk global_allocators.arena.allocator.?;
@@ -125,7 +130,7 @@ pub const Scene = eventloop.Scene;
 
 pub const SharedPtr = @import("./.types/SharedPointer.zig").SharedPtr;
 pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
-    return try SharedPtr(@TypeOf(value)).create(getAllocator(.gpa), value);
+    return try SharedPtr(@TypeOf(value)).create(getAllocator(.generic), value);
 }
 
 const warray_lib = @import("./.types/WrappedArray.zig");
@@ -322,7 +327,7 @@ pub const normal_control_flow = struct {
     }
 
     pub fn deinit() void {
-        defer if (global_allocators.gpa.interface) |*intf| {
+        defer if (global_allocators.generic.interface) |*intf| {
             const state = intf.deinit();
             switch (state) {
                 .ok => std.log.info("GPA exited without memory leaks!", .{}),

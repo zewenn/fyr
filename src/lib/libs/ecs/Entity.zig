@@ -26,7 +26,7 @@ pub fn init(alloc: Allocator, id: []const u8) Self {
 }
 
 pub fn new(id: []const u8) Self {
-    return Self.init(fyr.getAllocator(.gpa), id);
+    return Self.init(fyr.getAllocator(.generic), id);
 }
 
 pub fn deinit(self: *Self) void {

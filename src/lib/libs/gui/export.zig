@@ -13,10 +13,10 @@ pub const raygui = struct {
 
     pub fn loadStyle(filename: []const u8) !void {
         const full_path = try fyr.assets.fs.getFilePath(filename);
-        defer fyr.getAllocator(.gpa).free(full_path);
+        defer fyr.getAllocator(.generic).free(full_path);
 
-        const cpath = @as([:0]const u8, try fyr.getAllocator(.gpa).dupeZ(u8, full_path));
-        defer fyr.getAllocator(.gpa).free(std.mem.span(cpath));
+        const cpath = @as([:0]const u8, try fyr.getAllocator(.generic).dupeZ(u8, full_path));
+        defer fyr.getAllocator(.generic).free(std.mem.span(cpath));
 
         rg.guiLoadStyle(cpath);
     }
@@ -39,11 +39,11 @@ var fonts: std.ArrayList(fyr.SharedPtr(rl.Font)) = undefined;
 var fonts_cache: std.ArrayList(fyr.SharedPtr(rl.Font)) = undefined;
 
 pub fn init() !void {
-    fonts = .init(fyr.getAllocator(.gpa));
-    fonts_cache = .init(fyr.getAllocator(.gpa));
+    fonts = .init(fyr.getAllocator(.generic));
+    fonts_cache = .init(fyr.getAllocator(.generic));
 
     const min_memory_size: usize = fyr.changeNumberType(usize, clay.minMemorySize()).?;
-    memory = try fyr.getAllocator(.gpa).alloc(u8, min_memory_size);
+    memory = try fyr.getAllocator(.generic).alloc(u8, min_memory_size);
 
     const arena: clay.Arena = clay.createArenaWithCapacityAndMemory(memory);
 
@@ -66,7 +66,7 @@ pub fn update() !void {
 
     var render_commands = clay.endLayout();
 
-    try renderer.clayRaylibRender(&render_commands, fyr.getAllocator(.gpa));
+    try renderer.clayRaylibRender(&render_commands, fyr.getAllocator(.generic));
 }
 
 pub fn useDrawFn(func: *const fn () anyerror!void) void {
@@ -74,7 +74,7 @@ pub fn useDrawFn(func: *const fn () anyerror!void) void {
 }
 
 pub fn deinit() void {
-    fyr.getAllocator(.gpa).free(memory);
+    fyr.getAllocator(.generic).free(memory);
 }
 
 pub fn loadFont(file_data: ?[]const u8, font_id: u16, font_size: i32) !void {
