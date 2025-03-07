@@ -216,17 +216,17 @@ pub inline fn scene(comptime id: []const u8) *const fn (void) void {
 /// Set the default entities of the last created scene
 /// If an entity fn returns an error it will be ignored!
 pub fn entities(tuple: anytype) void {
+    const scene_ptr = activeOrOpenScene() catch {
+        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
+        return;
+    };
+
     const list = arrayAdvanced(
         *Entity,
         .{ .on_type_change_fail = .ignore },
         tuple,
     );
     defer list.deinit();
-
-    const scene_ptr = activeOrOpenScene() catch {
-        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
-        return;
-    };
 
     for (list.items) |ptr| {
         scene_ptr.addEntity(ptr) catch {
@@ -299,14 +299,17 @@ pub const normal_control_flow = struct {
                 window.toggleDebugLines();
             }
 
-            rl.beginDrawing();
             {
+                rl.beginDrawing();
+                defer rl.endDrawing();
+
                 window.clearBackground();
-                camera.begin();
                 {
+                    camera.begin();
+                    defer camera.end();
+
                     display.render();
                 }
-                camera.end();
 
                 gui.raygui.callDrawFn();
                 gui.render();
@@ -314,7 +317,6 @@ pub const normal_control_flow = struct {
                 if (window.use_debug_lines)
                     rl.drawFPS(10, 10);
             }
-            rl.endDrawing();
         }
     }
 
