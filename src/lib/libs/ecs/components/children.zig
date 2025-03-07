@@ -42,10 +42,10 @@ pub const Children = struct {
     list: ?std.ArrayList(EntityRef) = null,
 
     fn getMakeList(self: *Self) *std.ArrayList(EntityRef) {
-        return &self.list orelse Blk: {
+        return &(self.list orelse Blk: {
             self.list = .init(fyr.getAllocator(.gpa));
-            break :Blk &(self.list.?);
-        };
+            break :Blk self.list.?;
+        });
     }
 
     pub fn init(base: fyr.WrappedArray(*fyr.Entity)) Self {
@@ -55,8 +55,10 @@ pub const Children = struct {
         var child_list = this.getMakeList();
 
         for (base.items) |ptr| {
-            child_list.append(EntityRef.init(ptr.uuid, ptr));
+            child_list.append(EntityRef.init(ptr.uuid, ptr)) catch continue;
         }
+
+        return this;
     }
 
     pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
@@ -66,7 +68,7 @@ pub const Children = struct {
         for (list.items) |*item| {
             if (!scene.isEntityAliveUuid(item.uuid)) continue;
 
-            item.ptr.?.addComonent(Child.init(entity));
+            try item.ptr.?.addComonent(Child.init(entity));
         }
     }
 

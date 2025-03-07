@@ -1,6 +1,7 @@
 const fyr = @import("fyr");
 
 const MovementBehaviour = @import("../behaviours.zig").MovementBehaviour;
+const Box = @import("./Box.zig").Box;
 
 pub fn Player() !*fyr.Entity {
     return try fyr.entity("Player", .{
@@ -31,6 +32,12 @@ pub fn Player() !*fyr.Entity {
                 64,
             ),
         }),
+
+        fyr.Children.init(
+            fyr.array(*fyr.Entity, .{
+                try Box(),
+            }),
+        ),
 
         fyr.AnimatorBehaviour.init(fyr.array(
             fyr.Animation,

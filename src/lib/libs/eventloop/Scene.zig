@@ -59,7 +59,7 @@ pub inline fn reset(self: *Self) void {
 
     const entities = self.entities orelse return;
     for (entities.items) |entity| {
-        self.removeEntity(entity);
+        self.removeEntityByPtr(entity);
     }
 }
 
@@ -126,6 +126,8 @@ pub fn newEntity(self: *Self, id: []const u8, components: anytype) !*Entity {
     return ptr;
 }
 
+// Entities - Generics
+
 pub fn addEntity(self: *Self, entity: *Entity) !void {
     const behaviours = try entity.getBehaviours();
     for (behaviours) |b| {
@@ -137,10 +139,10 @@ pub fn addEntity(self: *Self, entity: *Entity) !void {
     try entities.append(entity);
 }
 
-pub fn removeEntity(self: *Self, entity: *Entity) void {
+pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) void {
     const entities = self.makeGetEntities();
-    for (entities.items, 0..) |it, index| {
-        if (@intFromPtr(entity) != @intFromPtr(it)) continue;
+    for (entities.items, 0..) |entity, index| {
+        if (!eqls(value, entity)) continue;
 
         const behaviours = entity.getBehaviours() catch &[_]*fyr.Behaviour{};
         for (behaviours) |b| {
@@ -151,70 +153,64 @@ pub fn removeEntity(self: *Self, entity: *Entity) void {
     }
 }
 
-pub fn removeEntityByUuid(self: *Self, uuid: u128) void {
-    const entities = self.makeGetEntities();
-    for (entities.items, 0..) |it, index| {
-        if (it.uuid != uuid) continue;
-
-        const behaviours = it.getBehaviours() catch &[_]*fyr.Behaviour{};
-        for (behaviours) |b| {
-            b.callSafe(.deinit, it);
-        }
-        _ = entities.swapRemove(index);
-        break;
-    }
-}
-
-pub fn removeEntityById(self: *Self, id: []const u8) void {
-    const entities = self.makeGetEntities();
-    for (entities.items, 0..) |it, index| {
-        if (std.mem.eql(u8, id, it.id)) continue;
-
-        const behaviours = it.getBehaviours() catch &[_]*fyr.Behaviour{};
-        for (behaviours) |b| {
-            b.callSafe(.deinit, it);
-        }
-        _ = entities.swapRemove(index);
-        break;
-    }
-}
-
-pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
-    const Entitys = self.entities orelse return null;
-    for (Entitys.items) |entity| {
-        if (!std.mem.eql(u8, entity.id, id)) continue;
+pub fn getEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) ?*Entity {
+    const entities = self.entities orelse return null;
+    for (entities.items) |entity| {
+        if (!eqls(value, entity)) continue;
         return Entity;
     }
 
     return null;
 }
 
-pub fn getEntityByUuid(self: *Self, uuid: u128) ?*Entity {
-    const Entitys = self.entities orelse return null;
-    for (Entitys.items) |entity| {
-        if (entity.uuid == uuid) continue;
-        return Entity;
-    }
-
-    return null;
-}
-
-pub fn isEntityAliveId(self: *Self, id: []const u8) bool {
-    const Entitys = self.entities orelse return false;
-    for (Entitys.items) |entity| {
-        if (!std.mem.eql(u8, entity.id, id)) continue;
+pub fn isEntityAlive(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) bool {
+    const entities = self.entities orelse return false;
+    for (entities.items) |entity| {
+        if (!eqls(value, entity)) continue;
         return true;
     }
 
     return false;
 }
 
-pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
-    const Entitys = self.entities orelse return false;
-    for (Entitys.items) |entity| {
-        if (entity.uuid == uuid) continue;
-        return Entity;
-    }
+// Entities - Specified
 
-    return false;
+fn ptrEqls(ptr: *Entity, entity: *Entity) bool {
+    return @intFromPtr(ptr) == @intFromPtr(entity);
+}
+
+fn idEqls(string: []const u8, entity: *Entity) bool {
+    return std.mem.eql(u8, string, entity.id);
+}
+
+fn uuidEqls(uuid: u128, entity: *Entity) bool {
+    return uuid == entity.uuid;
+}
+
+pub fn removeEntityByPtr(self: *Self, entity: *Entity) void {
+    removeEntity(self, entity, ptrEqls);
+}
+
+pub fn removeEntityById(self: *Self, id: []const u8) void {
+    removeEntity(self, id, idEqls);
+}
+
+pub fn removeEntityByUuid(self: *Self, uuid: u128) void {
+    removeEntity(self, uuid, uuidEqls);
+}
+
+pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
+    return getEntity(self, id, idEqls);
+}
+
+pub fn getEntityByUuid(self: *Self, uuid: u128) ?*Entity {
+    return getEntity(self, uuid, uuidEqls);
+}
+
+pub fn isEntityAliveId(self: *Self, id: []const u8) bool {
+    return isEntityAlive(self, id, idEqls);
+}
+
+pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
+    return isEntityAlive(self, uuid, uuidEqls);
 }

@@ -55,6 +55,7 @@ pub const Renderer = ecs.components.Renderer;
 pub const ColliderBehaviour = ecs.components.ColliderBehaviour;
 pub const CameraTarget = ecs.components.CameraTarget;
 pub const AnimatorBehaviour = ecs.components.AnimatorBehaviour;
+pub const Children = ecs.components.Children;
 
 // ^Animator
 // --------------------------------------------------------------------------------
