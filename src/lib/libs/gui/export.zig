@@ -50,6 +50,8 @@ pub fn init() !void {
     _ = clay.initialize(arena, .{ .h = 1280, .w = 720 }, .{});
 
     clay.setMeasureTextFunction({}, renderer.measureText);
+
+    try loadFont("press_play.ttf", 1);
 }
 
 pub fn update() !void {
@@ -64,6 +66,19 @@ pub fn update() !void {
     if (drawfn) |dfn|
         dfn() catch std.log.warn("failed to execute draw function", .{});
 
+    clay.UI()(.{
+        .id = .ID("test"),
+        .layout = .{
+            .sizing = .{
+                .w = .fixed(300),
+                .h = .fixed(200),
+            },
+        },
+        .background_color = .{ 250, 250, 255, 255 },
+    })({
+        clay.text("Clay - UI Library", .{ .font_size = 24, .color = .{ 0, 0, 0, 255 }, .font_id = 1 });
+    });
+
     var render_commands = clay.endLayout();
 
     try renderer.clayRaylibRender(&render_commands, fyr.getAllocator(.generic));
@@ -77,8 +92,8 @@ pub fn deinit() void {
     fyr.getAllocator(.generic).free(memory);
 }
 
-pub fn loadFont(file_data: ?[]const u8, font_id: u16, font_size: i32) !void {
-    renderer.raylib_fonts[font_id] = try rl.loadFontFromMemory(".ttf", file_data, font_size * 2, null);
+pub fn loadFont(rel_path: []const u8, font_id: usize) !void {
+    renderer.raylib_fonts[font_id] = (fyr.assets.font.get(rel_path, .{}) orelse return error.FontNotFound).*;
     rl.setTextureFilter(renderer.raylib_fonts[font_id].?.texture, .bilinear);
 }
 
