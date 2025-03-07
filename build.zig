@@ -24,6 +24,12 @@ pub fn build(b: *std.Build) !void {
     const uuid = uuid_dep.module("uuid");
     const uuid_artifact = uuid_dep.artifact("uuid-zig");
 
+    const zclay_dep = b.dependency("zclay", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const zclay = zclay_dep.module("zclay");
+
     if (target.result.os.tag == .macos)
         raylib.addSystemFrameworkPath(
             .{ .cwd_relative = "/System/Library/Frameworks" },
@@ -42,6 +48,8 @@ pub fn build(b: *std.Build) !void {
 
     fyr_module.addImport("uuid", uuid);
     fyr_module.linkLibrary(uuid_artifact);
+
+    fyr_module.addImport("zclay", zclay);
 
     try b.modules.put(b.dupe("fyr"), fyr_module);
 
@@ -62,6 +70,8 @@ pub fn build(b: *std.Build) !void {
 
     lib.root_module.addImport("uuid", uuid);
     lib.root_module.linkLibrary(uuid_artifact);
+
+    lib.root_module.addImport("zclay", zclay);
 
     b.installArtifact(lib);
 

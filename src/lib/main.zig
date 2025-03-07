@@ -267,7 +267,6 @@ pub const normal_control_flow = struct {
         try eventloop.init();
 
         display.init();
-        gui.init();
 
         try eventloop.setActive("engine");
     }
@@ -289,7 +288,6 @@ pub const normal_control_flow = struct {
             time.update();
 
             display.reset();
-            gui.reset();
 
             eventloop.execute() catch {
                 std.log.warn("eventloop.execute() failed!", .{});
@@ -312,7 +310,6 @@ pub const normal_control_flow = struct {
                 }
 
                 gui.raygui.callDrawFn();
-                gui.render();
 
                 if (window.use_debug_lines)
                     rl.drawFPS(10, 10);
@@ -335,7 +332,6 @@ pub const normal_control_flow = struct {
 
         eventloop.deinit();
 
-        gui.deinit();
         display.deinit();
 
         assets.deinit();

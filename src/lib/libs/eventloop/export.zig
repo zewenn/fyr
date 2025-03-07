@@ -100,7 +100,6 @@ pub fn execute() !void {
 
     if (!unload_next_frame) return;
     unload_next_frame = false;
-    fyr.gui.sceneUnload();
 
     defer active_scene = next_Scene;
 
