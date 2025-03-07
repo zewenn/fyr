@@ -4,8 +4,8 @@
     .fingerprint = 0xf3edbc2fefcce355,
     .dependencies = .{
         .uuid = .{
-            .url = "git+https://github.com/r4gus/uuid-zig#17cdf2cf5adb9e85892b04e269d408db3578cff2",
-            .hash = "uuid-0.3.0-AAAAAFJnAAB5IP8_zmk5ivyVmyUrjNcqtVptuyUdcfoE",
+            .url = "git+https://github.com/r4gus/uuid-zig.git#6d3f2701b84220ddcfdb2a153b7036e8058f3d13",
+            .hash = "uuid-0.3.0-oOieIY5nAABN9gM-xe_yC_WsXX346XaqdsT-aU6CksyV",
         },
         .raylib_zig = .{
             .url = "git+https://github.com/Not-Nik/raylib-zig?ref=devel#57a8a21b486af47d62cb8ce39a0c7902019a86d2",
