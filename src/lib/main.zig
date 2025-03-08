@@ -330,8 +330,8 @@ pub const normal_control_flow = struct {
         defer if (global_allocators.generic.interface) |*intf| {
             const state = intf.deinit();
             switch (state) {
-                .ok => std.log.info("GPA exited without memory leaks!", .{}),
-                .leak => std.log.warn("GPA exited with a memory leak!", .{}),
+                .ok => std.log.info("Generic allocator exited without memory leaks!", .{}),
+                .leak => std.log.warn("Generic allocator exited with memory leak(s)!", .{}),
             }
         };
 
@@ -360,6 +360,7 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
             .float, .comptime_float => @as(TypeTarget, @intFromFloat(@round(value))),
             .bool => @as(TypeTarget, @intFromBool(value)),
             .@"enum" => @as(TypeTarget, @intFromEnum(value)),
+            .pointer => @intFromPtr(value),
             else => null,
         },
         .float, .comptime_float => switch (value_info) {
@@ -367,6 +368,7 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
             .float, .comptime_float => @as(TypeTarget, @floatCast(value)),
             .bool => @as(TypeTarget, @floatFromInt(@intFromBool(value))),
             .@"enum" => @as(TypeTarget, @floatFromInt(@intFromEnum(value))),
+            .pointer => @as(TypeTarget, @floatFromInt(@as(usize, @intFromPtr(value)))),
             else => null,
         },
         .bool => switch (value_info) {
@@ -374,6 +376,7 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
             .float, .comptime_float => @as(isize, @intFromFloat(@round(value))) != 0,
             .bool => value,
             .@"enum" => @as(isize, @intFromEnum(value)) != 0,
+            .pointer => @as(usize, @intFromPtr(value)) != 0,
             else => null,
         },
         .@"enum" => switch (value_info) {
@@ -381,11 +384,20 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
             .float, .comptime_float => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
             .bool => @enumFromInt(@intFromBool(value)),
             .@"enum" => @enumFromInt(@as(isize, @intFromEnum(value))),
+            .pointer => @enumFromInt(@as(usize, @intFromPtr(value))),
+            else => null,
+        },
+        .pointer => switch (value_info) {
+            .int, .comptime_int => @ptrFromInt(value),
+            .float, .comptime_float => @ptrFromInt(@as(isize, @floatFromInt(@round(value)))),
+            .bool => @ptrFromInt(@as(usize, @intFromBool(value))),
+            .@"enum" => @ptrFromInt(@as(isize, @intFromEnum(value))),
+            .pointer => @ptrCast(@alignCast(value)),
             else => null,
         },
         else => Catch: {
             std.log.warn(
-                "cannot change type of \"{any}\" to type \"{any}\"! (fyr.changeType())",
+                "cannot change type of \"{any}\" to type \"{any}\" (fyr.changeType())",
                 .{ value, TypeTarget },
             );
             break :Catch null;
