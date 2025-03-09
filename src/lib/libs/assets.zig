@@ -139,6 +139,35 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
             _ = hmap.remove(HASH);
         }
 
+        pub fn releasePtr(ptr: *T) void {
+            const hmap = hashMap();
+
+            const entry: HashMapType.Entry = Blk: {
+                var iter = hmap.iterator();
+                while (iter.next()) |entry| {
+                    const value_ptr = entry.value_ptr.*.valueptr();
+                    defer entry.value_ptr.*.deinit();
+
+                    if (fyr.changeNumberType(usize, value_ptr) != fyr.changeNumberType(usize, ptr)) continue;
+                    break :Blk entry;
+                }
+                break :Blk null;
+            } orelse return;
+            
+            const sptr = entry.value_ptr.*;
+            const HASH = entry.key_ptr.*;
+
+            if (sptr.ref_count > 0) {
+                sptr.deinit();
+                return;
+            }
+
+            if (sptr.value) |v|
+                releasefn(v);
+            sptr.destroy();
+            _ = hmap.remove(HASH);
+        }
+
         pub fn get(rel_path: []const u8, modifiers: anytype) ?*T {
             const HASH = parseModAndGetHash(rel_path, modifiers);
 

@@ -35,8 +35,24 @@ pub const raygui = struct {
 
 var memory: []u8 = undefined;
 var drawfn: ?*const fn () anyerror!void = null;
-var fonts: std.ArrayList(fyr.SharedPtr(rl.Font)) = undefined;
-var fonts_cache: std.ArrayList(fyr.SharedPtr(rl.Font)) = undefined;
+
+const FontEntry = struct {
+    const Self = @This();
+
+    name: []const u8,
+    id: u16,
+
+    pub fn init(name: []const u8, id: anytype) Self {
+        return .{
+            .name = name,
+            .id = fyr.changeNumberType(u16, id) orelse 0,
+        };
+    }
+};
+
+var fonts: std.ArrayList(FontEntry) = undefined;
+var fonts_cache: std.ArrayList(FontEntry) = undefined;
+var font_index: usize = 1;
 
 pub fn init() !void {
     fonts = .init(fyr.getAllocator(.generic));
@@ -51,7 +67,7 @@ pub fn init() !void {
 
     clay.setMeasureTextFunction({}, renderer.measureText);
 
-    try loadFont("press_play.ttf", 1);
+    renderer.raylib_fonts[0] = try rl.getFontDefault();
 }
 
 pub fn update() !void {
@@ -76,12 +92,36 @@ pub fn update() !void {
         },
         .background_color = .{ 250, 250, 255, 255 },
     })({
-        clay.text("Clay - UI Library", .{ .font_size = 24, .color = .{ 0, 0, 0, 255 }, .font_id = 1 });
+        clay.text("Clay - UI Library", .{
+            .font_size = 24,
+            .color = .{ 0, 0, 0, 255 },
+            .font_id = fontID("press_play.ttf"),
+        });
     });
 
     var render_commands = clay.endLayout();
 
     try renderer.clayRaylibRender(&render_commands, fyr.getAllocator(.generic));
+
+    var cache_clone = try fonts_cache.clone();
+    defer cache_clone.deinit();
+
+    for (cache_clone.items, 0..) |cached, index| {
+        const included = Blk: {
+            for (fonts.items) |current| {
+                if (cached.id == current.id) break :Blk true;
+            }
+            break :Blk false;
+        };
+
+        if (included) continue;
+
+        fyr.assets.font.release(cached.name, .{});
+        _ = fonts_cache.swapRemove(index);
+    }
+
+    fonts_cache.deinit();
+    fonts_cache = try fonts.clone();
 }
 
 pub fn useDrawFn(func: *const fn () anyerror!void) void {
@@ -89,12 +129,39 @@ pub fn useDrawFn(func: *const fn () anyerror!void) void {
 }
 
 pub fn deinit() void {
+    for (fonts.items) |entry| {
+        fyr.assets.font.release(entry.name, .{});
+    }
+
+    fonts_cache.deinit();
+    fonts.deinit();
+
     fyr.getAllocator(.generic).free(memory);
 }
 
-pub fn loadFont(rel_path: []const u8, font_id: usize) !void {
-    renderer.raylib_fonts[font_id] = (fyr.assets.font.get(rel_path, .{}) orelse return error.FontNotFound).*;
-    rl.setTextureFilter(renderer.raylib_fonts[font_id].?.texture, .bilinear);
+fn loadFont(rel_path: []const u8) !void {
+    renderer.raylib_fonts[font_index] = (fyr.assets.font.get(rel_path, .{}) orelse return error.FontNotFound).*;
+    rl.setTextureFilter(renderer.raylib_fonts[font_index].?.texture, .bilinear);
+}
+
+/// Get the corresponding font id for a file path
+pub fn fontID(rel_path: []const u8) u16 {
+    for (fonts.items) |font_entry| {
+        if (!std.mem.eql(u8, font_entry.name, rel_path)) continue;
+        if (renderer.raylib_fonts[font_entry.id] == null) continue;
+        return font_entry.id;
+    }
+
+    font_index += 1;
+    if (font_index >= 10) {
+        font_index = 1;
+    }
+
+    const font_entry: FontEntry = .init(rel_path, font_index);
+    loadFont(rel_path) catch return 0;
+    fonts.append(font_entry) catch return 0;
+
+    return font_entry.id;
 }
 
 pub fn loadImage(comptime path: [:0]const u8) !rl.Texture2D {

@@ -51,11 +51,12 @@ pub fn SharedPtr(comptime T: type) type {
         }
 
         pub fn valueptr(self: *Self) ?*T {
+            self.ref_count += 1;
             return &(self.value orelse return null);
         }
 
         pub fn this(self: *Self) *Self {
-            return self.this();
+            return self.self_ptr;
         }
     };
 }
