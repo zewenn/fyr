@@ -104,7 +104,7 @@ pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
                     global_allocators.generic.interface = std.heap.DebugAllocator(.{}){};
                     global_allocators.generic.allocator = global_allocators.generic.interface.?.allocator();
                 },
-                else => global_allocators.generic.allocator = global_allocators.page,
+                else => global_allocators.generic.allocator = std.heap.smp_allocator,
             }
             break :Blk global_allocators.generic.allocator.?;
         },
