@@ -2,7 +2,7 @@ const std = @import("std");
 const fyr = @import("../../main.zig");
 
 const FnType = ?(*const fn (self: *anyopaque, entity: *fyr.Entity) anyerror!void);
-const Events = enum { awake, init, update, tick, deinit };
+const Events = enum { awake, start, update, tick, end };
 const AllocationError = error.OutOfMemory;
 
 const Self = @This();
@@ -36,31 +36,26 @@ pub fn initWithValue(value: anytype) !Self {
 pub fn add(self: *Self, event: Events, callback: FnType) void {
     switch (event) {
         .awake => self.awake = callback,
-        .init => self.start = callback,
+        .start => self.start = callback,
         .update => self.update = callback,
         .tick => self.tick = callback,
-        .deinit => self.end = callback,
+        .end => self.end = callback,
     }
 }
 
 pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
     defer FreeingCAllocations: {
-        if (event != .deinit) break :FreeingCAllocations;
+        if (event != .end) break :FreeingCAllocations;
 
-        if (fyr.lib_info.build_mode == .Debug) {
-            const addr = @intFromPtr(self.cache);
-
-            std.c.free(self.cache);
-            std.log.info("behaviour cache \x1b[32m\x1b[1mfree\x1b[0m at 0x{x}", .{addr});
-        }
+        if (fyr.lib_info.build_mode == .Debug) std.c.free(self.cache);
     }
 
     const func = switch (event) {
         .awake => self.awake,
-        .init => self.start,
+        .start => self.start,
         .update => self.update,
         .tick => self.tick,
-        .deinit => self.end,
+        .end => self.end,
     } orelse return;
 
     func(self.cache, entity) catch {
@@ -68,8 +63,8 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
             self.name,
             switch (event) {
                 .awake => "Awake",
-                .init => "Start",
-                .deinit => "End",
+                .start => "Start",
+                .end => "End",
                 .update => "Update",
                 .tick => "Tick",
             },
@@ -83,10 +78,10 @@ fn attachEvents(b: *Self, comptime T: type) void {
             try @field(T, "Awake")(@ptrCast(@alignCast(cache)), entity);
         }
 
-        pub fn init(cache: *anyopaque, entity: *fyr.Entity) !void {
+        pub fn start(cache: *anyopaque, entity: *fyr.Entity) !void {
             try @field(T, "Start")(@ptrCast(@alignCast(cache)), entity);
         }
-        pub fn deinit(cache: *anyopaque, entity: *fyr.Entity) !void {
+        pub fn end(cache: *anyopaque, entity: *fyr.Entity) !void {
             try @field(T, "End")(@ptrCast(@alignCast(cache)), entity);
         }
 
@@ -103,10 +98,10 @@ fn attachEvents(b: *Self, comptime T: type) void {
     }
 
     if (std.meta.hasFn(T, "Start")) {
-        b.add(.init, t.init);
+        b.add(.start, t.start);
     }
     if (std.meta.hasFn(T, "End")) {
-        b.add(.deinit, t.deinit);
+        b.add(.end, t.end);
     }
 
     if (std.meta.hasFn(T, "Update")) {

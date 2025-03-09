@@ -87,13 +87,15 @@ pub fn update() !void {
         .layout = .{
             .sizing = .{
                 .w = .fixed(300),
-                .h = .fixed(200),
+                .h = .fit,
             },
+            .padding = .all(10),
         },
         .background_color = .{ 250, 250, 255, 255 },
     })({
         clay.text("Clay - UI Library", .{
-            .font_size = 24,
+            .font_size = 12,
+            .letter_spacing = 1,
             .color = .{ 0, 0, 0, 255 },
             .font_id = fontID("press_play.ttf"),
         });
@@ -122,6 +124,7 @@ pub fn update() !void {
 
     fonts_cache.deinit();
     fonts_cache = try fonts.clone();
+    fonts.clearAndFree();
 }
 
 pub fn useDrawFn(func: *const fn () anyerror!void) void {
@@ -149,6 +152,14 @@ pub fn fontID(rel_path: []const u8) u16 {
     for (fonts.items) |font_entry| {
         if (!std.mem.eql(u8, font_entry.name, rel_path)) continue;
         if (renderer.raylib_fonts[font_entry.id] == null) continue;
+        return font_entry.id;
+    }
+
+    for (fonts_cache.items) |font_entry| {
+        if (!std.mem.eql(u8, font_entry.name, rel_path)) continue;
+        if (renderer.raylib_fonts[font_entry.id] == null) continue;
+
+        fonts.append(font_entry) catch return 0;
         return font_entry.id;
     }
 

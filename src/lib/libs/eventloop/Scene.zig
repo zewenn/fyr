@@ -132,7 +132,7 @@ pub fn addEntity(self: *Self, entity: *Entity) !void {
     const behaviours = try entity.getBehaviours();
     for (behaviours) |b| {
         b.callSafe(.awake, entity);
-        b.callSafe(.init, entity);
+        b.callSafe(.start, entity);
     }
 
     const entities = self.makeGetEntities();
@@ -146,7 +146,7 @@ pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value)
 
         const behaviours = entity.getBehaviours() catch &[_]*fyr.Behaviour{};
         for (behaviours) |b| {
-            b.callSafe(.deinit, entity);
+            b.callSafe(.end, entity);
         }
         _ = entities.swapRemove(index);
         break;

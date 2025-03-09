@@ -330,8 +330,8 @@ pub const normal_control_flow = struct {
         defer if (global_allocators.generic.interface) |*intf| {
             const state = intf.deinit();
             switch (state) {
-                .ok => std.log.info("Generic allocator exited without memory leaks!", .{}),
-                .leak => std.log.warn("Generic allocator exited with memory leak(s)!", .{}),
+                .ok => std.log.info("GA exit without memory leaks!", .{}),
+                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
             }
         };
 
@@ -413,6 +413,16 @@ pub inline fn tof32(value: anytype) f32 {
 /// Shorthand for changeNumberType
 pub fn toi32(value: anytype) i32 {
     return changeNumberType(i32, value) orelse 0;
+}
+
+/// Shorthand for changeNumberType
+pub fn toisize(value: anytype) isize {
+    return changeNumberType(isize, value) orelse 0;
+}
+
+/// Shorthand for changeNumberType
+pub fn tousize(value: anytype) usize {
+    return changeNumberType(usize, value) orelse 0;
 }
 
 // ^Raylib Shortcuts

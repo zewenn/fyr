@@ -85,6 +85,9 @@ pub fn build(b: *std.Build) !void {
     });
     demo_exe.linkLibC();
     demo_exe.root_module.addImport("fyr", lib.root_module);
+    if (target.result.os.tag == .windows and optimize != .Debug)
+        demo_exe.subsystem = .Windows;
+
     b.installArtifact(demo_exe);
 
     // Run Step
