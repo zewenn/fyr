@@ -1,117 +1,95 @@
+// ^Import
+// --------------------------------------------------------------------------------
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
-
 const testing = std.testing;
+const builtin = @import("builtin");
+const os = std.os;
+const target = builtin.target;
 
+var random: std.Random = undefined;
+
+// ^Library Inf
+// --------------------------------------------------------------------------------
 pub const lib_info = struct {
     pub const lib_name = "fyr";
-    pub const version_str = "v0.0.1-dev";
+    pub const version_str = "v0.1.0";
+    pub const build_mode = builtin.mode;
 };
 
-pub const builtin = @import("builtin");
-pub const os = std.os;
-pub const target = builtin.target;
-pub const BUILD_MODE = builtin.mode;
-
+// ^Dependencie
+// --------------------------------------------------------------------------------
 const deps = @import("./deps/export.zig");
-
 pub const rl = deps.raylib;
 pub const rgui = deps.raygui;
-
+pub const clay = deps.clay;
 pub const uuid = deps.uuid;
 
-pub const Vector2 = rl.Vector2;
-pub const Vector3 = rl.Vector3;
-pub const Vector4 = rl.Vector4;
-pub const Rectangle = rl.Rectangle;
-
+// ^Module
+// --------------------------------------------------------------------------------
 pub const ecs = @import("libs/ecs/export.zig");
 pub const eventloop = @import("libs/eventloop/export.zig");
 pub const time = @import("libs/time.zig");
 pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
 pub const gui = @import("libs/gui/export.zig");
+pub const window = @import("libs/window.zig");
 
+// ^Raylib Type
+// --------------------------------------------------------------------------------
+pub const Vector2 = rl.Vector2;
+pub const Vector3 = rl.Vector3;
+pub const Vector4 = rl.Vector4;
+pub const Rectangle = rl.Rectangle;
+
+// ^Component
+// --------------------------------------------------------------------------------
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
 pub const DisplayCache = ecs.components.DisplayCache;
-pub const Renderer = ecs.components.Renderer;
 pub const Collider = ecs.components.Collider;
+pub const Animator = ecs.components.Animator;
+
+// ^Behaviours
+// --------------------------------------------------------------------------------
+pub const Renderer = ecs.components.Renderer;
 pub const ColliderBehaviour = ecs.components.ColliderBehaviour;
 pub const CameraTarget = ecs.components.CameraTarget;
-
 pub const AnimatorBehaviour = ecs.components.AnimatorBehaviour;
-pub const Animator = ecs.components.Animator;
+pub const Children = ecs.components.Children;
+
+// ^Animator
+// --------------------------------------------------------------------------------
+pub const interpolation = ecs.components.interpolation;
 pub const Animation = ecs.components.Animation;
 pub const KeyFrame = ecs.components.KeyFrame;
 
-pub const interpolation = ecs.components.interpolation;
-
-pub const Scene = eventloop.Scene;
-pub const window = struct {
-    var _size = Vec2(860, 480);
-    pub var _temp_size = Vec2(860, 480);
-
-    var _inited = false;
-
-    pub const initalised = struct {
-        pub inline fn set(to: bool) void {
-            if (_inited) return;
-            _inited = to;
-        }
-
-        pub inline fn get() bool {
-            return _inited;
-        }
+// ^Allocators
+// --------------------------------------------------------------------------------
+fn AllocatorInstance(comptime T: type) type {
+    return struct {
+        interface: ?T = null,
+        allocator: ?Allocator = null,
     };
-
-    pub const size = struct {
-        inline fn update() void {
-            _size = Vec2(rl.getScreenWidth(), rl.getScreenHeight());
-        }
-
-        pub inline fn set(to: Vector2) void {
-            if (initalised.get()) {
-                rl.setWindowSize(toi32(to.x), toi32(to.y));
-                update();
-                return;
-            }
-            _temp_size = to;
-        }
-
-        pub inline fn get() Vector2 {
-            update();
-            return _size;
-        }
-    };
-
-    pub var _temp_title: [*:0]const u8 = "";
-
-    pub fn title(to: [*:0]const u8) void {
-        if (initalised.get()) {
-            rl.setWindowTitle(to);
-            return;
-        }
-        _temp_title = to;
-    }
-};
+}
 
 const global_allocators = struct {
-    pub var gpa: AllocatorScene(std.heap.GeneralPurposeAllocator(.{})) = .{};
-    pub var arena: AllocatorScene(std.heap.ArenaAllocator) = .{};
+    pub var generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
+    pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
     pub var page: Allocator = std.heap.page_allocator;
 
     pub const types = enum {
         /// Generic allocator, warns at program exit if a memory leak happened.
-        gpa,
+        /// In debug mode this is a dbeug allocator, otherwise it is equivalent to the page allocator
+        generic,
         /// Global arena allocator, everything allocated will be freed at program end.
         arena,
         /// Shorthand for `std.heap.page_allocator`.
         page,
         /// If `eventloop` has an Scene loaded, this is a shorthand for
-        /// `fyr.eventloop.active_Scene.allocator()`, otherwise this is the
-        /// same as arena.
-        Scene,
+        /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
+        /// same as `arena`.
+        scene,
         /// Shorthand for `std.heap.c_allocator`
         c,
         /// Shorthand for `std.heap.raw_c_allocator`
@@ -119,15 +97,44 @@ const global_allocators = struct {
     };
 };
 
-pub const SharedPointer = @import("./.types/SharedPointer.zig").SharedPointer;
-pub fn SharetPtr(value: anytype) !*SharedPointer(@TypeOf(value)) {
-    const ptr = try getAllocator(.gpa).create(SharedPointer(@TypeOf(value)));
-    ptr.* = try SharedPointer(@TypeOf(value)).init(getAllocator(.gpa), value);
-    return ptr;
+pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
+    return switch (T) {
+        .generic => global_allocators.generic.allocator orelse Blk: {
+            switch (lib_info.build_mode) {
+                .Debug => {
+                    global_allocators.generic.interface = std.heap.DebugAllocator(.{}){};
+                    global_allocators.generic.allocator = global_allocators.generic.interface.?.allocator();
+                },
+                else => global_allocators.generic.allocator = std.heap.smp_allocator,
+            }
+            break :Blk global_allocators.generic.allocator.?;
+        },
+        .arena => global_allocators.arena.allocator orelse Blk: {
+            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.generic));
+            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
+
+            break :Blk global_allocators.arena.allocator.?;
+        },
+        .page => global_allocators.page,
+        .scene => Blk: {
+            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
+            break :Blk active_Scene.allocator();
+        },
+        .c => std.heap.c_allocator,
+        .raw_c => std.heap.raw_c_allocator,
+    };
+}
+
+// ^Fyr Types
+// --------------------------------------------------------------------------------
+pub const Scene = eventloop.Scene;
+
+pub const SharedPtr = @import("./.types/SharedPointer.zig").SharedPtr;
+pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
+    return try SharedPtr(@TypeOf(value)).create(getAllocator(.generic), value);
 }
 
 const warray_lib = @import("./.types/WrappedArray.zig");
-
 pub const WrappedArray = warray_lib.WrappedArray;
 pub const WrappedArrayOptions = warray_lib.WrappedArrayOptions;
 pub const array = warray_lib.array;
@@ -139,6 +146,8 @@ pub const string = @import("./.types/strings/export.zig").string;
 pub const Entity = ecs.Entity;
 pub const Behaviour = ecs.Behaviour;
 
+// ^Camera2D
+// --------------------------------------------------------------------------------
 pub var camera: rl.Camera2D = .{
     .offset = Vec2(0, 0),
     .target = Vec2(0, 0),
@@ -154,161 +163,284 @@ pub fn worldToScreenPos(pos: Vector2) Vector2 {
     return rl.getWorldToScreen2D(pos, camera);
 }
 
+// ^Loop info
+// --------------------------------------------------------------------------------
 var loop_running = false;
 pub inline fn isLoopRunning() bool {
     return loop_running;
 }
 
-pub fn init() !void {
-    rl.setTraceLogLevel(.warning);
-
-    rl.initWindow(
-        toi32(window.size.get().x),
-        toi32(window.size.get().y),
-        "fyr project - loading...",
-    );
-    rl.initAudioDevice();
-
-    window.initalised.set(true);
-
-    window.size.set(window._temp_size);
-    window.title(window._temp_title);
-
-    time.init();
-    try eventloop.init();
-
-    display.init();
-
-    try eventloop.setActive("engine");
-}
-
-pub fn loop() void {
-    if (eventloop.active_scene == null) {
-        try useScene("default");
-    }
-
-    while (!rl.windowShouldClose()) {
-        if (!loop_running)
-            loop_running = true;
-
-        camera.offset = Vec2(
-            tof32(rl.getScreenWidth()) / 2,
-            tof32(rl.getScreenHeight()) / 2,
-        );
-
-        time.update();
-
-        display.reset();
-
-        eventloop.execute() catch {
-            std.log.warn("eventloop.execute() failed!", .{});
-        };
-
-        rl.beginDrawing();
-        {
-            rl.clearBackground(rl.Color.white);
-            camera.begin();
-            {
-                display.render();
-            }
-            camera.end();
-        }
-        rl.endDrawing();
-    }
-}
-
+// ^Block-based control flow and shorthands
+// --------------------------------------------------------------------------------
 pub fn project(_: void) *const fn (void) void {
-    init() catch panic("couldn't initalise window!", .{});
+    normal_control_flow.init() catch panic("couldn't initalise window!", .{});
 
     return struct {
         pub fn callback(_: void) void {
-            loop();
-            deinit();
+            normal_control_flow.loop();
+            normal_control_flow.deinit();
         }
     }.callback;
 }
 
 /// Shorthand for window.size.set()
-pub fn winSize(dimenstions: Vector2) void {
-    window.size.set(dimenstions);
-}
+pub const winSize = window.size.set;
 
 /// Shorthand for window.title()
-pub fn title(text: [*:0]const u8) void {
-    window.title(text);
+pub const title = window.title;
+
+/// Can be used to set the path of the `assets/` directory. This is the path
+/// which will be used as the base of all asset requests. For Scene:
+/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
+pub inline fn useDebugAssetPath(comptime path: []const u8) void {
+    if (lib_info.build_mode != .Debug) return;
+    assets.fs.debug = path;
 }
 
-pub fn deinit() void {
-    defer if (global_allocators.gpa.interface) |*intf| {
-        const state = intf.deinit();
-        switch (state) {
-            .ok => std.log.info("GPA exited without memory leaks!", .{}),
-            .leak => std.log.warn("GPA exited with a memory leak!", .{}),
+/// Sets the Scene with the given ID as the active Scene, unloading the current one.
+pub const useScene = eventloop.setActive;
+
+/// Created
+pub inline fn scene(comptime id: []const u8) *const fn (void) void {
+    if (eventloop.open_scene != null) {
+        std.log.warn("Opening a scene without closing the current open scene is dangerous, and can lead to unwanted results.", .{});
+        eventloop.open_scene = null;
+    }
+
+    eventloop.open_scene = eventloop.new(id) catch Blk: {
+        std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
+        break :Blk null;
+    };
+
+    return struct {
+        pub fn callback(_: void) void {
+            eventloop.open_scene = null;
         }
-    };
-
-    defer if (global_allocators.arena.interface) |*intf| {
-        intf.deinit();
-    };
-
-    eventloop.deinit();
-    display.deinit();
-    rl.closeWindow();
-
-    assets.deinit();
-
-    rl.closeAudioDevice();
+    }.callback;
 }
 
-pub inline fn changeNumberType(comptime T: type, value: anytype) ?T {
+/// Set the default entities of the last created scene
+/// If an entity fn returns an error it will be ignored!
+pub fn entities(tuple: anytype) void {
+    const scene_ptr = activeOrOpenScene() catch {
+        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
+        return;
+    };
+
+    const list = arrayAdvanced(
+        *Entity,
+        .{ .on_type_change_fail = .ignore },
+        tuple,
+    );
+    defer list.deinit();
+
+    for (list.items) |ptr| {
+        scene_ptr.addEntity(ptr) catch {
+            std.log.err("failed to add entity to scene!", .{});
+            continue;
+        };
+    }
+}
+
+pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
+    return try (try activeOrOpenScene()).newEntity(id, component_tuple);
+}
+
+pub fn scripts(tuple: anytype) void {
+    const scene_ptr = activeOrOpenScene() catch {
+        std.log.err("no scene was loaded or found, scripts cannot be added!", .{});
+        return;
+    };
+
+    inline for (tuple) |item| {
+        scene_ptr.newScript(item) catch {
+            std.log.err("failed to add script to scene!", .{});
+        };
+    }
+}
+
+pub inline fn activeScene() !*Scene {
+    return eventloop.active_scene orelse error.NoScenesPresent;
+}
+
+pub inline fn activeOrOpenScene() !*Scene {
+    return eventloop.active_scene orelse (eventloop.open_scene orelse error.NoScenesPresent);
+}
+
+// ^Normal control flow
+// --------------------------------------------------------------------------------
+pub const normal_control_flow = struct {
+    pub fn init() !void {
+        var seed: u64 = undefined;
+        std.posix.getrandom(std.mem.asBytes(&seed)) catch {
+            seed = changeNumberType(u64, rl.getTime()).?;
+        };
+        var x = std.Random.DefaultPrng.init(seed);
+        random = x.random();
+
+        rl.setTraceLogLevel(.warning);
+
+        window.init();
+
+        time.init();
+        try eventloop.init();
+
+        try gui.init();
+        display.init();
+
+        try eventloop.setActive("engine");
+    }
+
+    pub fn loop() void {
+        if (eventloop.active_scene == null) {
+            try useScene("default");
+        }
+
+        while (!rl.windowShouldClose()) {
+            if (!loop_running)
+                loop_running = true;
+
+            camera.offset = Vec2(
+                tof32(rl.getScreenWidth()) / 2,
+                tof32(rl.getScreenHeight()) / 2,
+            );
+
+            time.update();
+
+            display.reset();
+
+            eventloop.execute() catch {
+                std.log.warn("eventloop.execute() failed!", .{});
+            };
+
+            if (rl.isKeyPressed(.f3) and lib_info.build_mode == .Debug) {
+                window.toggleDebugLines();
+            }
+
+            {
+                rl.beginDrawing();
+                defer rl.endDrawing();
+
+                window.clearBackground();
+                {
+                    camera.begin();
+                    defer camera.end();
+
+                    display.render();
+                }
+
+                gui.raygui.callDrawFn();
+                gui.update() catch {
+                    std.log.warn("gui update failed", .{});
+                };
+
+                if (window.use_debug_lines)
+                    rl.drawFPS(10, 10);
+            }
+        }
+    }
+
+    pub fn deinit() void {
+        defer if (global_allocators.generic.interface) |*intf| {
+            const state = intf.deinit();
+            switch (state) {
+                .ok => std.log.info("GA exit without memory leaks!", .{}),
+                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
+            }
+        };
+
+        defer if (global_allocators.arena.interface) |*intf| {
+            intf.deinit();
+        };
+
+        eventloop.deinit();
+
+        display.deinit();
+        gui.deinit();
+
+        assets.deinit();
+
+        window.deinit();
+    }
+};
+
+// ^Changing between number(int, float), enum, and boolean types
+// --------------------------------------------------------------------------------
+pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeTarget {
     const value_info = @typeInfo(@TypeOf(value));
-    return switch (@typeInfo(T)) {
-        .Int, .ComptimeInt => switch (value_info) {
-            .Int, .ComptimeInt => @as(T, @intCast(value)),
-            .Float, .ComptimeFloat => @as(T, @intFromFloat(@round(value))),
-            .Bool => @as(T, @intFromBool(value)),
-            .Enum => @as(T, @intFromEnum(value)),
+    return switch (@typeInfo(TypeTarget)) {
+        .int, .comptime_int => switch (value_info) {
+            .int, .comptime_int => @as(TypeTarget, @intCast(value)),
+            .float, .comptime_float => @as(TypeTarget, @intFromFloat(@round(value))),
+            .bool => @as(TypeTarget, @intFromBool(value)),
+            .@"enum" => @as(TypeTarget, @intFromEnum(value)),
+            .pointer => @intFromPtr(value),
             else => null,
         },
-        .Float, .ComptimeFloat => switch (value_info) {
-            .Int, .ComptimeInt => @as(T, @floatFromInt(value)),
-            .Float, .ComptimeFloat => @as(T, @floatCast(value)),
-            .Bool => @as(T, @floatFromInt(@intFromBool(value))),
-            .Enum => @as(T, @floatFromInt(@intFromEnum(value))),
+        .float, .comptime_float => switch (value_info) {
+            .int, .comptime_int => @as(TypeTarget, @floatFromInt(value)),
+            .float, .comptime_float => @as(TypeTarget, @floatCast(value)),
+            .bool => @as(TypeTarget, @floatFromInt(@intFromBool(value))),
+            .@"enum" => @as(TypeTarget, @floatFromInt(@intFromEnum(value))),
+            .pointer => @as(TypeTarget, @floatFromInt(@as(usize, @intFromPtr(value)))),
             else => null,
         },
-        .Bool => switch (value_info) {
-            .Int, .ComptimeInt => value != 0,
-            .Float, .ComptimeFloat => @as(isize, @intFromFloat(@round(value))) != 0,
-            .Bool => value,
-            .Enum => @as(isize, @intFromEnum(value)) != 0,
+        .bool => switch (value_info) {
+            .int, .comptime_int => value != 0,
+            .float, .comptime_float => @as(isize, @intFromFloat(@round(value))) != 0,
+            .bool => value,
+            .@"enum" => @as(isize, @intFromEnum(value)) != 0,
+            .pointer => @as(usize, @intFromPtr(value)) != 0,
             else => null,
         },
-        .Enum => switch (value_info) {
-            .Int, .ComptimeInt => @enumFromInt(value),
-            .Float, .ComptimeFloat => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
-            .Bool => @enumFromInt(@intFromBool(value)),
-            .Enum => @enumFromInt(@as(isize, @intFromEnum(value))),
+        .@"enum" => switch (value_info) {
+            .int, .comptime_int => @enumFromInt(value),
+            .float, .comptime_float => @enumFromInt(@as(isize, @intFromFloat(@round(value)))),
+            .bool => @enumFromInt(@intFromBool(value)),
+            .@"enum" => @enumFromInt(@as(isize, @intFromEnum(value))),
+            .pointer => @enumFromInt(@as(usize, @intFromPtr(value))),
+            else => null,
+        },
+        .pointer => switch (value_info) {
+            .int, .comptime_int => @ptrFromInt(value),
+            .float, .comptime_float => @ptrFromInt(@as(isize, @floatFromInt(@round(value)))),
+            .bool => @ptrFromInt(@as(usize, @intFromBool(value))),
+            .@"enum" => @ptrFromInt(@as(isize, @intFromEnum(value))),
+            .pointer => @ptrCast(@alignCast(value)),
             else => null,
         },
         else => Catch: {
             std.log.warn(
-                "cannot change type of \"{any}\" to type \"{any}\"! (fyr.changeType())",
-                .{ value, T },
+                "cannot change type of \"{any}\" to type \"{any}\" (fyr.changeType())",
+                .{ value, TypeTarget },
             );
             break :Catch null;
         },
     };
 }
 
+/// Shorthand for changeNumberType
 pub inline fn tof32(value: anytype) f32 {
     return changeNumberType(f32, value) orelse 0;
 }
 
+/// Shorthand for changeNumberType
 pub fn toi32(value: anytype) i32 {
     return changeNumberType(i32, value) orelse 0;
 }
 
+/// Shorthand for changeNumberType
+pub fn toisize(value: anytype) isize {
+    return changeNumberType(isize, value) orelse 0;
+}
+
+/// Shorthand for changeNumberType
+pub fn tousize(value: anytype) usize {
+    return changeNumberType(usize, value) orelse 0;
+}
+
+// ^Raylib Shortcuts
+// --------------------------------------------------------------------------------
 pub fn Vec2(x: anytype, y: anytype) Vector2 {
     return Vector2{
         .x = tof32(x),
@@ -349,156 +481,10 @@ pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     return try cloned.toOwnedSlice();
 }
 
-pub fn AllocatorScene(comptime T: type) type {
-    return struct {
-        interface: ?T = null,
-        allocator: ?Allocator = null,
-    };
-}
-
-// ^GetAllocator ------------------------------------------------------------
-pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
-    return switch (T) {
-        .gpa => global_allocators.gpa.allocator orelse Blk: {
-            global_allocators.gpa.interface = std.heap.GeneralPurposeAllocator(.{}){};
-            global_allocators.gpa.allocator = global_allocators.gpa.interface.?.allocator();
-
-            break :Blk global_allocators.gpa.allocator.?;
-        },
-        .arena => global_allocators.arena.allocator orelse Blk: {
-            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.gpa));
-            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
-
-            break :Blk global_allocators.arena.allocator.?;
-        },
-        .page => global_allocators.page,
-        .Scene => Blk: {
-            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
-            break :Blk active_Scene.allocator();
-        },
-        .c => std.heap.c_allocator,
-        .raw_c => std.heap.raw_c_allocator,
-    };
-}
-
-test "getAllocator" {
-    try testing.expect(
-        std.meta.eql(
-            std.heap.raw_c_allocator,
-            getAllocator(.raw_c),
-        ),
-    );
-
-    try testing.expect(
-        std.meta.eql(
-            std.heap.c_allocator,
-            getAllocator(.c),
-        ),
-    );
-
-    try testing.expect(
-        std.meta.eql(
-            std.heap.page_allocator,
-            getAllocator(.page),
-        ),
-    );
-
-    _ = getAllocator(.gpa);
-    try testing.expect(global_allocators.gpa.allocator != null);
-
-    _ = getAllocator(.arena);
-    try testing.expect(global_allocators.arena.allocator != null);
-
-    global_allocators.arena.interface = null;
-    global_allocators.arena.allocator = null;
-
-    global_allocators.gpa.interface = null;
-    global_allocators.gpa.allocator = null;
-
-    _ = getAllocator(.arena);
-    try testing.expect(global_allocators.gpa.allocator != null);
-}
-
-pub fn assert(text: []const u8, statement: bool) void {
-    if (statement) {
-        logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[32m\x1b[1mpassed\x1b[0m successfully", .{text});
-        return;
-    }
-
-    logTest("\"\x1b[2m{s}\x1b[0m\" \x1b[31m\x1b[1mfailed\x1b[0m", .{text});
-    @panic("ASSERTON FAILIURE");
-}
-
-pub fn assertTitle(text: []const u8) void {
-    logTest("\n\n\n[ASSERT SECTION] {s}\n", .{text});
-}
-
-pub fn logTest(comptime text: []const u8, fmt: anytype) void {
-    const formatted = std.fmt.allocPrint(getAllocator(.gpa), text, fmt) catch "";
-    defer getAllocator(.gpa).free(formatted);
-    std.debug.print("test: {s}\n", .{formatted});
-}
-
-/// Can be used to set the path of the `assets/` directory. This is the path
-/// which will be used as the base of all asset requests. For Scene:
-/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
-pub inline fn useAssetDebugPath(comptime path: []const u8) void {
-    if (BUILD_MODE != .Debug) return;
-    assets.overrideDevPath(path);
-}
-
-/// Sets the Scene with the given ID as the active Scene, unloading the current one.
-pub const useScene = eventloop.setActive;
-
-/// Created
-pub inline fn scene(comptime id: []const u8) *const fn (void) void {
-    _ = eventloop.new(id) catch {
-        std.log.err("failed to create scene \"" ++ id ++ "\"!", .{});
-    };
-
-    return struct {
-        pub fn callback(_: void) void {
-            eventloop.last_created_scene = null;
-        }
-    }.callback;
-}
-
-/// Set the default entities of the last created scene
-/// If an entity fn returns an error it will be ignored!
-pub fn entities(tuple: anytype) void {
-    const list = arrayAdvanced(
-        *Entity,
-        .{ .on_type_change_fail = .ignore },
-        tuple,
-    );
-    defer list.deinit();
-
-    const scene_ptr = activeOrLastScene() catch {
-        std.log.err("no scene was loaded or found, entities cannot be added!", .{});
-        return;
-    };
-
-    for (list.items) |ptr| {
-        scene_ptr.addEntity(ptr) catch {
-            std.log.err("failed to add entity to scene!", .{});
-            continue;
-        };
-    }
-}
-
-pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
-    return try (try activeOrLastScene()).newEntity(id, component_tuple);
-}
-
-pub inline fn activeScene() !*Scene {
-    return eventloop.active_scene orelse error.NoScenesPresent;
-}
-
-pub inline fn activeOrLastScene() !*Scene {
-    return eventloop.active_scene orelse (eventloop.last_created_scene orelse error.NoScenesPresent);
-}
-
+// ^Utilities
+// --------------------------------------------------------------------------------
 pub const CacheCast = Behaviour.CacheCast;
+pub const asBehaviour = Behaviour.from;
 
 pub fn UUIDV7() u128 {
     return uuid.v7.new();
@@ -509,6 +495,37 @@ pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
     @panic("ENGINE PANIC!");
 }
 
-pub fn newVec2() Vector2 {
+pub fn vec2() Vector2 {
     return Vec2(0, 0);
 }
+
+pub fn vec3() Vector3 {
+    return Vec3(0, 0, 0);
+}
+
+pub fn vec4() Vector4 {
+    return Vec4(0, 0, 0, 0);
+}
+
+pub fn rect() Rectangle {
+    return Rect(0, 0, 0, 0);
+}
+
+pub fn vec2ToVec3(v2: Vector2) Vector3 {
+    return Vec3(v2.x, v2.y, 0);
+}
+
+pub fn vec3ToVec2(v3: Vector3) Vector2 {
+    return Vec2(v3.x, v3.y);
+}
+
+pub fn randColor() rl.Color {
+    return rl.Color.init(
+        random.int(u8),
+        random.int(u8),
+        random.int(u8),
+        random.int(u8),
+    );
+}
+
+pub const setTickTarget = eventloop.setTickTarget;

@@ -7,6 +7,7 @@ const Entity = fyr.Entity;
 const EventActions = std.ArrayList(Action);
 const EventMapType = std.AutoHashMap(Target, EventActions);
 const Action = @import("Action.zig");
+const Script = @import("Script.zig");
 pub const Target = isize;
 
 const Self = @This();
@@ -16,6 +17,7 @@ arena: std.heap.ArenaAllocator,
 arena_alloc: ?Allocator = null,
 
 entities: ?std.ArrayList(*Entity) = null,
+scripts: ?std.ArrayList(*Script) = null,
 
 original_alloc: Allocator,
 event_map: ?EventMapType,
@@ -59,7 +61,7 @@ pub inline fn reset(self: *Self) void {
 
     const entities = self.entities orelse return;
     for (entities.items) |entity| {
-        self.removeEntity(entity);
+        self.removeEntityByPtr(entity);
     }
 }
 
@@ -126,36 +128,111 @@ pub fn newEntity(self: *Self, id: []const u8, components: anytype) !*Entity {
     return ptr;
 }
 
+// Entities - Generics
+
 pub fn addEntity(self: *Self, entity: *Entity) !void {
-    const behaviours = try entity.getComponents(fyr.Behaviour);
+    const behaviours = try entity.getBehaviours();
     for (behaviours) |b| {
         b.callSafe(.awake, entity);
-        b.callSafe(.init, entity);
+        b.callSafe(.start, entity);
     }
 
     const entities = self.makeGetEntities();
     try entities.append(entity);
 }
 
-pub fn removeEntity(self: *Self, entity: *Entity) void {
+pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) void {
     const entities = self.makeGetEntities();
-    for (entities.items, 0..) |it, index| {
-        if (@intFromPtr(entity) != @intFromPtr(it)) continue;
+    for (entities.items, 0..) |entity, index| {
+        if (!eqls(value, entity)) continue;
 
-        const behaviours = entity.getComponents(fyr.Behaviour) catch &[_]*fyr.Behaviour{};
+        const behaviours = entity.getBehaviours() catch &[_]*fyr.Behaviour{};
         for (behaviours) |b| {
-            b.callSafe(.deinit, entity);
+            b.callSafe(.end, entity);
         }
         _ = entities.swapRemove(index);
+        break;
     }
 }
 
-pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
-    const Entitys = self.entities orelse return null;
-    for (Entitys.items) |entity| {
-        if (!std.mem.eql(u8, entity.id, id)) continue;
+pub fn getEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) ?*Entity {
+    const entities = self.entities orelse return null;
+    for (entities.items) |entity| {
+        if (!eqls(value, entity)) continue;
         return Entity;
     }
 
     return null;
+}
+
+pub fn isEntityAlive(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) bool {
+    const entities = self.entities orelse return false;
+    for (entities.items) |entity| {
+        if (!eqls(value, entity)) continue;
+        return true;
+    }
+
+    return false;
+}
+
+// Entities - Specified
+
+fn ptrEqls(ptr: *Entity, entity: *Entity) bool {
+    return @intFromPtr(ptr) == @intFromPtr(entity);
+}
+
+fn idEqls(string: []const u8, entity: *Entity) bool {
+    return std.mem.eql(u8, string, entity.id);
+}
+
+fn uuidEqls(uuid: u128, entity: *Entity) bool {
+    return uuid == entity.uuid;
+}
+
+pub fn removeEntityByPtr(self: *Self, entity: *Entity) void {
+    removeEntity(self, entity, ptrEqls);
+}
+
+pub fn removeEntityById(self: *Self, id: []const u8) void {
+    removeEntity(self, id, idEqls);
+}
+
+pub fn removeEntityByUuid(self: *Self, uuid: u128) void {
+    removeEntity(self, uuid, uuidEqls);
+}
+
+pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
+    return getEntity(self, id, idEqls);
+}
+
+pub fn getEntityByUuid(self: *Self, uuid: u128) ?*Entity {
+    return getEntity(self, uuid, uuidEqls);
+}
+
+pub fn isEntityAliveId(self: *Self, id: []const u8) bool {
+    return isEntityAlive(self, id, idEqls);
+}
+
+pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
+    return isEntityAlive(self, uuid, uuidEqls);
+}
+
+// Scripts
+
+fn makeGetScripts(self: *Self) *std.ArrayList(*Script) {
+    return &(self.scripts orelse Blk: {
+        self.scripts = .init(fyr.getAllocator(.generic));
+        break :Blk self.scripts.?;
+    });
+}
+
+pub fn newScript(self: *Self, value: anytype) !void {
+    if (!Script.isScript(value)) return;
+
+    const script = try Script.from(value);
+    const ptr = try fyr.getAllocator(.generic).create(Script);
+    ptr.* = script;
+
+    const scripts = self.makeGetScripts();
+    try scripts.append(ptr);
 }

@@ -23,10 +23,10 @@ pub const RectangleVertices = struct {
     delta_bottom_left: rl.Vector2,
     delta_bottom_right: rl.Vector2,
 
-    top_left: rl.Vector2 = fyr.newVec2(),
-    top_right: rl.Vector2 = fyr.newVec2(),
-    bottom_left: rl.Vector2 = fyr.newVec2(),
-    bottom_right: rl.Vector2 = fyr.newVec2(),
+    top_left: rl.Vector2 = fyr.vec2(),
+    top_right: rl.Vector2 = fyr.vec2(),
+    bottom_left: rl.Vector2 = fyr.vec2(),
+    bottom_right: rl.Vector2 = fyr.vec2(),
 
     x_min: f32 = 0,
     x_max: f32 = 0,
@@ -124,56 +124,58 @@ pub const RectangleVertices = struct {
     }
 };
 
+var collidables_or_null: ?std.ArrayList(*ColliderBehaviour) = null;
 pub const ColliderBehaviour = struct {
-    const Cache = struct {
-        base: Collider,
+    pub const FYR_BEHAVIOUR = {};
+    const Self = @This();
 
-        Entity: ?*fyr.Entity = null,
-        transform: ?*Transform = null,
-        collider: ?*Collider = null,
-    };
-    var collidable: ?std.ArrayList(*Cache) = null;
+    base: Collider,
 
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    entity: ?*fyr.Entity = null,
+    transform: ?*Transform = null,
+    collider: ?*Collider = null,
 
-        const transform = Entity.getComponent(Transform) orelse Blk: {
-            try Entity.addComonent(Transform{});
-            break :Blk Entity.getComponent(Transform).?;
-        };
-
-        const collider = Entity.getComponent(Collider) orelse Blk: {
-            try Entity.addComonent(cache.base);
-            break :Blk Entity.getComponent(Collider).?;
-        };
-
-        cache.transform = transform;
-        cache.collider = collider;
-        cache.Entity = Entity;
-
-        const c = &(collidable orelse Blk: {
-            collidable = std.ArrayList(*Cache).init(fyr.getAllocator(.gpa));
-            break :Blk collidable.?;
-        });
-
-        try c.append(cache);
+    pub fn init(base: Collider) Self {
+        return .{ .base = base };
     }
 
-    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-        const c = collidable orelse return;
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
+        const transform = entity.getComponent(Transform) orelse Blk: {
+            try entity.addComonent(Transform{});
+            break :Blk entity.getComponent(Transform).?;
+        };
 
-        const a_Entity = cache.Entity orelse return;
-        const a_transform = cache.transform orelse return;
+        const collider = entity.getComponent(Collider) orelse Blk: {
+            try entity.addComonent(self.base);
+            break :Blk entity.getComponent(Collider).?;
+        };
 
-        const a_collider = cache.collider orelse return;
+        self.transform = transform;
+        self.collider = collider;
+        self.entity = entity;
+
+        const collidables = &(collidables_or_null orelse Blk: {
+            collidables_or_null = std.ArrayList(*Self).init(fyr.getAllocator(.generic));
+            break :Blk collidables_or_null.?;
+        });
+
+        try collidables.append(self);
+    }
+
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
+        const collidables = collidables_or_null orelse return;
+
+        const a_entity = self.entity orelse return;
+        const a_transform = self.transform orelse return;
+
+        const a_collider = self.collider orelse return;
         if (!a_collider.dynamic) return;
 
         var a_vertices = RectangleVertices.init(a_transform, a_collider);
 
-        for (c.items) |b| {
-            const b_Entity = b.Entity orelse continue;
-            if (a_Entity.uuid == b_Entity.uuid) continue;
+        for (collidables.items) |b| {
+            const b_entity = b.entity orelse continue;
+            if (a_entity.uuid == b_entity.uuid) continue;
 
             const b_transform = b.transform orelse return;
             const b_collider = b.collider orelse continue;
@@ -196,28 +198,14 @@ pub const ColliderBehaviour = struct {
         }
     }
 
-    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-
-        const c = &(collidable orelse return);
-        for (c.items, 0..) |item, index| {
-            if (item != cache) continue;
-            _ = c.swapRemove(index);
+    pub fn End(self: *Self, _: *fyr.Entity) !void {
+        const collidables = &(collidables_or_null orelse return);
+        for (collidables.items, 0..) |item, index| {
+            if (item != self) continue;
+            _ = collidables.swapRemove(index);
             break;
         }
 
-        if (c.items.len == 0) c.deinit();
+        if (collidables.items.len == 0) collidables.deinit();
     }
-
-    pub fn behaviour(base: Collider) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
-            .base = base,
-        });
-
-        b.add(.awake, awake);
-        b.add(.update, update);
-        b.add(.deinit, deinit);
-
-        return b;
-    }
-}.behaviour;
+};

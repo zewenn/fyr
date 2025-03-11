@@ -12,29 +12,36 @@ pub const Animator = struct {
     const Self = @This();
 
     alloc: Allocator,
+    alive: bool = false,
 
     animations: std.StringHashMap(*Animation),
     playing: std.ArrayList(*Animation),
 
     pub fn init() Self {
         return Self{
-            .alloc = fyr.getAllocator(.Scene),
-            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.Scene)),
-            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.Scene)),
+            .alloc = fyr.getAllocator(.scene),
+            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.scene)),
+            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.scene)),
+            .alive = true,
         };
     }
 
     pub fn deinit(self: *Self) void {
+        if (!self.alive) return;
         var iterator = self.animations.iterator();
         while (iterator.next()) |item| {
             item.value_ptr.*.deinit();
         }
+
+        self.alive = false;
 
         self.playing.deinit();
         self.animations.deinit();
     }
 
     pub fn chain(self: *Self, anim: Animation) !void {
+        if (!self.alive) return;
+
         const ptr = try self.alloc.create(Animation);
         ptr.* = anim;
 
@@ -42,11 +49,15 @@ pub const Animator = struct {
     }
 
     pub fn isPlaying(self: *Self, name: []const u8) bool {
+        if (!self.alive) return false;
+
         const anim = self.animations.get(name) orelse return false;
         return anim.playing;
     }
 
     pub fn play(self: *Self, name: []const u8) !void {
+        if (!self.alive) return;
+
         const anim = self.animations.get(name) orelse return;
         if (anim.playing) return;
 
@@ -58,6 +69,8 @@ pub const Animator = struct {
     }
 
     pub fn stop(self: *Self, name: []const u8) void {
+        if (!self.alive) return;
+
         const anim = self.animations.get(name) orelse return;
         if (!anim.playing) return;
 
@@ -73,36 +86,39 @@ pub const Animator = struct {
 };
 
 pub const AnimatorBehaviour = struct {
-    const Cache = struct {
-        animations: fyr.WrappedArray(Animation),
-        animator: ?*Animator = null,
-        transform: ?*fyr.Transform = null,
-        display: ?*fyr.Display = null,
-    };
+    pub const FYR_BEHAVIOUR = {};
+    const Self = @This();
 
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
+    animations: fyr.WrappedArray(Animation),
+    animator: ?*Animator = null,
+    transform: ?*fyr.Transform = null,
+    display: ?*fyr.Display = null,
 
+    pub fn init(arg: fyr.WrappedArray(Animation)) Self {
+        return Self{
+            .animations = arg,
+        };
+    }
+
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
         var animator = Animator.init();
-        for (cache.animations.items) |item| {
+        for (self.animations.items) |item| {
             try animator.chain(item);
         }
 
-        cache.animations.deinit();
+        self.animations.deinit();
 
-        try Entity.addComonent(animator);
+        try entity.addComonent(animator);
 
-        cache.animator = Entity.getComponent(fyr.Animator) orelse return;
-        cache.transform = Entity.getComponent(fyr.Transform) orelse return;
-        cache.display = Entity.getComponent(fyr.Display) orelse return;
+        self.animator = entity.getComponent(fyr.Animator) orelse return;
+        self.transform = entity.getComponent(fyr.Transform) orelse return;
+        self.display = entity.getComponent(fyr.Display) orelse return;
     }
 
-    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-
-        const transform = cache.transform orelse return;
-        const display = cache.display orelse return;
-        const animator = cache.animator orelse return;
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
+        const transform = self.transform orelse return;
+        const display = self.display orelse return;
+        const animator = self.animator orelse return;
 
         for (animator.playing.items) |animation| {
             const current = animation.current();
@@ -139,25 +155,9 @@ pub const AnimatorBehaviour = struct {
         }
     }
 
-    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(Cache, cache_ptr);
-
-        if (cache.animator) |animator| {
+    pub fn End(self: *Self, _: *fyr.Entity) !void {
+        if (self.animator) |animator| {
             animator.deinit();
         }
-
-        cache.animations.deinit();
     }
-
-    pub fn behaviour(animations_tuple: anytype) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(Cache{
-            .animations = fyr.array(Animation, animations_tuple),
-        });
-
-        b.add(.awake, awake);
-        b.add(.update, update);
-        b.add(.deinit, deinit);
-
-        return b;
-    }
-}.behaviour;
+};

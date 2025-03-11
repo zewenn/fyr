@@ -4,36 +4,52 @@ const rl = fyr.rl;
 
 const Transform = @import("../components.zig").Transform;
 
-const Cache = struct {
+pub const CameraTarget = struct {
+    pub const FYR_BEHAVIOUR = {};
+    const Self = @This();
+
     transform: ?*Transform = null,
+    max_distance: f32 = 0,
+    min_distance: f32 = 0,
+    follow_speed: f32 = 1,
+
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
+        const transform = entity.getComponent(Transform) orelse Blk: {
+            try entity.addComonent(Transform{});
+            break :Blk entity.getComponent(Transform).?;
+        };
+
+        self.transform = transform;
+    }
+
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
+        const transform = self.transform orelse return;
+
+        const delta = fyr.vec3ToVec2(transform.position).subtract(fyr.camera.target);
+        if (delta.length() < self.min_distance) return;
+
+        const max_distance_position = fyr.vec3ToVec2(transform.position).add(
+            delta
+                .negate()
+                .normalize()
+                .multiply(fyr.Vec2(self.max_distance, self.max_distance)),
+        );
+
+        const movement = delta
+            .normalize()
+            .multiply(fyr.Vec2(self.follow_speed, self.follow_speed))
+            .multiply(fyr.time.deltaTimeVector2());
+
+        if (movement.length() > delta.length()) {
+            fyr.camera.target = fyr.camera.target.add(delta);
+            return;
+        }
+
+        if (delta.length() > self.max_distance) {
+            fyr.camera.target = max_distance_position;
+            return;
+        }
+
+        fyr.camera.target = fyr.camera.target.add(movement);
+    }
 };
-
-fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-    const cache = fyr.CacheCast(Cache, cache_ptr);
-
-    const transform = Entity.getComponent(Transform) orelse Blk: {
-        try Entity.addComonent(Transform{});
-        break :Blk Entity.getComponent(Transform).?;
-    };
-
-    cache.transform = transform;
-}
-
-fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-    const cache = fyr.CacheCast(Cache, cache_ptr);
-
-    const transform = cache.transform orelse return;
-    defer fyr.camera.target = fyr.Vec2(
-        transform.position.x,
-        transform.position.y,
-    );
-}
-
-pub fn CameraTarget() !fyr.Behaviour {
-    var b = try fyr.Behaviour.init(Cache);
-
-    b.add(.awake, awake);
-    b.add(.update, update);
-
-    return b;
-}

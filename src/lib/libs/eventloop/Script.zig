@@ -1,8 +1,8 @@
 const std = @import("std");
 const fyr = @import("../../main.zig");
 
-const FnType = ?(*const fn (self: *anyopaque, entity: *fyr.Entity) anyerror!void);
-const Events = enum { awake, start, update, tick, end };
+const FnType = ?(*const fn (self: *anyopaque) anyerror!void);
+const Events = enum { awake, start, update, ui, tick, end };
 const AllocationError = error.OutOfMemory;
 
 const Self = @This();
@@ -13,6 +13,7 @@ name: []const u8 = "[UNNAMED]",
 awake: FnType = null,
 start: FnType = null,
 update: FnType = null,
+ui: FnType = null,
 tick: FnType = null,
 end: FnType = null,
 
@@ -39,11 +40,12 @@ pub fn add(self: *Self, event: Events, callback: FnType) void {
         .start => self.start = callback,
         .update => self.update = callback,
         .tick => self.tick = callback,
+        .ui => self.ui = callback,
         .end => self.end = callback,
     }
 }
 
-pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
+pub fn callSafe(self: *Self, event: Events) void {
     defer FreeingCAllocations: {
         if (event != .end) break :FreeingCAllocations;
 
@@ -55,10 +57,11 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
         .start => self.start,
         .update => self.update,
         .tick => self.tick,
+        .ui => self.ui,
         .end => self.end,
     } orelse return;
 
-    func(self.cache, entity) catch {
+    func(self.cache) catch {
         std.log.err("failed to call behaviour event ({s}.{s})", .{
             self.name,
             switch (event) {
@@ -66,6 +69,7 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
                 .start => "Start",
                 .end => "End",
                 .update => "Update",
+                .ui => "UI",
                 .tick => "Tick",
             },
         });
@@ -74,22 +78,25 @@ pub fn callSafe(self: *Self, event: Events, entity: *fyr.Entity) void {
 
 fn attachEvents(b: *Self, comptime T: type) void {
     const t = struct {
-        pub fn awake(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "Awake")(@ptrCast(@alignCast(cache)), entity);
+        pub fn awake(cache: *anyopaque) !void {
+            try @field(T, "Awake")(@ptrCast(@alignCast(cache)));
         }
 
-        pub fn start(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "Start")(@ptrCast(@alignCast(cache)), entity);
+        pub fn start(cache: *anyopaque) !void {
+            try @field(T, "Start")(@ptrCast(@alignCast(cache)));
         }
-        pub fn end(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "End")(@ptrCast(@alignCast(cache)), entity);
+        pub fn end(cache: *anyopaque) !void {
+            try @field(T, "End")(@ptrCast(@alignCast(cache)));
         }
 
-        pub fn update(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "Update")(@ptrCast(@alignCast(cache)), entity);
+        pub fn update(cache: *anyopaque) !void {
+            try @field(T, "Update")(@ptrCast(@alignCast(cache)));
         }
-        pub fn tick(cache: *anyopaque, entity: *fyr.Entity) !void {
-            try @field(T, "Tick")(@ptrCast(@alignCast(cache)), entity);
+        pub fn ui(cache: *anyopaque) !void {
+            try @field(T, "UI")(@ptrCast(@alignCast(cache)));
+        }
+        pub fn tick(cache: *anyopaque) !void {
+            try @field(T, "Tick")(@ptrCast(@alignCast(cache)));
         }
     };
 
@@ -107,6 +114,9 @@ fn attachEvents(b: *Self, comptime T: type) void {
     if (std.meta.hasFn(T, "Update")) {
         b.add(.update, t.update);
     }
+    if (std.meta.hasFn(T, "UI")) {
+        b.add(.ui, t.ui);
+    }
     if (std.meta.hasFn(T, "Tick")) {
         b.add(.tick, t.tick);
     }
@@ -121,10 +131,10 @@ pub fn from(obj: anytype) !Self {
     return self;
 }
 
-pub inline fn isBehaviourBase(value: anytype) bool {
-    return comptime @hasDecl(@TypeOf(value), "FYR_BEHAVIOUR");
+pub inline fn isScript(value: anytype) bool {
+    return comptime @hasDecl(@TypeOf(value), "FYR_SCRIPT");
 }
 
-pub inline fn isBehvaiourBaseType(T: type) bool {
-    return comptime @hasDecl(T, "FYR_BEHAVIOUR");
+pub inline fn isScriptType(T: type) bool {
+    return comptime @hasDecl(T, "FYR_SCRIPT");
 }

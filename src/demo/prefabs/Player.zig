@@ -1,6 +1,7 @@
 const fyr = @import("fyr");
 
 const MovementBehaviour = @import("../behaviours.zig").MovementBehaviour;
+const Box = @import("./Box.zig").Box;
 
 pub fn Player() !*fyr.Entity {
     return try fyr.entity("Player", .{
@@ -11,11 +12,18 @@ pub fn Player() !*fyr.Entity {
                 .z = 0,
             },
         },
-        try MovementBehaviour(),
-        try fyr.Renderer(.{
+
+        MovementBehaviour.init(400),
+        fyr.CameraTarget{
+            .max_distance = 400,
+            .min_distance = 50,
+            .follow_speed = 360,
+        },
+        fyr.Renderer.init(fyr.Display{
             .img = "logo_small.png",
         }),
-        try fyr.ColliderBehaviour(.{
+
+        fyr.ColliderBehaviour.init(.{
             .dynamic = true,
             .rect = fyr.Rect(
                 0,
@@ -24,13 +32,22 @@ pub fn Player() !*fyr.Entity {
                 64,
             ),
         }),
-        try fyr.CameraTarget(),
-        try fyr.AnimatorBehaviour(.{
-            try fyr.Animation.create("test", 2, fyr.interpolation.lerp, .{
-                fyr.KeyFrame{ .rotation = 0 },
-                fyr.KeyFrame{ .rotation = 2 },
-                fyr.KeyFrame{ .rotation = 0 },
+
+        fyr.Children.init(
+            fyr.array(*fyr.Entity, .{
+                try Box(),
             }),
-        }),
+        ),
+
+        fyr.AnimatorBehaviour.init(fyr.array(
+            fyr.Animation,
+            .{
+                try fyr.Animation.create("test", 1, fyr.interpolation.lerp, .{
+                    fyr.KeyFrame{ .rotation = 0 },
+                    fyr.KeyFrame{ .rotation = 10 },
+                    fyr.KeyFrame{ .rotation = 0 },
+                }),
+            },
+        )),
     });
 }

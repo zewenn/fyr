@@ -1,285 +1,269 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
-const fs = std.fs;
 
 const fyr = @import("../main.zig");
-const rl = @import("raylib");
+const SharedPtr = fyr.SharedPtr;
+const sharedPtr = fyr.sharedPtr;
 
-/// 512 MB
-const MAX_FILE_SIZE: comptime_int = 1024 * 1024 * 512;
-var ASSETS_PATH_DEBUG: []const u8 = "./src/assets/";
+const Image = fyr.rl.Image;
+const Texture = fyr.rl.Texture;
+const Wave = fyr.rl.Wave;
+const Sound = fyr.rl.Sound;
+const Font = fyr.rl.Font;
 
-// ------------------------------------- Caches -------------------------------------
+pub const fs = struct {
+    pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
+    pub var release: []const u8 = "assets";
 
-const ImageCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image));
-pub var image_cache: ?ImageCache = null;
+    pub fn getBase() ![]const u8 {
+        const exepath = switch (fyr.lib_info.build_mode) {
+            .Debug => try std.fs.cwd().realpathAlloc(fyr.getAllocator(.generic), "."),
+            else => try std.fs.selfExeDirPathAlloc(fyr.getAllocator(.generic)),
+        };
+        defer fyr.getAllocator(.generic).free(exepath);
 
-const TextureCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture));
-pub var texture_cache: ?TextureCache = null;
+        const path = try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{ exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
+            .Debug => debug,
+            else => release,
+        } });
 
-const AudioCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Sound));
-pub var audio_cache: ?AudioCache = null;
+        return path;
+    }
 
-const FontCache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Font));
-pub var font_cache: ?FontCache = null;
+    pub fn getFilePath(rel_path: []const u8) ![]const u8 {
+        const basepath = try fs.getBase();
+        defer fyr.getAllocator(.generic).free(basepath);
 
-// ------------------------------------- Funcs --------------------------------------
+        return try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{ basepath, std.fs.path.sep_str, rel_path });
+    }
+
+    pub fn getFileExt(rel_path: []const u8) ![]const u8 {
+        const index = std.mem.lastIndexOf(u8, rel_path, ".") orelse 0;
+        const buf = try fyr.getAllocator(.generic).alloc(u8, rel_path.len - index);
+        std.mem.copyForwards(u8, buf, rel_path[index..]);
+
+        return buf;
+    }
+
+    pub fn getData(pth: []const u8) ![]const u8 {
+        const real_path = try getFilePath(pth);
+        defer fyr.getAllocator(.generic).free(real_path);
+
+        const reader = try std.fs.openFileAbsolute(real_path, .{});
+        defer reader.close();
+
+        return reader.readToEndAlloc(fyr.getAllocator(.generic), 8 * 1024 * 1024 * 512);
+    }
+};
+
+fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: []const u8, mod: anytype) anyerror!T, releasefn: *const fn (data: T) void) type {
+    return struct {
+        const HashMapType = std.AutoHashMap(u64, *SharedPtr(T));
+        var hash_map: ?HashMapType = null;
+
+        fn hashMap() *HashMapType {
+            return &(hash_map orelse Blk: {
+                hash_map = HashMapType.init(fyr.getAllocator(.generic));
+                break :Blk hash_map.?;
+            });
+        }
+
+        pub fn deinit() void {
+            const hmap = hashMap();
+            var iter = hmap.iterator();
+
+            while (iter.next()) |entry| {
+                const value = entry.value_ptr.*;
+                if (value.*.value) |v|
+                    releasefn(v);
+                value.destroyUnsafe();
+            }
+
+            hmap.deinit();
+        }
+
+        fn hash(str: []const u8, mod: u64) u64 {
+            const RANDOM_PRIME: comptime_int = 3;
+            const STRING_SUM: u64 = Blk: {
+                var res: u64 = 0;
+
+                for (str) |char| {
+                    res = res * RANDOM_PRIME + char;
+                }
+
+                break :Blk res;
+            };
+
+            return STRING_SUM + mod * RANDOM_PRIME;
+        }
+
+        fn parseModAndGetHash(rel_path: []const u8, modifiers: anytype) u64 {
+            const mods = fyr.array(f32, modifiers);
+            defer mods.deinit();
+
+            const mod = (mods.at(0) orelse 1) * (mods.at(1) orelse 1) * 7;
+
+            return hash(rel_path, fyr.changeNumberType(u64, mod) orelse 0);
+        }
+
+        pub fn store(rel_path: []const u8, modifiers: anytype) !void {
+            const hmap = hashMap();
+            const HASH = parseModAndGetHash(rel_path, modifiers);
+            if (hmap.contains(HASH)) return;
+
+            const data = try fs.getData(rel_path);
+            defer fyr.getAllocator(.generic).free(data);
+
+            const filetype = try fs.getFileExt(rel_path);
+            defer fyr.getAllocator(.generic).free(filetype);
+
+            const parsed: T = try parsefn(data, filetype, modifiers);
+
+            try hmap.put(HASH, try sharedPtr(parsed));
+        }
+
+        pub fn release(rel_path: []const u8, modifiers: anytype) void {
+            const HASH = parseModAndGetHash(rel_path, modifiers);
+            const hmap = hashMap();
+
+            const sptr = hmap.get(HASH) orelse return;
+
+            if (sptr.ref_count > 0) {
+                sptr.deinit();
+                return;
+            }
+
+            if (sptr.value) |v|
+                releasefn(v);
+            sptr.destroy();
+            _ = hmap.remove(HASH);
+        }
+
+        pub fn releasePtr(ptr: *T) void {
+            const hmap = hashMap();
+
+            const entry: HashMapType.Entry = Blk: {
+                var iter = hmap.iterator();
+                while (iter.next()) |entry| {
+                    const value_ptr = entry.value_ptr.*.valueptr();
+                    defer entry.value_ptr.*.deinit();
+
+                    if (fyr.changeNumberType(usize, value_ptr) != fyr.changeNumberType(usize, ptr)) continue;
+                    break :Blk entry;
+                }
+                break :Blk null;
+            } orelse return;
+            
+            const sptr = entry.value_ptr.*;
+            const HASH = entry.key_ptr.*;
+
+            if (sptr.ref_count > 0) {
+                sptr.deinit();
+                return;
+            }
+
+            if (sptr.value) |v|
+                releasefn(v);
+            sptr.destroy();
+            _ = hmap.remove(HASH);
+        }
+
+        pub fn get(rel_path: []const u8, modifiers: anytype) ?*T {
+            const HASH = parseModAndGetHash(rel_path, modifiers);
+
+            const hmap = hashMap();
+
+            const res1 = hmap.get(HASH);
+            if (res1) |r1| return r1.valueptr();
+
+            store(rel_path, modifiers) catch return null;
+            return if (hmap.get(HASH)) |r| r.valueptr() else null;
+        }
+    };
+}
+
+pub const image = AssetType(
+    Image,
+    struct {
+        pub fn callback(data: []const u8, filetype: []const u8, modifiers: anytype) !Image {
+            const mods = fyr.array(i32, modifiers);
+            defer mods.deinit();
+
+            const str: [:0]const u8 = fyr.getAllocator(.generic).dupeZ(u8, filetype) catch ".png";
+            defer fyr.getAllocator(.generic).free(str);
+
+            var img = try fyr.rl.loadImageFromMemory(str, data);
+            fyr.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
+
+            return img;
+        }
+    }.callback,
+    struct {
+        pub fn callback(data: Image) void {
+            fyr.rl.unloadImage(data);
+        }
+    }.callback,
+);
+
+pub const texture = AssetType(
+    Texture,
+    struct {
+        pub fn callback(data: []const u8, filetype: []const u8, modifiers: anytype) !Texture {
+            const mods = fyr.array(i32, modifiers);
+            defer mods.deinit();
+
+            const str: [:0]const u8 = fyr.getAllocator(.generic).dupeZ(u8, filetype) catch ".png";
+            defer fyr.getAllocator(.generic).free(str);
+
+            var img = try fyr.rl.loadImageFromMemory(str, data);
+            defer fyr.rl.unloadImage(img);
+
+            fyr.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
+
+            const txtr = try fyr.rl.loadTextureFromImage(img);
+            return txtr;
+        }
+    }.callback,
+    struct {
+        pub fn callback(data: Texture) void {
+            fyr.rl.unloadTexture(data);
+        }
+    }.callback,
+);
+
+pub const font = AssetType(
+    Font,
+    struct {
+        pub fn callback(data: []const u8, filetype: []const u8, mod: anytype) !Font {
+            const str: [:0]const u8 = fyr.getAllocator(.generic).dupeZ(u8, filetype) catch ".png";
+            defer fyr.getAllocator(.generic).free(str);
+
+            var fchars = fyr.array(i32, mod);
+            defer fchars.deinit();
+
+            var font_chars_base = [_]i32{
+                48, 49, 50, 51, 52, 53, 54, 55, 56, 57, // 0-9
+                65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, // A-Z
+                97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, // a-z
+                33, 34, 35, 36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  58,  59,  60,  61,  62,  63,  64,  91,  92,  93,  94,
+                95, 96, 123, 124, 125, 126, // !, ", #, $, %, &, ', (, ), *, +, ,, -, ., /, :, ;, <, =, >, ?, @, [, \, ], ^, _, `, {, |, }, ~
+            };
+
+            const font_chars: []i32 = if (fchars.len() == 0) &font_chars_base else fchars.items;
+
+            const fnt = try fyr.rl.loadFontFromMemory(str, data, fyr.toi32(font_chars.len), font_chars);
+            return fnt;
+        }
+    }.callback,
+    struct {
+        pub fn callback(data: Font) void {
+            fyr.rl.unloadFont(data);
+        }
+    }.callback,
+);
 
 pub fn deinit() void {
-    Img: {
-        const ic = &(image_cache orelse break :Img);
-        defer ic.deinit();
-
-        var it = ic.iterator();
-        while (it.next()) |entry| {
-            entry.value_ptr.*.deinit();
-            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
-        }
-    }
-    Texture: {
-        const tc = &(texture_cache orelse break :Texture);
-        defer tc.deinit();
-
-        var it = tc.iterator();
-        while (it.next()) |entry| {
-            entry.value_ptr.*.deinit();
-            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
-        }
-    }
-    Audio: {
-        const ac = &(audio_cache orelse break :Audio);
-        defer ac.deinit();
-
-        var it = ac.iterator();
-        while (it.next()) |entry| {
-            entry.value_ptr.*.deinit();
-            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
-        }
-    }
-    Font: {
-        const fc = &(font_cache orelse break :Font);
-        defer fc.deinit();
-
-        var it = fc.iterator();
-        while (it.next()) |entry| {
-            entry.value_ptr.*.deinit();
-            fyr.getAllocator(.gpa).destroy(entry.value_ptr.*);
-        }
-    }
+    texture.deinit();
+    image.deinit();
+    font.deinit();
 }
-
-inline fn calculateHash(rel_path: []const u8, size: fyr.Vector2, rotation: f32) usize {
-    var res: usize = 0;
-    for (rel_path, 0..) |char, index| {
-        res += char * index;
-    }
-
-    res += fyr.changeNumberType(usize, size.x).? * 128;
-    res += (fyr.changeNumberType(usize, size.y).? * 2 + 1) * 3;
-    res += fyr.changeNumberType(usize, rotation).? * 700;
-    return res;
-}
-
-fn loadFromFile(rel_path: []const u8) ![]const u8 {
-    const full_path = try getAssetFullPath(rel_path);
-    defer fyr.getAllocator(.gpa).free(full_path);
-
-    const file = fs.openFileAbsolute(full_path, .{}) catch fyr.panic("Asset {s} couldn't be found!", .{rel_path});
-    defer file.close();
-
-    return try file.readToEndAlloc(fyr.getAllocator(.gpa), MAX_FILE_SIZE);
-}
-
-pub fn getAssetFullPath(rel_path: []const u8) ![]const u8 {
-    const path = switch (fyr.BUILD_MODE) {
-        .Debug => try fs.path.join(fyr.getAllocator(.gpa), &[_][]const u8{
-            ASSETS_PATH_DEBUG,
-            rel_path,
-        }),
-        else => Blk: {
-            const base_path = try fs.selfExeDirPathAlloc(fyr.getAllocator(.gpa));
-            defer fyr.getAllocator(.gpa).free(base_path);
-
-            break :Blk try fs.path.join(fyr.getAllocator(.gpa), &[_][]const u8{
-                base_path,
-                "assets/",
-                rel_path,
-            });
-        },
-    };
-    defer fyr.getAllocator(.gpa).free(path);
-
-    return try fs.realpathAlloc(fyr.getAllocator(.gpa), path);
-}
-
-pub inline fn overrideDevPath(comptime path: []const u8) void {
-    ASSETS_PATH_DEBUG = path;
-}
-
-test "override dev path" {
-    const expect = std.testing.expect;
-
-    overrideDevPath("test");
-    try expect(
-        std.mem.eql(
-            u8,
-            ASSETS_PATH_DEBUG,
-            "test",
-        ),
-    );
-}
-
-pub const get = struct {
-    fn EntityImage(
-        ic: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image)),
-        hash: usize,
-        rel_path: []const u8,
-        size: fyr.Vector2,
-        rotation: f32,
-    ) !*fyr.SharedPointer(rl.Image) {
-        const data = try loadFromFile(rel_path);
-        defer fyr.getAllocator(.gpa).free(data);
-
-        var img = rl.loadImageFromMemory(".png", data);
-        rl.imageResizeNN(
-            &img,
-            fyr.toi32(size.x),
-            fyr.toi32(size.y),
-        );
-        rl.imageRotate(
-            &img,
-            fyr.toi32(rotation),
-        );
-
-        try ic.put(hash, try fyr.SharetPtr(img));
-        return ic.get(hash).?;
-    }
-
-    pub fn image(rel_path: []const u8, size: fyr.Vector2, rotation: f32) !?*rl.Image {
-        const ic = &(image_cache orelse Blk: {
-            image_cache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Image)).init(fyr.getAllocator(.gpa));
-            break :Blk image_cache.?;
-        });
-        const hash = calculateHash(rel_path, size, rotation);
-
-        var Entityd = ic.get(hash) orelse try EntityImage(ic, hash, rel_path, size, rotation);
-        if (!Entityd.isAlive()) {
-            fyr.getAllocator(.gpa).destroy(Entityd);
-            Entityd = try EntityImage(ic, hash, rel_path, size, rotation);
-        }
-
-        return Entityd.ptr() orelse error.AlreadyFreed;
-    }
-
-    fn EntityTexture(
-        tc: *std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture)),
-        hash: usize,
-        img: rl.Image,
-    ) !*fyr.SharedPointer(rl.Texture) {
-        const t = rl.loadTextureFromImage(img);
-
-        try tc.put(hash, try fyr.SharetPtr(t));
-        return tc.get(hash).?;
-    }
-
-    pub fn texture(rel_path: []const u8, img: rl.Image, rotation: f32) !*rl.Texture {
-        const tc = &(texture_cache orelse Blk: {
-            texture_cache = std.AutoHashMap(usize, *fyr.SharedPointer(rl.Texture)).init(fyr.getAllocator(.gpa));
-            break :Blk texture_cache.?;
-        });
-        const hash = calculateHash(rel_path, fyr.Vec2(img.width, img.height), rotation);
-
-        var Entityd = tc.get(hash) orelse try EntityTexture(tc, hash, img);
-        if (!Entityd.isAlive()) {
-            fyr.getAllocator(.gpa).destroy(Entityd);
-            Entityd = try EntityTexture(tc, hash, img);
-        }
-
-        return Entityd.ptr() orelse error.AlreadyFreed;
-    }
-
-    pub fn audio(rel_path: []const u8) !*rl.Sound {
-        const ac = &(audio_cache orelse Blk: {
-            audio_cache = AudioCache.init(fyr.getAllocator(.gpa));
-            break :Blk audio_cache.?;
-        });
-        const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
-
-        var Entityd = ac.get(hash) orelse Blk: {
-            const data = try loadFromFile(rel_path);
-            defer fyr.getAllocator(.gpa).free(data);
-
-            const wave = rl.loadWaveFromMemory(".mp3", data);
-            defer rl.unloadWave(wave);
-
-            const sound = rl.loadSoundFromWave(wave);
-
-            try ac.put(hash, try fyr.SharetPtr(sound));
-            break :Blk ac.get(hash).?;
-        };
-
-        return Entityd.ptr() orelse error.AlreadyFreed;
-    }
-
-    pub fn font(rel_path: []const u8) !*rl.Sound {
-        const fc = &(font_cache orelse Blk: {
-            audio_cache = AudioCache.init(fyr.getAllocator(.gpa));
-            break :Blk audio_cache.?;
-        });
-        const hash = calculateHash(rel_path, fyr.Vec2(1, 1), 0);
-
-        var Entityd = fc.get(hash) orelse Blk: {
-            const data = try loadFromFile(rel_path);
-            defer fyr.getAllocator(.gpa).free(data);
-
-            const f = rl.loadFontFromMemory(".ttf", data);
-
-            try fc.put(hash, try fyr.SharetPtr(f));
-            break :Blk fc.get(hash).?;
-        };
-
-        return Entityd.ptr() orelse error.AlreadyFreed;
-    }
-};
-
-pub const rmref = struct {
-    pub fn image(rel_path: []const u8, size: fyr.Vector2, rotation: f32) void {
-        const ic = &(image_cache orelse return);
-        const hash = calculateHash(rel_path, size, rotation);
-        const sptr = ic.get(hash) orelse return;
-
-        if (!sptr.isAlive()) return;
-
-        if (sptr.ref_count == 1) {
-            const img = sptr.ptr().?;
-
-            rl.unloadImage(img.*);
-
-            sptr.deinit();
-            fyr.getAllocator(.gpa).destroy(sptr);
-            _ = ic.remove(hash);
-            return;
-        }
-        sptr.rmref();
-    }
-
-    pub fn texture(rel_path: []const u8, img: rl.Image, rotation: f32) void {
-        const tc = &(texture_cache orelse return);
-        const hash = calculateHash(rel_path, fyr.Vec2(img.width, img.height), rotation);
-        const sptr = tc.get(hash) orelse return;
-
-        if (!sptr.isAlive()) return;
-
-        if (sptr.ref_count == 1) {
-            const txtr = sptr.ptr().?;
-
-            rl.unloadTexture(txtr.*);
-
-            sptr.deinit();
-            fyr.getAllocator(.gpa).destroy(sptr);
-            _ = tc.remove(hash);
-            return;
-        }
-        sptr.rmref();
-    }
-};

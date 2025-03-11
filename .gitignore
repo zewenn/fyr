@@ -4,3 +4,6 @@ zig-out/
 **/.codegen/
 
 **/.DS_Store
+
+.vscode/
+.idea/

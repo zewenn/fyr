@@ -15,79 +15,69 @@ pub const DisplayCache = struct {
 
     transform: Transform,
     path: []const u8,
-    img: ?*rl.Image = null,
     texture: ?*rl.Texture = null,
 
     pub fn free(self: *Self) void {
-        const i = self.img orelse return;
-
         if (self.texture != null)
-            assets.rmref.texture(self.path, i.*, self.transform.rotation);
-
-        assets.rmref.image(
-            self.path,
-            self.transform.scale,
-            self.transform.rotation,
-        );
+            assets.texture.release(
+                self.path,
+                .{ self.transform.scale.x, self.transform.scale.y },
+            );
     }
 };
 
-const DCCache = struct {
+pub const Renderer = struct {
+    pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
     base: Display,
     display: ?*Display = null,
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
-};
 
-pub const Renderer = struct {
-    fn awake(Entity: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(DCCache, cache_ptr);
+    pub fn init(args: Display) Self {
+        return Self{
+            .base = args,
+        };
+    }
 
-        try Entity.addComonent(cache.base);
-        cache.display = Entity.getComponent(Display);
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
+        try entity.addComonent(self.base);
+        self.display = entity.getComponent(Display);
 
-        cache.transform = Entity.getComponent(Transform);
-        if (cache.transform == null) {
-            try Entity.addComonent(Transform{});
-            cache.transform = Entity.getComponent(Transform);
+        self.transform = entity.getComponent(Transform);
+        if (self.transform == null) {
+            try entity.addComonent(Transform{});
+            self.transform = entity.getComponent(Transform);
         }
 
-        const c_transform = cache.transform.?;
-        const c_display = cache.display.?;
+        const c_transform = self.transform.?;
+        const c_display = self.display.?;
 
         var display_cache = DisplayCache{
             .path = c_display.img,
             .transform = c_transform.*,
         };
 
-        display_cache.img = try assets.get.image(
+        display_cache.texture = assets.texture.get(
             display_cache.path,
-            display_cache.transform.scale,
-            display_cache.transform.rotation,
+            .{
+                c_transform.scale.x,
+                c_transform.scale.y,
+            },
         );
-        if (display_cache.img) |i| {
-            display_cache.texture = try assets.get.texture(
-                display_cache.path,
-                i.*,
-                c_transform.rotation,
-            );
-        }
 
-        try Entity.addComonent(display_cache);
-        cache.display_cache = Entity.getComponent(DisplayCache);
+        try entity.addComonent(display_cache);
+        self.display_cache = entity.getComponent(DisplayCache);
     }
 
-    fn update(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(DCCache, cache_ptr);
-
-        const display_cache = cache.display_cache orelse return;
-        const transform = cache.transform orelse return;
-        const display = cache.display orelse return;
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
+        const display_cache = self.display_cache orelse return;
+        const transform = self.transform orelse return;
+        const display = self.display orelse return;
 
         const has_to_be_updated = Blk: {
-            if (!transform.eqlSkipPosition(display_cache.transform)) break :Blk true;
+            if (transform.scale.equals(display_cache.transform.scale) == 0) break :Blk true;
             if (!std.mem.eql(u8, display.img, display_cache.path)) break :Blk true;
             break :Blk false;
         };
@@ -99,25 +89,14 @@ pub const Renderer = struct {
                 .path = display.img,
                 .transform = transform.*,
             };
-            display_cache.img = assets.get.image(
-                display_cache.path,
-                display_cache.transform.scale,
-                display_cache.transform.rotation,
-            ) catch {
-                std.log.err("Image error!", .{});
-                return;
-            };
 
-            if (display_cache.img) |i| {
-                display_cache.texture = assets.get.texture(
-                    display_cache.path,
-                    i.*,
-                    transform.rotation,
-                ) catch {
-                    std.log.err("Texture error!", .{});
-                    return;
-                };
-            }
+            display_cache.texture = assets.texture.get(
+                display_cache.path,
+                .{
+                    transform.scale.x,
+                    transform.scale.y,
+                },
+            );
         }
 
         const texture = display_cache.texture orelse return;
@@ -126,25 +105,11 @@ pub const Renderer = struct {
             .transform = transform.*,
             .display = display.*,
         });
-        // rl.drawTexture(texture.*, 0, 0, rl.Color.white);
     }
 
-    fn deinit(_: *fyr.Entity, cache_ptr: *anyopaque) !void {
-        const cache = fyr.CacheCast(DCCache, cache_ptr);
-        const c_display_cache = cache.display_cache orelse return;
+    pub fn End(self: *Self, _: *fyr.Entity) !void {
+        const c_display_cache = self.display_cache orelse return;
 
         c_display_cache.free();
     }
-
-    pub fn behaviour(base: Display) !fyr.Behaviour {
-        var b = try fyr.Behaviour.initWithDefaultValue(DCCache{
-            .base = base,
-        });
-
-        b.add(.awake, awake);
-        b.add(.update, update);
-        b.add(.deinit, deinit);
-
-        return b;
-    }
-}.behaviour;
+};

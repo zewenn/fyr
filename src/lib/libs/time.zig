@@ -26,6 +26,14 @@ pub inline fn deltaTime() f32 {
     return rl.getFrameTime();
 }
 
+pub inline fn deltaTimeVector2() rl.Vector2 {
+    return rl.Vector2.init(deltaTime(), deltaTime());
+}
+
+pub inline fn deltaTimeVector3() rl.Vector3 {
+    return rl.Vector3.init(deltaTime(), deltaTime(), deltaTime());
+}
+
 pub inline fn appTime() f32 {
     return rl.getTime();
 }

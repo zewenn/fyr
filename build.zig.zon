@@ -1,14 +1,19 @@
 .{
-    .name = "fyr",
-    .version = "0.0.1-dev.2",
+    .name = .fyr,
+    .version = "0.1.0",
+    .fingerprint = 0xf3edbc2fefcce355,
     .dependencies = .{
-        .@"raylib-zig" = .{
-            .url = "git+https://github.com/Not-Nik/raylib-zig.git#845af357e4bc5ed8d008a8bb64bd7c4b4906851d",
-            .hash = "122081321a9b6653f90fee325553c9f64934f94b789e7ddbadf27f754a5e42537c4d",
-        },
         .uuid = .{
-            .url = "https://github.com/r4gus/uuid-zig/archive/refs/tags/0.2.1.tar.gz",
-            .hash = "1220b4deeb4ec1ec3493ea934905356384561b725dba69d1fbf6a25cb398716dd05b",
+            .url = "git+https://github.com/r4gus/uuid-zig.git#6d3f2701b84220ddcfdb2a153b7036e8058f3d13",
+            .hash = "uuid-0.3.0-oOieIY5nAABN9gM-xe_yC_WsXX346XaqdsT-aU6CksyV",
+        },
+        .raylib_zig = .{
+            .url = "git+https://github.com/Not-Nik/raylib-zig#5bbafa4f86eb3e3f41a107bbec6b8822e0f87c93",
+            .hash = "raylib_zig-5.6.0-dev-KE8REE0uBQD5Lzuc6qSZPtE5li3iPyU4iGQEMPqOPI11",
+        },
+        .zclay = .{
+            .url = "git+https://github.com/johan0A/clay-zig-bindings#b4365bad8ebbf20c5e54d3f07db1207170e8ef1d",
+            .hash = "zclay-0.0.0-Ej1rkHd5AADma7wDB3By1hoJnqdX8UHnlIQ7IZquevuu",
         },
     },
     .paths = .{
