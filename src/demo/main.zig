@@ -3,7 +3,8 @@ const fyr = @import("fyr");
 
 const Player = @import("./prefabs/Player.zig").Player;
 const Box = @import("./prefabs/Box.zig").Box;
-const UIDrawer = @import("./prefabs/UIDrawer.zig").UIDrawer;
+
+const scripts = @import("scripts.zig");
 
 pub fn main() !void {
     fyr.project({
@@ -19,7 +20,10 @@ pub fn main() !void {
             fyr.entities(.{
                 try Player(),
                 try Box(),
-                try UIDrawer(),
+            });
+
+            fyr.scripts(.{
+                scripts.DemoUI{},
             });
         });
     });

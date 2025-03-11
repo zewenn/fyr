@@ -7,6 +7,7 @@ const Entity = fyr.Entity;
 const EventActions = std.ArrayList(Action);
 const EventMapType = std.AutoHashMap(Target, EventActions);
 const Action = @import("Action.zig");
+const Script = @import("Script.zig");
 pub const Target = isize;
 
 const Self = @This();
@@ -16,6 +17,7 @@ arena: std.heap.ArenaAllocator,
 arena_alloc: ?Allocator = null,
 
 entities: ?std.ArrayList(*Entity) = null,
+scripts: ?std.ArrayList(*Script) = null,
 
 original_alloc: Allocator,
 event_map: ?EventMapType,
@@ -213,4 +215,24 @@ pub fn isEntityAliveId(self: *Self, id: []const u8) bool {
 
 pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
     return isEntityAlive(self, uuid, uuidEqls);
+}
+
+// Scripts
+
+fn makeGetScripts(self: *Self) *std.ArrayList(*Script) {
+    return &(self.scripts orelse Blk: {
+        self.scripts = .init(fyr.getAllocator(.generic));
+        break :Blk self.scripts.?;
+    });
+}
+
+pub fn newScript(self: *Self, value: anytype) !void {
+    if (!Script.isScript(value)) return;
+
+    const script = try Script.from(value);
+    const ptr = try fyr.getAllocator(.generic).create(Script);
+    ptr.* = script;
+
+    const scripts = self.makeGetScripts();
+    try scripts.append(ptr);
 }

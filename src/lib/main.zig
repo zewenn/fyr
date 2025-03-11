@@ -22,6 +22,7 @@ pub const lib_info = struct {
 const deps = @import("./deps/export.zig");
 pub const rl = deps.raylib;
 pub const rgui = deps.raygui;
+pub const clay = deps.clay;
 pub const uuid = deps.uuid;
 
 // ^Module
@@ -243,6 +244,19 @@ pub fn entities(tuple: anytype) void {
 
 pub inline fn entity(id: []const u8, component_tuple: anytype) !*Entity {
     return try (try activeOrOpenScene()).newEntity(id, component_tuple);
+}
+
+pub fn scripts(tuple: anytype) void {
+    const scene_ptr = activeOrOpenScene() catch {
+        std.log.err("no scene was loaded or found, scripts cannot be added!", .{});
+        return;
+    };
+
+    inline for (tuple) |item| {
+        scene_ptr.newScript(item) catch {
+            std.log.err("failed to add script to scene!", .{});
+        };
+    }
 }
 
 pub inline fn activeScene() !*Scene {

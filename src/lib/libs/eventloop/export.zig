@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
 pub const Scene = @import("./Scene.zig");
+pub const Script = @import("./Script.zig");
 const fyr = @import("../../main.zig");
 
 var Scenes: ?std.StringHashMap(*Scene) = null;
@@ -93,10 +94,18 @@ pub fn execute() !void {
         for (s.items) |Entity| executeEntityBehaviour(Entity, do_tick);
 
     try scene.call(Events.update);
+    if (scene.scripts) |scripts| for (scripts.items) |script| {
+        script.callSafe(.update);
+    };
+
     last_update = now;
 
-    if (do_tick)
+    if (do_tick) {
         try scene.call(Events.tick);
+        if (scene.scripts) |scripts| for (scripts.items) |script| {
+            script.callSafe(.update);
+        };
+    }
 
     if (!unload_next_frame) return;
     unload_next_frame = false;
@@ -104,6 +113,10 @@ pub fn execute() !void {
     defer active_scene = next_Scene;
 
     try scene.call(Events.end);
+    if (scene.scripts) |scripts| for (scripts.items) |script| {
+        script.callSafe(.end);
+    };
+
     scene.reset();
 }
 
@@ -132,6 +145,15 @@ pub fn setActive(id: []const u8) !void {
         _scene.call(Events.start) catch {
             std.log.warn("OutOfMemory when calling Scene event", .{});
         };
+
+        if (_scene.scripts) |scripts| {
+            for (scripts.items) |script| {
+                script.callSafe(.awake);
+            }
+            for (scripts.items) |script| {
+                script.callSafe(.start);
+            }
+        }
     }
 
     if (!fyr.isLoopRunning()) {

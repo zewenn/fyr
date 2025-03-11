@@ -34,7 +34,6 @@ pub const raygui = struct {
 };
 
 var memory: []u8 = undefined;
-var drawfn: ?*const fn () anyerror!void = null;
 
 const FontEntry = struct {
     const Self = @This();
@@ -71,6 +70,7 @@ pub fn init() !void {
 }
 
 pub fn update() !void {
+    const activeScene = try fyr.activeScene();
     const mouse_position = rl.getMousePosition();
 
     clay.setPointerState(.{
@@ -79,27 +79,10 @@ pub fn update() !void {
     }, rl.isMouseButtonDown(.left));
 
     clay.beginLayout();
-    if (drawfn) |dfn|
-        dfn() catch std.log.warn("failed to execute draw function", .{});
 
-    clay.UI()(.{
-        .id = .ID("test"),
-        .layout = .{
-            .sizing = .{
-                .w = .fixed(300),
-                .h = .fit,
-            },
-            .padding = .all(10),
-        },
-        .background_color = .{ 250, 250, 255, 255 },
-    })({
-        clay.text("Clay - UI Library", .{
-            .font_size = 12,
-            .letter_spacing = 1,
-            .color = .{ 0, 0, 0, 255 },
-            .font_id = fontID("press_play.ttf"),
-        });
-    });
+    if (activeScene.scripts) |scripts| for (scripts.items) |script| {
+        script.callSafe(.ui);
+    };
 
     var render_commands = clay.endLayout();
 
@@ -125,10 +108,6 @@ pub fn update() !void {
     fonts_cache.deinit();
     fonts_cache = try fonts.clone();
     fonts.clearAndFree();
-}
-
-pub fn useDrawFn(func: *const fn () anyerror!void) void {
-    drawfn = func;
 }
 
 pub fn deinit() void {
@@ -173,6 +152,10 @@ pub fn fontID(rel_path: []const u8) u16 {
     fonts.append(font_entry) catch return 0;
 
     return font_entry.id;
+}
+
+pub fn color(r: f32, g: f32, b: f32, a: f32) clay.Color {
+    return .{ r, g, b, a };
 }
 
 pub fn loadImage(comptime path: [:0]const u8) !rl.Texture2D {
