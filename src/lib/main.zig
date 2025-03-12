@@ -341,18 +341,6 @@ pub const normal_control_flow = struct {
     }
 
     pub fn deinit() void {
-        defer if (global_allocators.generic.interface) |*intf| {
-            const state = intf.deinit();
-            switch (state) {
-                .ok => std.log.info("GA exit without memory leaks!", .{}),
-                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
-            }
-        };
-
-        defer if (global_allocators.arena.interface) |*intf| {
-            intf.deinit();
-        };
-
         eventloop.deinit();
 
         display.deinit();
@@ -361,6 +349,18 @@ pub const normal_control_flow = struct {
         assets.deinit();
 
         window.deinit();
+
+        if (global_allocators.arena.interface) |*intf| {
+            intf.deinit();
+        }
+
+        if (global_allocators.generic.interface) |*intf| {
+            const state = intf.deinit();
+            switch (state) {
+                .ok => std.log.info("GA exit without memory leaks!", .{}),
+                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
+            }
+        }
     }
 };
 
