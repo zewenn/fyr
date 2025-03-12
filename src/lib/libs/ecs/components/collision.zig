@@ -117,10 +117,10 @@ pub const RectangleVertices = struct {
     }
 };
 
-var collidables_or_null: ?std.ArrayList(*RectCollider) = null;
 pub const RectCollider = struct {
     pub const FYR_BEHAVIOUR = {};
     const Self = @This();
+    var collidables_or_null: ?std.ArrayList(*RectCollider) = null;
 
     pub const Config = struct {
         trigger: bool = false,
