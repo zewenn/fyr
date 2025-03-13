@@ -189,12 +189,15 @@ pub const winSize = window.size.set;
 /// Shorthand for window.title()
 pub const title = window.title;
 
-/// Can be used to set the path of the `assets/` directory. This is the path
-/// which will be used as the base of all asset requests. For Scene:
-/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
-pub inline fn useDebugAssetPath(comptime path: []const u8) void {
-    if (lib_info.build_mode != .Debug) return;
-    assets.fs.debug = path;
+pub inline fn useAssetPaths(comptime config: struct {
+    debug: ?[]const u8 = null,
+    release: ?[]const u8 = null,
+}) void {
+    if (config.debug) |d|
+        assets.fs.paths.debug = d;
+
+    if (config.release) |r|
+        assets.fs.paths.release = r;
 }
 
 /// Sets the Scene with the given ID as the active Scene, unloading the current one.

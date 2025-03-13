@@ -12,8 +12,10 @@ const Sound = fyr.rl.Sound;
 const Font = fyr.rl.Font;
 
 pub const fs = struct {
-    pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
-    pub var release: []const u8 = "assets";
+    pub const paths = struct {
+        pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
+        pub var release: []const u8 = "assets";
+    };
 
     pub fn getBase() ![]const u8 {
         const exepath = switch (fyr.lib_info.build_mode) {
@@ -22,10 +24,12 @@ pub const fs = struct {
         };
         defer fyr.getAllocator(.generic).free(exepath);
 
-        const path = try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{ exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
-            .Debug => debug,
-            else => release,
-        } });
+        const path = try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{
+            exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
+                .Debug => paths.debug,
+                else => paths.release,
+            },
+        });
 
         return path;
     }
@@ -153,7 +157,7 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
                 }
                 break :Blk null;
             } orelse return;
-            
+
             const sptr = entry.value_ptr.*;
             const HASH = entry.key_ptr.*;
 
