@@ -48,7 +48,7 @@ pub const Children = struct {
         });
     }
 
-    pub fn init(base: fyr.WrappedArray(*fyr.Entity)) Self {
+    pub fn init(base: fyr.Array(*fyr.Entity)) Self {
         defer base.deinit();
 
         var this = Self{};

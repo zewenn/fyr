@@ -89,12 +89,12 @@ pub const AnimatorBehaviour = struct {
     pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
-    animations: fyr.WrappedArray(Animation),
+    animations: fyr.Array(Animation),
     animator: ?*Animator = null,
     transform: ?*fyr.Transform = null,
     display: ?*fyr.Display = null,
 
-    pub fn init(arg: fyr.WrappedArray(Animation)) Self {
+    pub fn init(arg: fyr.Array(Animation)) Self {
         return Self{
             .animations = arg,
         };

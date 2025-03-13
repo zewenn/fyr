@@ -134,9 +134,9 @@ pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
     return try SharedPtr(@TypeOf(value)).create(getAllocator(.generic), value);
 }
 
-const warray_lib = @import("./.types/WrappedArray.zig");
-pub const WrappedArray = warray_lib.WrappedArray;
-pub const WrappedArrayOptions = warray_lib.WrappedArrayOptions;
+const warray_lib = @import("./.types/Array.zig");
+pub const Array = warray_lib.Array;
+pub const ArrayOptions = warray_lib.ArrayOptions;
 pub const array = warray_lib.array;
 pub const arrayAdvanced = warray_lib.arrayAdvanced;
 
