@@ -12,8 +12,10 @@ const Sound = fyr.rl.Sound;
 const Font = fyr.rl.Font;
 
 pub const fs = struct {
-    pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
-    pub var release: []const u8 = "assets";
+    pub const paths = struct {
+        pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
+        pub var release: []const u8 = "assets";
+    };
 
     pub fn getBase() ![]const u8 {
         const exepath = switch (fyr.lib_info.build_mode) {
@@ -22,10 +24,12 @@ pub const fs = struct {
         };
         defer fyr.getAllocator(.generic).free(exepath);
 
-        const path = try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{ exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
-            .Debug => debug,
-            else => release,
-        } });
+        const path = try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{
+            exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
+                .Debug => paths.debug,
+                else => paths.release,
+            },
+        });
 
         return path;
     }
@@ -103,7 +107,7 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
 
             const mod = (mods.at(0) orelse 1) * (mods.at(1) orelse 1) * 7;
 
-            return hash(rel_path, fyr.changeNumberType(u64, mod) orelse 0);
+            return hash(rel_path, fyr.coerceTo(u64, mod) orelse 0);
         }
 
         pub fn store(rel_path: []const u8, modifiers: anytype) !void {
@@ -148,12 +152,12 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
                     const value_ptr = entry.value_ptr.*.valueptr();
                     defer entry.value_ptr.*.deinit();
 
-                    if (fyr.changeNumberType(usize, value_ptr) != fyr.changeNumberType(usize, ptr)) continue;
+                    if (fyr.coerceTo(usize, value_ptr) != fyr.coerceTo(usize, ptr)) continue;
                     break :Blk entry;
                 }
                 break :Blk null;
             } orelse return;
-            
+
             const sptr = entry.value_ptr.*;
             const HASH = entry.key_ptr.*;
 

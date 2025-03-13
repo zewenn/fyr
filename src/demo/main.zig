@@ -14,7 +14,9 @@ pub fn main() !void {
         fyr.rl.setTargetFPS(256);
         fyr.rl.setConfigFlags(.{ .window_resizable = true });
 
-        fyr.useDebugAssetPath("./src/demo/assets/");
+        fyr.useAssetPaths(.{
+            .debug = "./src/demo/assets/",
+        });
     })({
         fyr.scene("default")({
             fyr.entities(.{
