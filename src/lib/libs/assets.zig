@@ -19,12 +19,12 @@ pub const fs = struct {
 
     pub fn getBase() ![]const u8 {
         const exepath = switch (fyr.lib_info.build_mode) {
-            .Debug => try std.fs.cwd().realpathAlloc(fyr.getAllocator(.generic), "."),
-            else => try std.fs.selfExeDirPathAlloc(fyr.getAllocator(.generic)),
+            .Debug => try std.fs.cwd().realpathAlloc(fyr.allocators.generic(), "."),
+            else => try std.fs.selfExeDirPathAlloc(fyr.allocators.generic()),
         };
         defer fyr.getAllocator(.generic).free(exepath);
 
-        const path = try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{
+        const path = try std.fmt.allocPrint(fyr.allocators.generic(), "{s}{s}{s}", .{
             exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
                 .Debug => paths.debug,
                 else => paths.release,

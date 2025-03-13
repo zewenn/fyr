@@ -31,7 +31,7 @@ pub fn Array(comptime T: type) type {
         items: []T,
 
         pub fn init(tuple: anytype, options: ArrayOptions) !Self {
-            const allocator = fyr.getAllocator(.generic);
+            const allocator = fyr.allocators.generic();
 
             var list = std.ArrayList(T).init(allocator);
             defer list.deinit();

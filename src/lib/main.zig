@@ -73,57 +73,64 @@ fn AllocatorInstance(comptime T: type) type {
     };
 }
 
-const global_allocators = struct {
-    pub var generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
-    pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
-    pub var page: Allocator = std.heap.page_allocator;
-
-    pub const types = enum {
-        /// Generic allocator, warns at program exit if a memory leak happened.
-        /// In debug mode this is a dbeug allocator, otherwise it is equivalent to the page allocator
-        generic,
-        /// Global arena allocator, everything allocated will be freed at program end.
-        arena,
-        /// Shorthand for `std.heap.page_allocator`.
-        page,
-        /// If `eventloop` has an Scene loaded, this is a shorthand for
-        /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
-        /// same as `arena`.
-        scene,
-        /// Shorthand for `std.heap.c_allocator`
-        c,
-        /// Shorthand for `std.heap.raw_c_allocator`
-        raw_c,
-    };
+const AllocatorTypes = enum {
+    generic,
+    arena,
+    page,
+    scene,
+    c,
+    raw_c,
 };
 
-pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
+pub inline fn getAllocator(comptime T: AllocatorTypes) Allocator {
     return switch (T) {
-        .generic => global_allocators.generic.allocator orelse Blk: {
-            switch (lib_info.build_mode) {
-                .Debug => {
-                    global_allocators.generic.interface = std.heap.DebugAllocator(.{}){};
-                    global_allocators.generic.allocator = global_allocators.generic.interface.?.allocator();
-                },
-                else => global_allocators.generic.allocator = std.heap.smp_allocator,
-            }
-            break :Blk global_allocators.generic.allocator.?;
-        },
-        .arena => global_allocators.arena.allocator orelse Blk: {
-            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.generic));
-            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
-
-            break :Blk global_allocators.arena.allocator.?;
-        },
-        .page => global_allocators.page,
-        .scene => Blk: {
-            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
-            break :Blk active_Scene.allocator();
-        },
+        .generic => allocators.generic(),
+        .arena => allocators.arena(),
+        .scene => allocators.scene(),
+        .page => std.heap.page_allocator,
         .c => std.heap.c_allocator,
         .raw_c => std.heap.raw_c_allocator,
     };
 }
+
+pub const allocators = struct {
+    pub var AI_generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
+    pub var AI_arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
+
+    /// Generic allocator, warns at program exit if a memory leak happened.
+    /// In the Debug and ReleaseFast modes this is a `DebugAllocator`,
+    /// otherwise it is equivalent to the `std.heap.smp_allocator`
+    pub inline fn generic() Allocator {
+        return AI_generic.allocator orelse Blk: {
+            switch (lib_info.build_mode) {
+                .Debug, .ReleaseFast => {
+                    AI_generic.interface = std.heap.DebugAllocator(.{}){};
+                    AI_generic.allocator = AI_generic.interface.?.allocator();
+                },
+                else => AI_generic.allocator = std.heap.smp_allocator,
+            }
+            break :Blk AI_generic.allocator.?;
+        };
+    }
+
+    /// Global arena allocator, everything allocated will be freed at program end.
+    pub inline fn arena() Allocator {
+        return AI_arena.allocator orelse Blk: {
+            AI_arena.interface = std.heap.ArenaAllocator.init(generic());
+            AI_arena.allocator = AI_arena.interface.?.allocator();
+
+            break :Blk AI_arena.allocator.?;
+        };
+    }
+
+    /// If `eventloop` has an Scene loaded, this is a shorthand for
+    /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
+    /// same as `arena`.
+    pub inline fn scene() Allocator {
+        const active_Scene = eventloop.active_scene orelse return arena();
+        return active_Scene.allocator();
+    }
+};
 
 // ^Fyr Types
 // --------------------------------------------------------------------------------
@@ -134,11 +141,11 @@ pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
     return try SharedPtr(@TypeOf(value)).create(getAllocator(.generic), value);
 }
 
-const warray_lib = @import("./.types/Array.zig");
-pub const Array = warray_lib.Array;
-pub const ArrayOptions = warray_lib.ArrayOptions;
-pub const array = warray_lib.array;
-pub const arrayAdvanced = warray_lib.arrayAdvanced;
+const array_lib = @import("./.types/Array.zig");
+pub const Array = array_lib.Array;
+pub const ArrayOptions = array_lib.ArrayOptions;
+pub const array = array_lib.array;
+pub const arrayAdvanced = array_lib.arrayAdvanced;
 
 pub const String = @import("./.types/strings/export.zig").String;
 pub const string = @import("./.types/strings/export.zig").string;
@@ -353,11 +360,11 @@ pub const normal_control_flow = struct {
 
         window.deinit();
 
-        if (global_allocators.arena.interface) |*intf| {
+        if (allocators.AI_arena.interface) |*intf| {
             intf.deinit();
         }
 
-        if (global_allocators.generic.interface) |*intf| {
+        if (allocators.AI_generic.interface) |*intf| {
             const state = intf.deinit();
             switch (state) {
                 .ok => std.log.info("GA exit without memory leaks!", .{}),

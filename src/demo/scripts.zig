@@ -16,10 +16,7 @@ pub const DemoUI = struct {
             .layout = .{
                 .sizing = .{
                     .w = .fixed(300),
-                    .h = .growMinMax(.{
-                        .min = 10,
-                        .max = 700,
-                    }),
+                    .h = .percent(100),
                 },
                 .padding = .all(10),
                 .child_gap = 10,
@@ -32,7 +29,7 @@ pub const DemoUI = struct {
                 .layout = .{
                     .sizing = .{
                         .w = .grow,
-                        .h = .grow,
+                        .h = .fixed(300),
                     },
                 },
                 .background_color = gui.color(20, 120, 220, 255),
@@ -49,7 +46,7 @@ pub const DemoUI = struct {
                 .layout = .{
                     .sizing = .{
                         .w = .grow,
-                        .h = .grow,
+                        .h = .fixed(100),
                     },
                 },
             })({
