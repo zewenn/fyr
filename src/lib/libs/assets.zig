@@ -107,7 +107,7 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
 
             const mod = (mods.at(0) orelse 1) * (mods.at(1) orelse 1) * 7;
 
-            return hash(rel_path, fyr.changeNumberType(u64, mod) orelse 0);
+            return hash(rel_path, fyr.coerceTo(u64, mod) orelse 0);
         }
 
         pub fn store(rel_path: []const u8, modifiers: anytype) !void {
@@ -152,7 +152,7 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
                     const value_ptr = entry.value_ptr.*.valueptr();
                     defer entry.value_ptr.*.deinit();
 
-                    if (fyr.changeNumberType(usize, value_ptr) != fyr.changeNumberType(usize, ptr)) continue;
+                    if (fyr.coerceTo(usize, value_ptr) != fyr.coerceTo(usize, ptr)) continue;
                     break :Blk entry;
                 }
                 break :Blk null;

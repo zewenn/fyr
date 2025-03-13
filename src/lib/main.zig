@@ -276,7 +276,7 @@ pub const normal_control_flow = struct {
     pub fn init() !void {
         var seed: u64 = undefined;
         std.posix.getrandom(std.mem.asBytes(&seed)) catch {
-            seed = changeNumberType(u64, rl.getTime()).?;
+            seed = coerceTo(u64, rl.getTime()).?;
         };
         var x = std.Random.DefaultPrng.init(seed);
         random = x.random();
@@ -369,7 +369,35 @@ pub const normal_control_flow = struct {
 
 // ^Changing between number(int, float), enum, and boolean types
 // --------------------------------------------------------------------------------
-pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeTarget {
+
+/// # coerceTo
+/// The quick way to change types for ints, floats, booleans, enums and pointers.
+/// Currently:
+/// - `int`, `comptime_int` can be cast to:
+///     - other `int` types (e.g. `i32` -> `i64`)
+///     - `float`
+///     - `bool`
+///     - `enum`
+///     - `pointer` (this case the input integer is taken as the address)
+/// - `float`, `comptime_float` can be cast to:
+///     - `int`
+///     - other `float` types
+///     - `bool`
+///     - `enum`
+/// - `bool` can be cast to:
+///     - `int`
+///     - `float`
+///     - `bool`
+///     - `enum`
+/// - `enum` can be cast to:
+///     - `int`
+///     - `float`
+///     - `bool`
+///     - other `enum` types
+/// - `pointer` can be cast to:
+///     - `int`, the address will become the int's value
+///     - other `pointer` types (e.g. `*anyopaque` -> `*i32`)
+pub inline fn coerceTo(comptime TypeTarget: type, value: anytype) ?TypeTarget {
     const value_info = @typeInfo(@TypeOf(value));
     return switch (@typeInfo(TypeTarget)) {
         .int, .comptime_int => switch (value_info) {
@@ -422,24 +450,29 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
     };
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
 pub inline fn tof32(value: anytype) f32 {
-    return changeNumberType(f32, value) orelse 0;
+    return coerceTo(f32, value) orelse 0;
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
+pub inline fn tof64(value: anytype) f64 {
+    return coerceTo(f64, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
 pub fn toi32(value: anytype) i32 {
-    return changeNumberType(i32, value) orelse 0;
+    return coerceTo(i32, value) orelse 0;
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
 pub fn toisize(value: anytype) isize {
-    return changeNumberType(isize, value) orelse 0;
+    return coerceTo(isize, value) orelse 0;
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
 pub fn tousize(value: anytype) usize {
-    return changeNumberType(usize, value) orelse 0;
+    return coerceTo(usize, value) orelse 0;
 }
 
 // ^Raylib Shortcuts

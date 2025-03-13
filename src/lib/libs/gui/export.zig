@@ -44,7 +44,7 @@ const FontEntry = struct {
     pub fn init(name: []const u8, id: anytype) Self {
         return .{
             .name = name,
-            .id = fyr.changeNumberType(u16, id) orelse 0,
+            .id = fyr.coerceTo(u16, id) orelse 0,
         };
     }
 };
@@ -57,7 +57,7 @@ pub fn init() !void {
     fonts = .init(fyr.getAllocator(.generic));
     fonts_cache = .init(fyr.getAllocator(.generic));
 
-    const min_memory_size: usize = fyr.changeNumberType(usize, clay.minMemorySize()).?;
+    const min_memory_size: usize = fyr.coerceTo(usize, clay.minMemorySize()).?;
     memory = try fyr.getAllocator(.generic).alloc(u8, min_memory_size);
 
     const arena: clay.Arena = clay.createArenaWithCapacityAndMemory(memory);
