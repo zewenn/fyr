@@ -73,24 +73,8 @@ fn AllocatorInstance(comptime T: type) type {
     };
 }
 
-const AllocatorTypes = enum {
-    generic,
-    arena,
-    page,
-    scene,
-    c,
-    raw_c,
-};
-
-pub inline fn getAllocator(comptime T: AllocatorTypes) Allocator {
-    return switch (T) {
-        .generic => allocators.generic(),
-        .arena => allocators.arena(),
-        .scene => allocators.scene(),
-        .page => std.heap.page_allocator,
-        .c => std.heap.c_allocator,
-        .raw_c => std.heap.raw_c_allocator,
-    };
+pub inline fn getAllocator(comptime _: enum { generic, arena, page, scene, c, raw_c }) Allocator {
+    @compileError("fyr.getAllocator got deprecated, use fyr.allocators instead");
 }
 
 pub const allocators = struct {
@@ -138,7 +122,7 @@ pub const Scene = eventloop.Scene;
 
 pub const SharedPtr = @import("./.types/SharedPointer.zig").SharedPtr;
 pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
-    return try SharedPtr(@TypeOf(value)).create(getAllocator(.generic), value);
+    return try SharedPtr(@TypeOf(value)).create(allocators.generic(), value);
 }
 
 const array_lib = @import("./.types/Array.zig");

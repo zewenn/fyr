@@ -43,7 +43,7 @@ pub const Children = struct {
 
     fn getMakeList(self: *Self) *std.ArrayList(EntityRef) {
         return &(self.list orelse Blk: {
-            self.list = .init(fyr.getAllocator(.generic));
+            self.list = .init(fyr.allocators.generic());
             break :Blk self.list.?;
         });
     }

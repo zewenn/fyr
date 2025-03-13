@@ -221,7 +221,7 @@ pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
 
 fn makeGetScripts(self: *Self) *std.ArrayList(*Script) {
     return &(self.scripts orelse Blk: {
-        self.scripts = .init(fyr.getAllocator(.generic));
+        self.scripts = .init(fyr.allocators.generic());
         break :Blk self.scripts.?;
     });
 }
@@ -230,7 +230,7 @@ pub fn newScript(self: *Self, value: anytype) !void {
     if (!Script.isScript(value)) return;
 
     const script = try Script.from(value);
-    const ptr = try fyr.getAllocator(.generic).create(Script);
+    const ptr = try fyr.allocators.generic().create(Script);
     ptr.* = script;
 
     const scripts = self.makeGetScripts();

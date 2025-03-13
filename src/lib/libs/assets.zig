@@ -22,7 +22,7 @@ pub const fs = struct {
             .Debug => try std.fs.cwd().realpathAlloc(fyr.allocators.generic(), "."),
             else => try std.fs.selfExeDirPathAlloc(fyr.allocators.generic()),
         };
-        defer fyr.getAllocator(.generic).free(exepath);
+        defer fyr.allocators.generic().free(exepath);
 
         const path = try std.fmt.allocPrint(fyr.allocators.generic(), "{s}{s}{s}", .{
             exepath, std.fs.path.sep_str, switch (fyr.lib_info.build_mode) {
@@ -36,14 +36,14 @@ pub const fs = struct {
 
     pub fn getFilePath(rel_path: []const u8) ![]const u8 {
         const basepath = try fs.getBase();
-        defer fyr.getAllocator(.generic).free(basepath);
+        defer fyr.allocators.generic().free(basepath);
 
-        return try std.fmt.allocPrint(fyr.getAllocator(.generic), "{s}{s}{s}", .{ basepath, std.fs.path.sep_str, rel_path });
+        return try std.fmt.allocPrint(fyr.allocators.generic(), "{s}{s}{s}", .{ basepath, std.fs.path.sep_str, rel_path });
     }
 
     pub fn getFileExt(rel_path: []const u8) ![]const u8 {
         const index = std.mem.lastIndexOf(u8, rel_path, ".") orelse 0;
-        const buf = try fyr.getAllocator(.generic).alloc(u8, rel_path.len - index);
+        const buf = try fyr.allocators.generic().alloc(u8, rel_path.len - index);
         std.mem.copyForwards(u8, buf, rel_path[index..]);
 
         return buf;
@@ -51,12 +51,12 @@ pub const fs = struct {
 
     pub fn getData(pth: []const u8) ![]const u8 {
         const real_path = try getFilePath(pth);
-        defer fyr.getAllocator(.generic).free(real_path);
+        defer fyr.allocators.generic().free(real_path);
 
         const reader = try std.fs.openFileAbsolute(real_path, .{});
         defer reader.close();
 
-        return reader.readToEndAlloc(fyr.getAllocator(.generic), 8 * 1024 * 1024 * 512);
+        return reader.readToEndAlloc(fyr.allocators.generic(), 8 * 1024 * 1024 * 512);
     }
 };
 
@@ -67,7 +67,7 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
 
         fn hashMap() *HashMapType {
             return &(hash_map orelse Blk: {
-                hash_map = HashMapType.init(fyr.getAllocator(.generic));
+                hash_map = HashMapType.init(fyr.allocators.generic());
                 break :Blk hash_map.?;
             });
         }
@@ -116,10 +116,10 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
             if (hmap.contains(HASH)) return;
 
             const data = try fs.getData(rel_path);
-            defer fyr.getAllocator(.generic).free(data);
+            defer fyr.allocators.generic().free(data);
 
             const filetype = try fs.getFileExt(rel_path);
-            defer fyr.getAllocator(.generic).free(filetype);
+            defer fyr.allocators.generic().free(filetype);
 
             const parsed: T = try parsefn(data, filetype, modifiers);
 
@@ -193,8 +193,8 @@ pub const image = AssetType(
             const mods = fyr.array(i32, modifiers);
             defer mods.deinit();
 
-            const str: [:0]const u8 = fyr.getAllocator(.generic).dupeZ(u8, filetype) catch ".png";
-            defer fyr.getAllocator(.generic).free(str);
+            const str: [:0]const u8 = fyr.allocators.generic().dupeZ(u8, filetype) catch ".png";
+            defer fyr.allocators.generic().free(str);
 
             var img = try fyr.rl.loadImageFromMemory(str, data);
             fyr.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
@@ -216,8 +216,8 @@ pub const texture = AssetType(
             const mods = fyr.array(i32, modifiers);
             defer mods.deinit();
 
-            const str: [:0]const u8 = fyr.getAllocator(.generic).dupeZ(u8, filetype) catch ".png";
-            defer fyr.getAllocator(.generic).free(str);
+            const str: [:0]const u8 = fyr.allocators.generic().dupeZ(u8, filetype) catch ".png";
+            defer fyr.allocators.generic().free(str);
 
             var img = try fyr.rl.loadImageFromMemory(str, data);
             defer fyr.rl.unloadImage(img);
@@ -239,8 +239,8 @@ pub const font = AssetType(
     Font,
     struct {
         pub fn callback(data: []const u8, filetype: []const u8, mod: anytype) !Font {
-            const str: [:0]const u8 = fyr.getAllocator(.generic).dupeZ(u8, filetype) catch ".png";
-            defer fyr.getAllocator(.generic).free(str);
+            const str: [:0]const u8 = fyr.allocators.generic().dupeZ(u8, filetype) catch ".png";
+            defer fyr.allocators.generic().free(str);
 
             var fchars = fyr.array(i32, mod);
             defer fchars.deinit();

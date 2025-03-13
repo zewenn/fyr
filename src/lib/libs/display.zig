@@ -18,7 +18,7 @@ fn sort(_: void, lsh: Renderer, rsh: Renderer) bool {
 }
 
 pub fn init() void {
-    buffer = BufferType.init(fyr.getAllocator(.generic));
+    buffer = BufferType.init(fyr.allocators.generic());
 }
 
 pub fn reset() void {
