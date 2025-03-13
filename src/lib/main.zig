@@ -512,8 +512,6 @@ pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
 
 pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     var cloned = try list.clone();
-    defer cloned.deinit();
-
     return try cloned.toOwnedSlice();
 }
 
@@ -527,7 +525,7 @@ pub fn UUIDV7() u128 {
 }
 
 pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
-    std.debug.print(fmt ++ "\n", args);
+    std.log.err(fmt ++ "\n", args);
     @panic("ENGINE PANIC!");
 }
 
