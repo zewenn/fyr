@@ -68,11 +68,13 @@ test "[core] changeNumberType conversions" {
 test "[assets] override dev path" {
     const expect = std.testing.expect;
 
-    fyr.useDebugAssetPath("test");
+    fyr.useAssetPaths(.{
+        .debug = "test"
+    });
     try expect(
         std.mem.eql(
             u8,
-            fyr.assets.fs.debug,
+            fyr.assets.fs.paths.debug,
             "test",
         ),
     );
