@@ -97,7 +97,7 @@ pub const allocators = struct {
         };
     }
 
-    /// Global arena allocator, everything allocated will be freed at program end.
+    /// Global arena allocator, everything allocated will be freed at program exit.
     pub inline fn arena() Allocator {
         return AI_arena.allocator orelse Blk: {
             AI_arena.interface = std.heap.ArenaAllocator.init(generic());
