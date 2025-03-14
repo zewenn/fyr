@@ -70,7 +70,7 @@ pub inline fn reset(self: *Self) void {
 fn makeGetEventList(self: *Self, event: anytype) !*EventActions {
     const emap: *EventMapType = &(self.event_map orelse @panic("event_map wasn't initalised! Call eventloop.init()!"));
 
-    const key = fyr.changeNumberType(Target, event) orelse -1;
+    const key = fyr.coerceTo(Target, event) orelse -1;
 
     if (!emap.contains(key)) {
         try emap.put(key, EventActions.init(self.original_alloc));

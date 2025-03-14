@@ -6,7 +6,7 @@ const fyr = @import("../main.zig");
 const assertTitle = fyr.assertTitle;
 const assert = fyr.assert;
 
-const changeType = fyr.changeNumberType;
+const changeType = fyr.coerceTo;
 const cloneToOwnedSlice = fyr.cloneToOwnedSlice;
 
 pub const WrappedArrayOptions = struct {
