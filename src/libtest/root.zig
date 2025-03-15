@@ -92,11 +92,13 @@ test "Array(T)" {
     var test_array = fyr.array(u8, .{ 10, 12, 13 });
     defer test_array.deinit();
 
+    // Clone
     var clone = try test_array.clone();
     defer clone.deinit();
 
     try (expect(std.mem.eql(u8, test_array.items, clone.items)));
 
+    // Reverse
     var reverse = try test_array.reverse();
     defer reverse.deinit();
 
@@ -105,6 +107,7 @@ test "Array(T)" {
 
     try expect(std.mem.eql(u8, test_array.items, reverse_reversed.items));
 
+    // Map
     var doubled = try test_array.map(u8, struct {
         pub fn callback(elem: u8) !u8 {
             return elem * 2;
@@ -115,21 +118,48 @@ test "Array(T)" {
 
     try expect(std.mem.eql(u8, doubled.items, &doubled_elements));
 
+    // Len
     try expect(test_array.len() == 3);
     try expect(test_array.len() == test_array.items.len);
+    // Last index
     try expect(test_array.lastIndex() == 2);
 
+    // At
     try expect(test_array.at(0) == test_array.items[0]);
     try expect(test_array.at(0) == 10);
 
+    // PtrAt
     try expect(test_array.ptrAt(0) == &(test_array.items[0]));
 
     test_array.set(1, 24);
     try expect(test_array.at(1) == 24);
 
+    // GetFirst / GetLast
     try expect(test_array.getFirst() == 10);
     try expect(test_array.getLast() == 13);
 
+    // GetFirstPtr / GetLastPtr
     try expect(test_array.getFirstPtr() == &(test_array.items[0]));
     try expect(test_array.getLastPtr() == &(test_array.items[2]));
+
+    // Slice
+    var slice = try test_array.slice(0, 2);
+    defer slice.deinit();
+
+    try expect(slice.at(0) == 10);
+    try expect(slice.len() == 2);
+
+    // ToOwnedSlice
+    const owned = try test_array.toOwnedSlice();
+    defer test_array.alloc.free(owned);
+
+    try expect(owned.len == test_array.len());
+    try expect(owned[0] == test_array.at(0));
+
+    // ToArrayList
+    const array_list = try test_array.toArrayList();
+    defer array_list.deinit();
+
+    try expect(array_list.getLastOrNull() == test_array.getLast());
+    try expect(array_list.items.len == test_array.len());
 }

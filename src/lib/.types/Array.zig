@@ -190,7 +190,7 @@ pub fn Array(comptime T: type) type {
             return try Self.fromArray(self.items[start..end], self.alloc);
         }
 
-        /// Caller owns the returned memory.
+        /// Caller owns the returned memory. Does not empty the array.
         pub fn toOwnedSlice(self: Self) ![]T {
             const new_slice = try self.alloc.alloc(T, self.len());
             std.mem.copyForwards(T, new_slice, self.items);
