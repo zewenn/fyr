@@ -6,7 +6,7 @@ const fyr = @import("../main.zig");
 const assertTitle = fyr.assertTitle;
 const assert = fyr.assert;
 
-const changeType = fyr.coerceTo;
+const coerceTo = fyr.coerceTo;
 const cloneToOwnedSlice = fyr.cloneToOwnedSlice;
 
 pub const ArrayOptions = struct {
@@ -41,7 +41,7 @@ pub fn Array(comptime T: type) type {
                     ?T,
                     if (T != @TypeOf(item))
                         switch (options.try_type_change) {
-                            true => changeType(T, item) orelse switch (options.on_type_change_fail) {
+                            true => coerceTo(T, item) orelse switch (options.on_type_change_fail) {
                                 .ignore => null,
                                 .panic => {
                                     std.log.err(
@@ -154,7 +154,7 @@ pub fn Array(comptime T: type) type {
             return self.items[index];
         }
 
-        pub fn atPtr(self: Self, index: usize) ?*T {
+        pub fn ptrAt(self: Self, index: usize) ?*T {
             if (self.len() == 0 or index > self.lastIndex())
                 return null;
 
@@ -162,7 +162,7 @@ pub fn Array(comptime T: type) type {
         }
 
         pub fn set(self: Self, index: usize, value: T) void {
-            const ptr = self.atPtr(index) orelse return;
+            const ptr = self.ptrAt(index) orelse return;
             ptr.* = value;
         }
 
@@ -174,7 +174,15 @@ pub fn Array(comptime T: type) type {
             return self.at(self.lastIndex());
         }
 
-        /// Warning: This will allocate a new slice!
+        pub fn getFirstPtr(self: Self) ?*T {
+            return self.ptrAt(0);
+        }
+
+        pub fn getLastPtr(self: Self) ?*T {
+            return self.ptrAt(self.lastIndex());
+        }
+
+        /// Caller owns the returned memory.
         pub fn slice(self: Self, from: usize, to: usize) !Self {
             const start = @min(@min(from, to), self.lastIndex());
             const end = @min(@max(from, to), self.lastIndex());
@@ -182,7 +190,7 @@ pub fn Array(comptime T: type) type {
             return try Self.fromArray(self.items[start..end], self.alloc);
         }
 
-        /// Caller owns the returned memory!
+        /// Caller owns the returned memory.
         pub fn toOwnedSlice(self: Self) ![]T {
             const new_slice = try self.alloc.alloc(T, self.len());
             std.mem.copyForwards(T, new_slice, self.items);

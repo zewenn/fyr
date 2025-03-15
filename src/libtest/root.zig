@@ -2,10 +2,10 @@ const std = @import("std");
 const fyr = @import("fyr");
 
 const testing = std.testing;
+const expect = testing.expect;
 
 test "[core] coerceTo conversions" {
     const coerceTo = fyr.coerceTo;
-    const expect = testing.expect;
     const x = enum(u8) { a = 0, b = 32 };
 
     // Check if types can be handled properly
@@ -78,8 +78,6 @@ test "[core] coerceTo conversions" {
 }
 
 test "[assets] override dev path" {
-    const expect = std.testing.expect;
-
     fyr.useAssetPaths(.{ .debug = "test" });
     try expect(
         std.mem.eql(
@@ -88,4 +86,50 @@ test "[assets] override dev path" {
             "test",
         ),
     );
+}
+
+test "Array(T)" {
+    var test_array = fyr.array(u8, .{ 10, 12, 13 });
+    defer test_array.deinit();
+
+    var clone = try test_array.clone();
+    defer clone.deinit();
+
+    try (expect(std.mem.eql(u8, test_array.items, clone.items)));
+
+    var reverse = try test_array.reverse();
+    defer reverse.deinit();
+
+    var reverse_reversed = try reverse.reverse();
+    defer reverse_reversed.deinit();
+
+    try expect(std.mem.eql(u8, test_array.items, reverse_reversed.items));
+
+    var doubled = try test_array.map(u8, struct {
+        pub fn callback(elem: u8) !u8 {
+            return elem * 2;
+        }
+    }.callback);
+    defer doubled.deinit();
+    var doubled_elements = [_]u8{ 20, 24, 26 };
+
+    try expect(std.mem.eql(u8, doubled.items, &doubled_elements));
+
+    try expect(test_array.len() == 3);
+    try expect(test_array.len() == test_array.items.len);
+    try expect(test_array.lastIndex() == 2);
+
+    try expect(test_array.at(0) == test_array.items[0]);
+    try expect(test_array.at(0) == 10);
+
+    try expect(test_array.ptrAt(0) == &(test_array.items[0]));
+
+    test_array.set(1, 24);
+    try expect(test_array.at(1) == 24);
+
+    try expect(test_array.getFirst() == 10);
+    try expect(test_array.getLast() == 13);
+
+    try expect(test_array.getFirstPtr() == &(test_array.items[0]));
+    try expect(test_array.getLastPtr() == &(test_array.items[2]));
 }
