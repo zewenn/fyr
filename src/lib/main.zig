@@ -13,7 +13,7 @@ var random: std.Random = undefined;
 // --------------------------------------------------------------------------------
 pub const lib_info = struct {
     pub const lib_name = "fyr";
-    pub const version_str = "v0.1.0";
+    pub const version_str = "0.2.0b";
     pub const build_mode = builtin.mode;
 };
 
