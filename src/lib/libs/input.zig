@@ -1,4 +1,4 @@
-const fyr = @import("fyr");
+const fyr = @import("../main.zig");
 const rl = fyr.rl;
 
 pub const getKeyDown = rl.isKeyPressed;

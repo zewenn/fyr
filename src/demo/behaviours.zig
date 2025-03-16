@@ -25,16 +25,16 @@ pub const MovementBehaviour = struct {
 
         var move_vec = fyr.Vec3(0, 0, 0);
 
-        if (fyr.rl.isKeyDown(.w)) {
+        if (fyr.input.getKey(.w)) {
             move_vec.y -= 1;
         }
-        if (fyr.rl.isKeyDown(.s)) {
+        if (fyr.input.getKey(.s)) {
             move_vec.y += 1;
         }
-        if (fyr.rl.isKeyDown(.a)) {
+        if (fyr.input.getKey(.a)) {
             move_vec.x -= 1;
         }
-        if (fyr.rl.isKeyDown(.d)) {
+        if (fyr.input.getKey(.d)) {
             move_vec.x += 1;
         }
 

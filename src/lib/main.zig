@@ -34,6 +34,7 @@ pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
 pub const gui = @import("libs/gui/export.zig");
 pub const window = @import("libs/window.zig");
+pub const input = @import("libs/input.zig");
 
 // ^Raylib Type
 // --------------------------------------------------------------------------------
@@ -131,8 +132,9 @@ pub const ArrayOptions = array_lib.ArrayOptions;
 pub const array = array_lib.array;
 pub const arrayAdvanced = array_lib.arrayAdvanced;
 
-pub const String = @import("./.types/strings/export.zig").String;
-pub const string = @import("./.types/strings/export.zig").string;
+const string_lib = @import("./.types/strings/export.zig");
+pub const String = string_lib.String;
+pub const string = string_lib.string;
 
 pub const Entity = ecs.Entity;
 pub const Behaviour = ecs.Behaviour;
