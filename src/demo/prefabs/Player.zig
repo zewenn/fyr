@@ -25,7 +25,7 @@ pub fn Player() !*fyr.Entity {
             .img = "logo_small.png",
         }),
 
-        fyr.ColliderBehaviour.init(.{
+        fyr.RectCollider.init(.{
             .dynamic = true,
             .rect = fyr.Rect(
                 0,

@@ -11,7 +11,7 @@ pub fn Box() !*fyr.Entity {
                 .img = "small.png",
             },
         ),
-        fyr.ColliderBehaviour.init(.{
+        fyr.RectCollider.init(.{
             .dynamic = false,
             .rect = fyr.Rect(
                 0,

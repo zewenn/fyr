@@ -1,5 +1,11 @@
+const std = @import("std");
+
 const fyr = @import("../main.zig");
 const rl = fyr.rl;
+
+pub const KeyboardKey = rl.KeyboardKey;
+pub const MouseButton = rl.MouseButton;
+pub const MouseCursor = rl.MouseCursor;
 
 pub const getKeyDown = rl.isKeyPressed;
 pub const getKeyDownRepeat = rl.isKeyPressedRepeat;

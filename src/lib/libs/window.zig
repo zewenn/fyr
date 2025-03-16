@@ -2,10 +2,10 @@ const fyr = @import("../main.zig");
 const rl = fyr.rl;
 
 var _size = fyr.Vec2(860, 480);
-pub var _temp_size = fyr.Vec2(860, 480);
+var _temp_size = fyr.Vec2(860, 480);
+var _title: [:0]const u8 = "";
 
 var is_alive = false;
-pub var _title: [:0]const u8 = "";
 
 pub var clear_color: rl.Color = rl.Color.black;
 pub var use_debug_lines = false;

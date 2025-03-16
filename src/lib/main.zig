@@ -42,19 +42,19 @@ pub const Vector2 = rl.Vector2;
 pub const Vector3 = rl.Vector3;
 pub const Vector4 = rl.Vector4;
 pub const Rectangle = rl.Rectangle;
+pub const Color = rl.Color;
 
 // ^Component
 // --------------------------------------------------------------------------------
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
 pub const DisplayCache = ecs.components.DisplayCache;
-pub const Collider = ecs.components.Collider;
 pub const Animator = ecs.components.Animator;
 
 // ^Behaviours
 // --------------------------------------------------------------------------------
 pub const Renderer = ecs.components.Renderer;
-pub const ColliderBehaviour = ecs.components.ColliderBehaviour;
+pub const RectCollider = ecs.components.RectCollider;
 pub const CameraTarget = ecs.components.CameraTarget;
 pub const AnimatorBehaviour = ecs.components.AnimatorBehaviour;
 pub const Children = ecs.components.Children;
