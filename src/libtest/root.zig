@@ -82,7 +82,7 @@ test "[assets] override dev path" {
     try expect(
         std.mem.eql(
             u8,
-            fyr.assets.fs.paths.debug,
+            fyr.assets.files.paths.debug,
             "test",
         ),
     );

@@ -11,10 +11,21 @@ const Wave = fyr.rl.Wave;
 const Sound = fyr.rl.Sound;
 const Font = fyr.rl.Font;
 
-pub const fs = struct {
+pub const files = struct {
     pub const paths = struct {
         pub var debug: []const u8 = "src" ++ std.fs.path.sep_str ++ "assets";
         pub var release: []const u8 = "assets";
+
+        pub fn use(comptime config: struct {
+            debug: ?[]const u8 = null,
+            release: ?[]const u8 = null,
+        }) void {
+            if (config.debug) |d|
+                debug = d;
+
+            if (config.release) |r|
+                release = r;
+        }
     };
 
     pub fn getBase() ![]const u8 {
@@ -35,7 +46,7 @@ pub const fs = struct {
     }
 
     pub fn getFilePath(rel_path: []const u8) ![]const u8 {
-        const basepath = try fs.getBase();
+        const basepath = try files.getBase();
         defer fyr.allocators.generic().free(basepath);
 
         return try std.fmt.allocPrint(fyr.allocators.generic(), "{s}{s}{s}", .{ basepath, std.fs.path.sep_str, rel_path });
@@ -115,10 +126,10 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
             const HASH = parseModAndGetHash(rel_path, modifiers);
             if (hmap.contains(HASH)) return;
 
-            const data = try fs.getData(rel_path);
+            const data = try files.getData(rel_path);
             defer fyr.allocators.generic().free(data);
 
-            const filetype = try fs.getFileExt(rel_path);
+            const filetype = try files.getFileExt(rel_path);
             defer fyr.allocators.generic().free(filetype);
 
             const parsed: T = try parsefn(data, filetype, modifiers);

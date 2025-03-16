@@ -12,7 +12,7 @@ pub const raygui = struct {
     var fnptr: ?(*const fn () anyerror!void) = null;
 
     pub fn loadStyle(filename: []const u8) !void {
-        const full_path = try fyr.assets.fs.getFilePath(filename);
+        const full_path = try fyr.assets.files.getFilePath(filename);
         defer fyr.allocators.generic().free(full_path);
 
         const cpath = @as([:0]const u8, try fyr.allocators.generic().dupeZ(u8, full_path));

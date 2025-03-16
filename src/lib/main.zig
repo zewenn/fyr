@@ -177,21 +177,13 @@ pub fn project(_: void) *const fn (void) void {
 }
 
 /// Shorthand for window.size.set()
-pub const winSize = window.size.set;
+pub const windowSize = window.size.set;
 
 /// Shorthand for window.title()
 pub const title = window.title;
 
-pub inline fn useAssetPaths(comptime config: struct {
-    debug: ?[]const u8 = null,
-    release: ?[]const u8 = null,
-}) void {
-    if (config.debug) |d|
-        assets.fs.paths.debug = d;
-
-    if (config.release) |r|
-        assets.fs.paths.release = r;
-}
+/// Shorthand for assets.files.paths.use()
+pub const useAssetPaths = assets.files.paths.use;
 
 /// Sets the Scene with the given ID as the active Scene, unloading the current one.
 pub const useScene = eventloop.setActive;
@@ -292,7 +284,7 @@ pub const normal_control_flow = struct {
             try useScene("default");
         }
 
-        while (!rl.windowShouldClose()) {
+        while (!window.shouldClose()) {
             if (!loop_running)
                 loop_running = true;
 
@@ -309,9 +301,10 @@ pub const normal_control_flow = struct {
                 std.log.warn("eventloop.execute() failed!", .{});
             };
 
-            if (rl.isKeyPressed(.f3) and lib_info.build_mode == .Debug) {
+            if (input.getKeyDown(.f3) and
+                input.getKey(.left_alt) and
+                lib_info.build_mode == .Debug)
                 window.toggleDebugLines();
-            }
 
             {
                 rl.beginDrawing();
