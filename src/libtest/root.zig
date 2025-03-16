@@ -89,8 +89,13 @@ test "[assets] override dev path" {
 }
 
 test "Array(T)" {
+    var test_array_elements = [_]u8{ 10, 12, 13 };
     var test_array = fyr.array(u8, .{ 10, 12, 13 });
     defer test_array.deinit();
+
+    try expect(std.mem.eql(u8, test_array.items, &test_array_elements));
+    try expect(test_array.eqls(@as([]u8, &test_array_elements)));
+    try expect(test_array.eqls(test_array));
 
     // Clone
     var clone = try test_array.clone();

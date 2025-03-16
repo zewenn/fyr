@@ -110,6 +110,18 @@ pub fn Array(comptime T: type) type {
             };
         }
 
+        pub fn eqls(self: Self, other: anytype) bool {
+            const K = @TypeOf(other);
+            if (K == Self) {
+                return std.mem.eql(T, self.items, @field(other, "items"));
+            }
+            if (K == []T) {
+                return std.mem.eql(T, self.items, other);
+            }
+
+            return std.meta.eql(self.items, other);
+        }
+
         pub fn reverse(self: Self) !Self {
             const new = try self.alloc.alloc(T, self.items.len);
 
