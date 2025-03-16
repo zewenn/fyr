@@ -151,6 +151,29 @@ pub fn Array(comptime T: type) type {
             };
         }
 
+        pub fn reduce(self: Self, comptime R: type, reduce_fn: fn (T) anyerror!R) !?R {
+            var value: ?R = null;
+
+            for (self.items) |item| {
+                if (value == null) {
+                    value = reduce_fn(item) catch null;
+                    continue;
+                }
+
+                const val = reduce_fn(item) catch continue;
+
+                value = value.? + val;
+            }
+
+            return value;
+        }
+
+        pub fn forEach(self: *Self, func: fn (T) anyerror!void) void {
+            for (self.items) |item| {
+                func(item) catch {};
+            }
+        }
+
         pub fn len(self: Self) usize {
             return self.items.len;
         }

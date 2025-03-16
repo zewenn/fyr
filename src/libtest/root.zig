@@ -88,6 +88,7 @@ test "[assets] override dev path" {
     );
 }
 
+var run_counter: u8 = 0;
 test "Array(T)" {
     var test_array_elements = [_]u8{ 10, 12, 13 };
     var test_array = fyr.array(u8, .{ 10, 12, 13 });
@@ -120,8 +121,23 @@ test "Array(T)" {
     }.callback);
     defer doubled.deinit();
     var doubled_elements = [_]u8{ 20, 24, 26 };
-
     try expect(std.mem.eql(u8, doubled.items, &doubled_elements));
+
+    // Reduce
+    const sum: ?u8 = try test_array.reduce(u8, struct {
+        pub fn callback(value: u8) !u8 {
+            return value;
+        }
+    }.callback);
+    try expect(sum == 10 + 12 + 13);
+
+    // Foreach
+    test_array.forEach(struct {
+        pub fn callback(_: u8) !void {
+            run_counter += 1;
+        }
+    }.callback);
+    try expect(run_counter == 3);
 
     // Len
     try expect(test_array.len() == 3);
