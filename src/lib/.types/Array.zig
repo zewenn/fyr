@@ -30,6 +30,10 @@ pub fn Array(comptime T: type) type {
         alloc: Allocator = std.heap.page_allocator,
         items: []T,
 
+        pub fn create(tuple: anytype) Self {
+            return Self.init(tuple, .{}) catch unreachable;
+        }
+
         pub fn init(tuple: anytype, options: ArrayOptions) !Self {
             const allocator = fyr.allocators.generic();
 

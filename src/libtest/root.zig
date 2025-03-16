@@ -91,7 +91,7 @@ test "[assets] override dev path" {
 var run_counter: u8 = 0;
 test "Array(T)" {
     var test_array_elements = [_]u8{ 10, 12, 13 };
-    var test_array = fyr.array(u8, .{ 10, 12, 13 });
+    var test_array: fyr.Array(u8) = .create(.{ 10, 12, 13 });
     defer test_array.deinit();
 
     try expect(std.mem.eql(u8, test_array.items, &test_array_elements));
