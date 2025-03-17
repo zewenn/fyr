@@ -5,16 +5,18 @@ const Player = @import("./prefabs/Player.zig").Player;
 const Box = @import("./prefabs/Box.zig").Box;
 
 const scripts = @import("scripts.zig");
+const window = fyr.window;
 
 pub fn main() !void {
     fyr.project({
-        fyr.title("fyr-demo");
-        fyr.winSize(fyr.Vec2(1280, 720));
+        window.title("fyr-demo");
+        window.size.set(fyr.Vec2(1280, 720));
+        window.fps.setTarget(256);
+        window.resizing.enable();
 
-        fyr.rl.setTargetFPS(256);
-        fyr.rl.setConfigFlags(.{ .window_resizable = true });
-
-        fyr.useDebugAssetPath("./src/demo/assets/");
+        fyr.useAssetPaths(.{
+            .debug = "./src/demo/assets/",
+        });
     })({
         fyr.scene("default")({
             fyr.entities(.{

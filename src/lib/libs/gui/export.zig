@@ -12,11 +12,11 @@ pub const raygui = struct {
     var fnptr: ?(*const fn () anyerror!void) = null;
 
     pub fn loadStyle(filename: []const u8) !void {
-        const full_path = try fyr.assets.fs.getFilePath(filename);
-        defer fyr.getAllocator(.generic).free(full_path);
+        const full_path = try fyr.assets.files.getFilePath(filename);
+        defer fyr.allocators.generic().free(full_path);
 
-        const cpath = @as([:0]const u8, try fyr.getAllocator(.generic).dupeZ(u8, full_path));
-        defer fyr.getAllocator(.generic).free(std.mem.span(cpath));
+        const cpath = @as([:0]const u8, try fyr.allocators.generic().dupeZ(u8, full_path));
+        defer fyr.allocators.generic().free(std.mem.span(cpath));
 
         rg.guiLoadStyle(cpath);
     }
@@ -44,7 +44,7 @@ const FontEntry = struct {
     pub fn init(name: []const u8, id: anytype) Self {
         return .{
             .name = name,
-            .id = fyr.changeNumberType(u16, id) orelse 0,
+            .id = fyr.coerceTo(u16, id) orelse 0,
         };
     }
 };
@@ -54,16 +54,15 @@ var fonts_cache: std.ArrayList(FontEntry) = undefined;
 var font_index: usize = 1;
 
 pub fn init() !void {
-    fonts = .init(fyr.getAllocator(.generic));
-    fonts_cache = .init(fyr.getAllocator(.generic));
+    fonts = .init(fyr.allocators.generic());
+    fonts_cache = .init(fyr.allocators.generic());
 
-    const min_memory_size: usize = fyr.changeNumberType(usize, clay.minMemorySize()).?;
-    memory = try fyr.getAllocator(.generic).alloc(u8, min_memory_size);
+    const min_memory_size: usize = fyr.coerceTo(usize, clay.minMemorySize()).?;
+    memory = try fyr.allocators.generic().alloc(u8, min_memory_size);
 
     const arena: clay.Arena = clay.createArenaWithCapacityAndMemory(memory);
 
     _ = clay.initialize(arena, .{ .h = 1280, .w = 720 }, .{});
-
     clay.setMeasureTextFunction({}, renderer.measureText);
 
     renderer.raylib_fonts[0] = try rl.getFontDefault();
@@ -86,7 +85,7 @@ pub fn update() !void {
 
     var render_commands = clay.endLayout();
 
-    try renderer.clayRaylibRender(&render_commands, fyr.getAllocator(.generic));
+    try renderer.clayRaylibRender(&render_commands, fyr.allocators.generic());
 
     var cache_clone = try fonts_cache.clone();
     defer cache_clone.deinit();
@@ -118,7 +117,7 @@ pub fn deinit() void {
     fonts_cache.deinit();
     fonts.deinit();
 
-    fyr.getAllocator(.generic).free(memory);
+    fyr.allocators.generic().free(memory);
 }
 
 fn loadFont(rel_path: []const u8) !void {

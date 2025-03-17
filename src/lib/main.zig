@@ -13,7 +13,7 @@ var random: std.Random = undefined;
 // --------------------------------------------------------------------------------
 pub const lib_info = struct {
     pub const lib_name = "fyr";
-    pub const version_str = "v0.1.0";
+    pub const version_str = "0.2.0b";
     pub const build_mode = builtin.mode;
 };
 
@@ -34,6 +34,7 @@ pub const assets = @import("libs/assets.zig");
 pub const display = @import("libs/display.zig");
 pub const gui = @import("libs/gui/export.zig");
 pub const window = @import("libs/window.zig");
+pub const input = @import("libs/input.zig");
 
 // ^Raylib Type
 // --------------------------------------------------------------------------------
@@ -41,19 +42,19 @@ pub const Vector2 = rl.Vector2;
 pub const Vector3 = rl.Vector3;
 pub const Vector4 = rl.Vector4;
 pub const Rectangle = rl.Rectangle;
+pub const Color = rl.Color;
 
 // ^Component
 // --------------------------------------------------------------------------------
 pub const Transform = ecs.components.Transform;
 pub const Display = ecs.components.Display;
 pub const DisplayCache = ecs.components.DisplayCache;
-pub const Collider = ecs.components.Collider;
 pub const Animator = ecs.components.Animator;
 
 // ^Behaviours
 // --------------------------------------------------------------------------------
 pub const Renderer = ecs.components.Renderer;
-pub const ColliderBehaviour = ecs.components.ColliderBehaviour;
+pub const RectCollider = ecs.components.RectCollider;
 pub const CameraTarget = ecs.components.CameraTarget;
 pub const AnimatorBehaviour = ecs.components.AnimatorBehaviour;
 pub const Children = ecs.components.Children;
@@ -73,57 +74,48 @@ fn AllocatorInstance(comptime T: type) type {
     };
 }
 
-const global_allocators = struct {
-    pub var generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
-    pub var arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
-    pub var page: Allocator = std.heap.page_allocator;
-
-    pub const types = enum {
-        /// Generic allocator, warns at program exit if a memory leak happened.
-        /// In debug mode this is a dbeug allocator, otherwise it is equivalent to the page allocator
-        generic,
-        /// Global arena allocator, everything allocated will be freed at program end.
-        arena,
-        /// Shorthand for `std.heap.page_allocator`.
-        page,
-        /// If `eventloop` has an Scene loaded, this is a shorthand for
-        /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
-        /// same as `arena`.
-        scene,
-        /// Shorthand for `std.heap.c_allocator`
-        c,
-        /// Shorthand for `std.heap.raw_c_allocator`
-        raw_c,
-    };
-};
-
-pub inline fn getAllocator(comptime T: global_allocators.types) Allocator {
-    return switch (T) {
-        .generic => global_allocators.generic.allocator orelse Blk: {
-            switch (lib_info.build_mode) {
-                .Debug => {
-                    global_allocators.generic.interface = std.heap.DebugAllocator(.{}){};
-                    global_allocators.generic.allocator = global_allocators.generic.interface.?.allocator();
-                },
-                else => global_allocators.generic.allocator = std.heap.smp_allocator,
-            }
-            break :Blk global_allocators.generic.allocator.?;
-        },
-        .arena => global_allocators.arena.allocator orelse Blk: {
-            global_allocators.arena.interface = std.heap.ArenaAllocator.init(getAllocator(.generic));
-            global_allocators.arena.allocator = global_allocators.arena.interface.?.allocator();
-
-            break :Blk global_allocators.arena.allocator.?;
-        },
-        .page => global_allocators.page,
-        .scene => Blk: {
-            const active_Scene = eventloop.active_scene orelse break :Blk getAllocator(.arena);
-            break :Blk active_Scene.allocator();
-        },
-        .c => std.heap.c_allocator,
-        .raw_c => std.heap.raw_c_allocator,
-    };
+pub inline fn getAllocator(comptime _: enum { generic, arena, page, scene, c, raw_c }) Allocator {
+    @compileError("fyr.getAllocator got deprecated, use fyr.allocators instead");
 }
+
+pub const allocators = struct {
+    pub var AI_generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
+    pub var AI_arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
+
+    /// Generic allocator, warns at program exit if a memory leak happened.
+    /// In the Debug and ReleaseFast modes this is a `DebugAllocator`,
+    /// otherwise it is equivalent to the `std.heap.smp_allocator`
+    pub inline fn generic() Allocator {
+        return AI_generic.allocator orelse Blk: {
+            switch (lib_info.build_mode) {
+                .Debug, .ReleaseFast => {
+                    AI_generic.interface = std.heap.DebugAllocator(.{}){};
+                    AI_generic.allocator = AI_generic.interface.?.allocator();
+                },
+                else => AI_generic.allocator = std.heap.smp_allocator,
+            }
+            break :Blk AI_generic.allocator.?;
+        };
+    }
+
+    /// Global arena allocator, everything allocated will be freed at program exit.
+    pub inline fn arena() Allocator {
+        return AI_arena.allocator orelse Blk: {
+            AI_arena.interface = std.heap.ArenaAllocator.init(generic());
+            AI_arena.allocator = AI_arena.interface.?.allocator();
+
+            break :Blk AI_arena.allocator.?;
+        };
+    }
+
+    /// If `eventloop` has an Scene loaded, this is a shorthand for
+    /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
+    /// same as `arena`.
+    pub inline fn scene() Allocator {
+        const active_Scene = eventloop.active_scene orelse return arena();
+        return active_Scene.allocator();
+    }
+};
 
 // ^Fyr Types
 // --------------------------------------------------------------------------------
@@ -131,17 +123,18 @@ pub const Scene = eventloop.Scene;
 
 pub const SharedPtr = @import("./.types/SharedPointer.zig").SharedPtr;
 pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
-    return try SharedPtr(@TypeOf(value)).create(getAllocator(.generic), value);
+    return try SharedPtr(@TypeOf(value)).create(allocators.generic(), value);
 }
 
-const warray_lib = @import("./.types/WrappedArray.zig");
-pub const WrappedArray = warray_lib.WrappedArray;
-pub const WrappedArrayOptions = warray_lib.WrappedArrayOptions;
-pub const array = warray_lib.array;
-pub const arrayAdvanced = warray_lib.arrayAdvanced;
+const array_lib = @import("./.types/Array.zig");
+pub const Array = array_lib.Array;
+pub const ArrayOptions = array_lib.ArrayOptions;
+pub const array = array_lib.array;
+pub const arrayAdvanced = array_lib.arrayAdvanced;
 
-pub const String = @import("./.types/strings/export.zig").String;
-pub const string = @import("./.types/strings/export.zig").string;
+const string_lib = @import("./.types/strings/export.zig");
+pub const String = string_lib.String;
+pub const string = string_lib.string;
 
 pub const Entity = ecs.Entity;
 pub const Behaviour = ecs.Behaviour;
@@ -184,18 +177,13 @@ pub fn project(_: void) *const fn (void) void {
 }
 
 /// Shorthand for window.size.set()
-pub const winSize = window.size.set;
+pub const windowSize = window.size.set;
 
 /// Shorthand for window.title()
 pub const title = window.title;
 
-/// Can be used to set the path of the `assets/` directory. This is the path
-/// which will be used as the base of all asset requests. For Scene:
-/// `assets.get.image(`*- assetDebugPath gets inserted here -*`<subpath>)`.
-pub inline fn useDebugAssetPath(comptime path: []const u8) void {
-    if (lib_info.build_mode != .Debug) return;
-    assets.fs.debug = path;
-}
+/// Shorthand for assets.files.paths.use()
+pub const useAssetPaths = assets.files.paths.use;
 
 /// Sets the Scene with the given ID as the active Scene, unloading the current one.
 pub const useScene = eventloop.setActive;
@@ -273,7 +261,7 @@ pub const normal_control_flow = struct {
     pub fn init() !void {
         var seed: u64 = undefined;
         std.posix.getrandom(std.mem.asBytes(&seed)) catch {
-            seed = changeNumberType(u64, rl.getTime()).?;
+            seed = coerceTo(u64, rl.getTime()).?;
         };
         var x = std.Random.DefaultPrng.init(seed);
         random = x.random();
@@ -296,7 +284,7 @@ pub const normal_control_flow = struct {
             try useScene("default");
         }
 
-        while (!rl.windowShouldClose()) {
+        while (!window.shouldClose()) {
             if (!loop_running)
                 loop_running = true;
 
@@ -313,9 +301,10 @@ pub const normal_control_flow = struct {
                 std.log.warn("eventloop.execute() failed!", .{});
             };
 
-            if (rl.isKeyPressed(.f3) and lib_info.build_mode == .Debug) {
+            if (input.getKeyDown(.f3) and
+                input.getKey(.left_alt) and
+                lib_info.build_mode == .Debug)
                 window.toggleDebugLines();
-            }
 
             {
                 rl.beginDrawing();
@@ -341,18 +330,6 @@ pub const normal_control_flow = struct {
     }
 
     pub fn deinit() void {
-        defer if (global_allocators.generic.interface) |*intf| {
-            const state = intf.deinit();
-            switch (state) {
-                .ok => std.log.info("GA exit without memory leaks!", .{}),
-                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
-            }
-        };
-
-        defer if (global_allocators.arena.interface) |*intf| {
-            intf.deinit();
-        };
-
         eventloop.deinit();
 
         display.deinit();
@@ -361,12 +338,52 @@ pub const normal_control_flow = struct {
         assets.deinit();
 
         window.deinit();
+
+        if (allocators.AI_arena.interface) |*intf| {
+            intf.deinit();
+        }
+
+        if (allocators.AI_generic.interface) |*intf| {
+            const state = intf.deinit();
+            switch (state) {
+                .ok => std.log.info("GA exit without memory leaks!", .{}),
+                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
+            }
+        }
     }
 };
 
 // ^Changing between number(int, float), enum, and boolean types
 // --------------------------------------------------------------------------------
-pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeTarget {
+
+/// # coerceTo
+/// The quick way to change types for ints, floats, booleans, enums and pointers.
+/// Currently:
+/// - `int`, `comptime_int` can be cast to:
+///     - other `int` types (e.g. `i32` -> `i64`)
+///     - `float`
+///     - `bool`
+///     - `enum`
+///     - `pointer` (this case the input integer is taken as the address)
+/// - `float`, `comptime_float` can be cast to:
+///     - `int`
+///     - other `float` types
+///     - `bool`
+///     - `enum`
+/// - `bool` can be cast to:
+///     - `int`
+///     - `float`
+///     - `bool`
+///     - `enum`
+/// - `enum` can be cast to:
+///     - `int`
+///     - `float`
+///     - `bool`
+///     - other `enum` types
+/// - `pointer` can be cast to:
+///     - `int`, the address will become the int's value
+///     - other `pointer` types (e.g. `*anyopaque` -> `*i32`)
+pub inline fn coerceTo(comptime TypeTarget: type, value: anytype) ?TypeTarget {
     const value_info = @typeInfo(@TypeOf(value));
     return switch (@typeInfo(TypeTarget)) {
         .int, .comptime_int => switch (value_info) {
@@ -402,10 +419,10 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
             else => null,
         },
         .pointer => switch (value_info) {
-            .int, .comptime_int => @ptrFromInt(value),
-            .float, .comptime_float => @ptrFromInt(@as(isize, @floatFromInt(@round(value)))),
-            .bool => @ptrFromInt(@as(usize, @intFromBool(value))),
-            .@"enum" => @ptrFromInt(@as(isize, @intFromEnum(value))),
+            .int, .comptime_int => @ptrCast(@alignCast(@as(*anyopaque, @ptrFromInt(value)))),
+            .float, .comptime_float => @compileError("Cannot convert float to pointer address"),
+            .bool => @compileError("Cannot convert bool to pointer address"),
+            .@"enum" => @compileError("Cannot convert enum to pointer address"),
             .pointer => @ptrCast(@alignCast(value)),
             else => null,
         },
@@ -419,24 +436,29 @@ pub inline fn changeNumberType(comptime TypeTarget: type, value: anytype) ?TypeT
     };
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
 pub inline fn tof32(value: anytype) f32 {
-    return changeNumberType(f32, value) orelse 0;
+    return coerceTo(f32, value) orelse 0;
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
+pub inline fn tof64(value: anytype) f64 {
+    return coerceTo(f64, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
 pub fn toi32(value: anytype) i32 {
-    return changeNumberType(i32, value) orelse 0;
+    return coerceTo(i32, value) orelse 0;
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
 pub fn toisize(value: anytype) isize {
-    return changeNumberType(isize, value) orelse 0;
+    return coerceTo(isize, value) orelse 0;
 }
 
-/// Shorthand for changeNumberType
+/// Shorthand for coerceTo
 pub fn tousize(value: anytype) usize {
-    return changeNumberType(usize, value) orelse 0;
+    return coerceTo(usize, value) orelse 0;
 }
 
 // ^Raylib Shortcuts
@@ -476,8 +498,6 @@ pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
 
 pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     var cloned = try list.clone();
-    defer cloned.deinit();
-
     return try cloned.toOwnedSlice();
 }
 
@@ -491,7 +511,7 @@ pub fn UUIDV7() u128 {
 }
 
 pub fn panic(comptime fmt: []const u8, args: anytype) noreturn {
-    std.debug.print(fmt ++ "\n", args);
+    std.log.err(fmt ++ "\n", args);
     @panic("ENGINE PANIC!");
 }
 

@@ -2,10 +2,11 @@ const fyr = @import("../main.zig");
 const rl = fyr.rl;
 
 var _size = fyr.Vec2(860, 480);
-pub var _temp_size = fyr.Vec2(860, 480);
+var _temp_size = fyr.Vec2(860, 480);
+var _resizable = false;
+var _title: [:0]const u8 = "";
 
 var is_alive = false;
-pub var _title: [:0]const u8 = "";
 
 pub var clear_color: rl.Color = rl.Color.black;
 pub var use_debug_lines = false;
@@ -33,9 +34,30 @@ pub fn clearBackground() void {
     rl.clearBackground(clear_color);
 }
 
+pub const shouldClose = rl.windowShouldClose;
+
 pub fn toggleDebugLines() void {
     use_debug_lines = !use_debug_lines;
 }
+
+/// FPS: frames per second
+pub const fps = struct {
+    var _target: i32 = 60;
+
+    /// Set the maximum FPS the program can run at
+    pub inline fn setTarget(to: anytype) void {
+        _target = fyr.coerceTo(i32, to) orelse 60;
+        rl.setTargetFPS(_target);
+    }
+
+    /// Get the maximum FPS the program can run at
+    pub inline fn getTarget() i32 {
+        return _target;
+    }
+
+    /// Get the currect FPS
+    pub const get = rl.getFPS();
+};
 
 pub const size = struct {
     inline fn update() void {
@@ -58,6 +80,54 @@ pub const size = struct {
         if (!is_alive) return _temp_size;
         update();
         return _size;
+    }
+};
+
+pub const resizing = struct {
+    inline fn update() void {
+        if (!is_alive) {
+            config_flags.set(.{ .window_resizable = _resizable });
+            return;
+        }
+        config_flags.set(.{ .window_resizable = _resizable });
+    }
+
+    pub inline fn enable() void {
+        if (_resizable) return;
+
+        _resizable = true;
+        update();
+    }
+
+    pub inline fn disable() void {
+        if (!_resizable) return;
+        _resizable = false;
+        update();
+    }
+
+    pub inline fn set(to: bool) void {
+        _resizable = to;
+        update();
+    }
+
+    pub inline fn get() bool {
+        _resizable = config_flags.get(.{ .window_resizable = true });
+        return _resizable;
+    }
+};
+
+pub const ConfigFlags = rl.ConfigFlags;
+pub const config_flags = struct {
+    pub inline fn set(flag: ConfigFlags) void {
+        if (!is_alive) {
+            rl.setConfigFlags(flag);
+            return;
+        }
+        rl.setWindowState(flag);
+    }
+
+    pub inline fn get(flag: ConfigFlags) ?ConfigFlags {
+        return rl.isWindowState(flag);
     }
 };
 

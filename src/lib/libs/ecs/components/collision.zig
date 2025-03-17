@@ -4,13 +4,6 @@ const rl = fyr.rl;
 
 const Transform = @import("../components.zig").Transform;
 
-pub const Collider = struct {
-    trigger: bool = false,
-    rect: rl.Rectangle,
-    weight: f32 = 1,
-    dynamic: bool,
-};
-
 pub const RectangleVertices = struct {
     const Self = @This();
 
@@ -34,22 +27,22 @@ pub const RectangleVertices = struct {
     y_min: f32 = 0,
     y_max: f32 = 0,
 
-    pub fn init(transform: *Transform, collider: *Collider) Self {
-        const center_point = getCenterPoint(transform, collider);
+    pub fn init(transform: *Transform, collider_rect: fyr.Rectangle) Self {
+        const center_point = getCenterPoint(transform, collider_rect);
         const delta_point_top_left = rl.Vector2
-            .init(-collider.rect.width / 2, -collider.rect.height / 2)
+            .init(-collider_rect.width / 2, -collider_rect.height / 2)
             .rotate(std.math.degreesToRadians(transform.rotation));
 
         const delta_point_top_right = rl.Vector2
-            .init(collider.rect.width / 2, -collider.rect.height / 2)
+            .init(collider_rect.width / 2, -collider_rect.height / 2)
             .rotate(std.math.degreesToRadians(transform.rotation));
 
         const delta_point_bottom_left = rl.Vector2
-            .init(-collider.rect.width / 2, collider.rect.height / 2)
+            .init(-collider_rect.width / 2, collider_rect.height / 2)
             .rotate(std.math.degreesToRadians(transform.rotation));
 
         const delta_point_bottom_right = rl.Vector2
-            .init(collider.rect.width / 2, collider.rect.height / 2)
+            .init(collider_rect.width / 2, collider_rect.height / 2)
             .rotate(std.math.degreesToRadians(transform.rotation));
 
         var self = Self{
@@ -67,10 +60,10 @@ pub const RectangleVertices = struct {
         return self;
     }
 
-    pub fn getCenterPoint(transform: *Transform, collider: *Collider) rl.Vector2 {
+    pub fn getCenterPoint(transform: *Transform, collider_rect: fyr.Rectangle) rl.Vector2 {
         return fyr.Vec2(
-            transform.position.x + collider.rect.x,
-            transform.position.y + collider.rect.y,
+            transform.position.x + collider_rect.x,
+            transform.position.y + collider_rect.y,
         );
     }
 
@@ -124,19 +117,25 @@ pub const RectangleVertices = struct {
     }
 };
 
-var collidables_or_null: ?std.ArrayList(*ColliderBehaviour) = null;
-pub const ColliderBehaviour = struct {
+pub const RectCollider = struct {
     pub const FYR_BEHAVIOUR = {};
     const Self = @This();
+    var collidables_or_null: ?std.ArrayList(*RectCollider) = null;
 
-    base: Collider,
+    pub const Config = struct {
+        trigger: bool = false,
+        rect: rl.Rectangle,
+        verticies: ?RectangleVertices = null,
+        weight: f32 = 1,
+        dynamic: bool = true,
+    };
 
     entity: ?*fyr.Entity = null,
     transform: ?*Transform = null,
-    collider: ?*Collider = null,
+    config: Config,
 
-    pub fn init(base: Collider) Self {
-        return .{ .base = base };
+    pub fn init(config: Config) Self {
+        return .{ .config = config };
     }
 
     pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
@@ -145,17 +144,11 @@ pub const ColliderBehaviour = struct {
             break :Blk entity.getComponent(Transform).?;
         };
 
-        const collider = entity.getComponent(Collider) orelse Blk: {
-            try entity.addComonent(self.base);
-            break :Blk entity.getComponent(Collider).?;
-        };
-
         self.transform = transform;
-        self.collider = collider;
         self.entity = entity;
 
         const collidables = &(collidables_or_null orelse Blk: {
-            collidables_or_null = std.ArrayList(*Self).init(fyr.getAllocator(.generic));
+            collidables_or_null = std.ArrayList(*Self).init(fyr.allocators.generic());
             break :Blk collidables_or_null.?;
         });
 
@@ -168,19 +161,25 @@ pub const ColliderBehaviour = struct {
         const a_entity = self.entity orelse return;
         const a_transform = self.transform orelse return;
 
-        const a_collider = self.collider orelse return;
+        const a_collider = &self.config;
         if (!a_collider.dynamic) return;
 
-        var a_vertices = RectangleVertices.init(a_transform, a_collider);
+        var a_vertices = a_collider.verticies orelse Blk: {
+            a_collider.verticies = RectangleVertices.init(a_transform, a_collider.rect);
+            break :Blk a_collider.verticies.?;
+        };
 
         for (collidables.items) |b| {
             const b_entity = b.entity orelse continue;
             if (a_entity.uuid == b_entity.uuid) continue;
 
             const b_transform = b.transform orelse return;
-            const b_collider = b.collider orelse continue;
+            const b_collider = &b.config;
 
-            var b_vertices = RectangleVertices.init(b_transform, b_collider);
+            var b_vertices = b_collider.verticies orelse Blk: {
+                b_collider.verticies = RectangleVertices.init(b_transform, b_collider.rect);
+                break :Blk b_collider.verticies.?;
+            };
 
             if (!a_vertices.overlaps(b_vertices)) continue;
 
@@ -195,6 +194,10 @@ pub const ColliderBehaviour = struct {
 
             a_vertices.pushback(b_vertices, a_mult);
             b_vertices.pushback(b_vertices, b_mult);
+        }
+
+        for (collidables.items) |item| {
+            item.config.verticies = null;
         }
     }
 

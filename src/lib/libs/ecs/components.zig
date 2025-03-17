@@ -33,8 +33,7 @@ pub const Display = display_components.Display;
 pub const DisplayCache = display_components.DisplayCache;
 pub const Renderer = display_components.Renderer;
 
-pub const ColliderBehaviour = collision_components.ColliderBehaviour;
-pub const Collider = collision_components.Collider;
+pub const RectCollider = collision_components.RectCollider;
 
 pub const CameraTarget = camera_components.CameraTarget;
 

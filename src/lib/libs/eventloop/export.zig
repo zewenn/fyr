@@ -30,7 +30,7 @@ const EventLoopErrors = error{
 
 pub fn init() !void {
     Scenes = std.StringHashMap(*Scene).init(
-        fyr.getAllocator(.generic),
+        fyr.allocators.generic(),
     );
 }
 
@@ -41,8 +41,8 @@ pub fn new(comptime id: []const u8) EventLoopErrors!*Scene {
     }
 
     const ptr = &(Scenes.?);
-    const Sceneptr = try fyr.getAllocator(.generic).create(Scene);
-    Sceneptr.* = Scene.init(fyr.getAllocator(.generic), id);
+    const Sceneptr = try fyr.allocators.generic().create(Scene);
+    Sceneptr.* = Scene.init(fyr.allocators.generic(), id);
 
     if (!ptr.contains(id)) {
         try ptr.put(id, Sceneptr);
@@ -175,7 +175,7 @@ pub fn deinit() void {
     var iterator = ptr.iterator();
     while (iterator.next()) |entry| {
         entry.value_ptr.*.deinit();
-        fyr.getAllocator(.generic).destroy(entry.value_ptr.*);
+        fyr.allocators.generic().destroy(entry.value_ptr.*);
     }
 }
 

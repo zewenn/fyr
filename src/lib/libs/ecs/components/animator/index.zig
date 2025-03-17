@@ -19,9 +19,9 @@ pub const Animator = struct {
 
     pub fn init() Self {
         return Self{
-            .alloc = fyr.getAllocator(.scene),
-            .animations = std.StringHashMap(*Animation).init(fyr.getAllocator(.scene)),
-            .playing = std.ArrayList(*Animation).init(fyr.getAllocator(.scene)),
+            .alloc = fyr.allocators.scene(),
+            .animations = std.StringHashMap(*Animation).init(fyr.allocators.scene()),
+            .playing = std.ArrayList(*Animation).init(fyr.allocators.scene()),
             .alive = true,
         };
     }
@@ -89,12 +89,12 @@ pub const AnimatorBehaviour = struct {
     pub const FYR_BEHAVIOUR = {};
     const Self = @This();
 
-    animations: fyr.WrappedArray(Animation),
+    animations: fyr.Array(Animation),
     animator: ?*Animator = null,
     transform: ?*fyr.Transform = null,
     display: ?*fyr.Display = null,
 
-    pub fn init(arg: fyr.WrappedArray(Animation)) Self {
+    pub fn init(arg: fyr.Array(Animation)) Self {
         return Self{
             .animations = arg,
         };
