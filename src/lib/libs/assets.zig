@@ -71,7 +71,11 @@ pub const files = struct {
     }
 };
 
-fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: []const u8, mod: anytype) anyerror!T, releasefn: *const fn (data: T) void) type {
+fn AssetType(
+    comptime T: type,
+    comptime parsefn: *const fn (data: []const u8, filetype: []const u8, mod: anytype) anyerror!T,
+    comptime releasefn: *const fn (data: T) void,
+) type {
     return struct {
         const HashMapType = std.AutoHashMap(u64, *SharedPtr(T));
         var hash_map: ?HashMapType = null;
