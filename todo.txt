@@ -80,51 +80,6 @@ x 2025-01-24 update readme
 
 
 
-+v0.0.1-dev.3
-
-desired end syntax:
-```zig
-var name: []const u8 = "World!";
-
-ui.root(.{
-    .id = "root",
-})({
-    ui.h1(.{})({
-        ui.text("Hello {s}", .{name});
-    });
-
-    ui.button(.{
-        .on_click = struct {
-            pub fn c() void {
-                name = "!dlroW";
-            }
-        }.c,
-    })({
-        ui.text("Hello {s}", .{name});
-    });
-
-    ui.div(.{
-        .style = .{
-            .width = .{ .px = 250 },
-        },
-    })({
-        ui.p(.{
-            .style = .{
-                .width = .{ .fill = true },
-            },
-        })({
-            ui.text("Test: {s}", .{name});
-        });
-    });
-});
-
-```
-
-
-f(str: []const u8, mod: anytype) -> T
-
-
-
 +future @unmapped
 
 implment physics system: vel, acc, drag 

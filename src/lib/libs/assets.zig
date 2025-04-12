@@ -98,15 +98,20 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
         }
 
         fn hash(str: []const u8, mod: u64) u64 {
-            const RANDOM_PRIME: comptime_int = 3;
+            const RANDOM_PRIME: comptime_int = 37;
+            const MAX: comptime_int = std.math.maxInt(u63);
+            const POWER_MAX: comptime_int = std.math.maxInt(u32);
+            var power: u64 = 1;
+
             const STRING_SUM: u64 = Blk: {
-                var res: u64 = 0;
+                var hash_value: u64 = 0;
 
                 for (str) |char| {
-                    res = res * RANDOM_PRIME + char;
+                    hash_value = (hash_value + (char - @min(char, 'a') + 1) * power) % MAX;
+                    power = (RANDOM_PRIME * power) % POWER_MAX;
                 }
 
-                break :Blk res;
+                break :Blk hash_value;
             };
 
             return STRING_SUM + mod * RANDOM_PRIME;
@@ -138,10 +143,10 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
         }
 
         pub fn release(rel_path: []const u8, modifiers: anytype) void {
-            const HASH = parseModAndGetHash(rel_path, modifiers);
+            const path_hash = parseModAndGetHash(rel_path, modifiers);
             const hmap = hashMap();
 
-            const sptr = hmap.get(HASH) orelse return;
+            const sptr = hmap.get(path_hash) orelse return;
 
             if (sptr.ref_count > 0) {
                 sptr.deinit();
@@ -151,7 +156,7 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
             if (sptr.value) |v|
                 releasefn(v);
             sptr.destroy();
-            _ = hmap.remove(HASH);
+            _ = hmap.remove(path_hash);
         }
 
         pub fn releasePtr(ptr: *T) void {
@@ -169,18 +174,18 @@ fn AssetType(comptime T: type, parsefn: *const fn (data: []const u8, filetype: [
                 break :Blk null;
             } orelse return;
 
-            const sptr = entry.value_ptr.*;
-            const HASH = entry.key_ptr.*;
+            const shared_pointer = entry.value_ptr.*;
+            const entry_hash = entry.key_ptr.*;
 
-            if (sptr.ref_count > 0) {
-                sptr.deinit();
+            if (shared_pointer.ref_count > 0) {
+                shared_pointer.deinit();
                 return;
             }
 
-            if (sptr.value) |v|
+            if (shared_pointer.value) |v|
                 releasefn(v);
-            sptr.destroy();
-            _ = hmap.remove(HASH);
+            shared_pointer.destroy();
+            _ = hmap.remove(entry_hash);
         }
 
         pub fn get(rel_path: []const u8, modifiers: anytype) ?*T {
