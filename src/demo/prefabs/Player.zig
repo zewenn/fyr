@@ -27,6 +27,7 @@ pub fn Player() !*fyr.Entity {
 
         fyr.RectCollider.init(.{
             .dynamic = true,
+            .weight = 1,
             .rect = fyr.Rect(
                 0,
                 0,
@@ -37,7 +38,7 @@ pub fn Player() !*fyr.Entity {
 
         fyr.Children.init(
             .create(.{
-                try Box(),
+                // try Box(),
             }),
         ),
 

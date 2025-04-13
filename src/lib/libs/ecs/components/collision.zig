@@ -158,42 +158,42 @@ pub const RectCollider = struct {
     pub fn Update(self: *Self, _: *fyr.Entity) !void {
         const collidables = collidables_or_null orelse return;
 
-        const a_entity = self.entity orelse return;
-        const a_transform = self.transform orelse return;
+        const self_entity = self.entity orelse return;
+        const self_transform = self.transform orelse return;
 
-        const a_collider = &self.config;
-        if (!a_collider.dynamic) return;
+        const self_collider = &self.config;
+        if (!self_collider.dynamic) return;
 
-        var a_vertices = a_collider.verticies orelse Blk: {
-            a_collider.verticies = RectangleVertices.init(a_transform, a_collider.rect);
-            break :Blk a_collider.verticies.?;
+        var self_vertices = self_collider.verticies orelse Blk: {
+            self_collider.verticies = RectangleVertices.init(self_transform, self_collider.rect);
+            break :Blk self_collider.verticies.?;
         };
 
-        for (collidables.items) |b| {
-            const b_entity = b.entity orelse continue;
-            if (a_entity.uuid == b_entity.uuid) continue;
+        for (collidables.items) |other| {
+            const other_entity = other.entity orelse continue;
+            if (self_entity.uuid == other_entity.uuid) continue;
 
-            const b_transform = b.transform orelse return;
-            const b_collider = &b.config;
+            const other_transform = other.transform orelse return;
+            const other_collider = &other.config;
 
-            var b_vertices = b_collider.verticies orelse Blk: {
-                b_collider.verticies = RectangleVertices.init(b_transform, b_collider.rect);
-                break :Blk b_collider.verticies.?;
+            var other_vertices = other_collider.verticies orelse Blk: {
+                other_collider.verticies = RectangleVertices.init(other_transform, other_collider.rect);
+                break :Blk other_collider.verticies.?;
             };
 
-            if (!a_vertices.overlaps(b_vertices)) continue;
+            if (!self_vertices.overlaps(other_vertices)) continue;
 
-            if (!b_collider.dynamic) {
-                a_vertices.pushback(b_vertices, 1);
+            if (!other_collider.dynamic) {
+                self_vertices.pushback(other_vertices, 1);
                 continue;
             }
 
-            const combined_weight = a_collider.weight + b_collider.weight;
-            const a_mult = 1 - a_collider.weight / combined_weight;
-            const b_mult = 1 - a_mult;
+            const combined_weight = self_collider.weight + other_collider.weight;
+            const self_mult = 1 - self_collider.weight / combined_weight;
+            const other_mult = 1 - self_mult;
 
-            a_vertices.pushback(b_vertices, a_mult);
-            b_vertices.pushback(b_vertices, b_mult);
+            self_vertices.pushback(other_vertices, self_mult);
+            other_vertices.pushback(self_vertices, other_mult);
         }
 
         for (collidables.items) |item| {

@@ -80,7 +80,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
     });
     demo_exe.linkLibC();
-    demo_exe.root_module.addImport("fyr", lib.root_module);
+    demo_exe.root_module.addImport("fyr", fyr_module);
     if (target.result.os.tag == .windows and optimize != .Debug)
         demo_exe.subsystem = .Windows;
 

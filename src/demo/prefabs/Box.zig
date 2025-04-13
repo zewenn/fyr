@@ -1,9 +1,9 @@
 const fyr = @import("fyr");
 
-pub fn Box() !*fyr.Entity {
+pub fn Box(can_collide: bool, position: fyr.Vector3) !*fyr.Entity {
     return try fyr.entity("Box", .{
         fyr.Transform{
-            .position = fyr.Vec3(128, 128, 0),
+            .position = position,
             .scale = fyr.Vec2(256, 64),
         },
         fyr.Renderer.init(
@@ -12,13 +12,14 @@ pub fn Box() !*fyr.Entity {
             },
         ),
         fyr.RectCollider.init(.{
-            .dynamic = false,
+            .dynamic = can_collide,
             .rect = fyr.Rect(
                 0,
                 0,
                 256,
                 64,
             ),
+            .weight = 2,
         }),
     });
 }
