@@ -1,6 +1,6 @@
 .{
     .name = .fyr,
-    .version = "0.2.2",
+    .version = "0.2.3",
     .fingerprint = 0xf3edbc2fefcce355,
     .dependencies = .{
         .uuid = .{
