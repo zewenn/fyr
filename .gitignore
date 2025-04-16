@@ -7,3 +7,5 @@ zig-out/
 
 .vscode/
 .idea/
+
+.VSCodeCounter
