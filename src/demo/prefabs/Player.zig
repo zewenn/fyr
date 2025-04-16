@@ -1,3 +1,4 @@
+const std = @import("std");
 const fyr = @import("fyr");
 
 const MovementBehaviour = @import("../behaviours.zig").MovementBehaviour;
@@ -27,17 +28,40 @@ pub fn Player() !*fyr.Entity {
 
         fyr.RectCollider.init(.{
             .dynamic = true,
+            .weight = 1,
             .rect = fyr.Rect(
                 0,
                 0,
                 64,
                 64,
             ),
+            .onCollisionEnter = struct {
+                pub fn callback(other: *fyr.Entity) !void {
+                    std.log.info("other: {s}", .{other.id});
+                }
+            }.callback
+        }),
+
+        fyr.RectCollider.init(.{
+            .trigger = true,
+            .rect = fyr.Rect(
+                // -64,
+                // -64,
+                0,
+                0,
+                64 * 3,
+                64 * 3,
+            ),
+            .onTriggerEnter = struct {
+                pub fn callback(other: *fyr.Entity) !void {
+                    std.log.info("trigger: {s}\n", .{other.id});
+                }
+            }.callback
         }),
 
         fyr.Children.init(
             .create(.{
-                try Box(),
+                // try Box(),
             }),
         ),
 

@@ -76,6 +76,8 @@ pub const Renderer = struct {
         const transform = self.transform orelse return;
         const display = self.display orelse return;
 
+        if (transform.scale.x == 0 or transform.scale.y == 0) return;
+
         const has_to_be_updated = Blk: {
             if (transform.scale.equals(display_cache.transform.scale) == 0) break :Blk true;
             if (!std.mem.eql(u8, display.img, display_cache.path)) break :Blk true;

@@ -16,11 +16,7 @@ pub fn build(b: *std.Build) !void {
     const raygui = raylib_dep.module("raygui");
     const raylib_artifact = raylib_dep.artifact("raylib");
 
-    const uuid_dep = b.dependency("uuid", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
+    const uuid_dep = b.dependency("uuid", .{ .target = target, .optimize = optimize });
     const uuid = uuid_dep.module("uuid");
     const uuid_artifact = uuid_dep.artifact("uuid-zig");
 
@@ -84,7 +80,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
     });
     demo_exe.linkLibC();
-    demo_exe.root_module.addImport("fyr", lib.root_module);
+    demo_exe.root_module.addImport("fyr", fyr_module);
     if (target.result.os.tag == .windows and optimize != .Debug)
         demo_exe.subsystem = .Windows;
 
