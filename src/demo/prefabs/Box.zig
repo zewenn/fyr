@@ -1,7 +1,11 @@
 const fyr = @import("fyr");
 
-pub fn Box(can_collide: bool, position: fyr.Vector3) !*fyr.Entity {
-    return try fyr.entity("Box", .{
+pub fn Box(
+    comptime id: []const u8,
+    can_collide: bool,
+    position: fyr.Vector3,
+) !*fyr.Entity {
+    return try fyr.entity("box-" ++ id, .{
         fyr.Transform{
             .position = position,
             .scale = fyr.Vec2(256, 64),

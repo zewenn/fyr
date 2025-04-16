@@ -128,6 +128,8 @@ pub const RectCollider = struct {
         verticies: ?RectangleVertices = null,
         weight: f32 = 1,
         dynamic: bool = true,
+        onCollisionEnter: ?*const fn (other: *fyr.Entity) anyerror!void = null,
+        onTriggerEnter: ?*const fn (other: *fyr.Entity) anyerror!void = null,
     };
 
     entity: ?*fyr.Entity = null,
@@ -169,7 +171,7 @@ pub const RectCollider = struct {
             break :Blk self_collider.verticies.?;
         };
 
-        for (collidables.items) |other| {
+        other_loop: for (collidables.items) |other| {
             const other_entity = other.entity orelse continue;
             if (self_entity.uuid == other_entity.uuid) continue;
 
@@ -181,7 +183,20 @@ pub const RectCollider = struct {
                 break :Blk other_collider.verticies.?;
             };
 
+            if (other.config.trigger) continue;
             if (!self_vertices.overlaps(other_vertices)) continue;
+
+            callbacks: switch (self.config.trigger) {
+                true => {
+                    (self.config.onTriggerEnter orelse continue)(other_entity) catch {
+                        std.log.info("Trigger collision error ({s})", .{self_entity.id});
+                    };
+                    continue :other_loop;
+                },
+                false => (self.config.onCollisionEnter orelse break :callbacks)(other_entity) catch {
+                    std.log.info("Collision error ({s})", .{self_entity.id});
+                },
+            }
 
             if (!other_collider.dynamic) {
                 self_vertices.pushback(other_vertices, 1);

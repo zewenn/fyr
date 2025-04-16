@@ -21,8 +21,8 @@ pub fn main() !void {
         fyr.scene("default")({
             fyr.entities(.{
                 try Player(),
-                try Box(true, fyr.Vec3(0, 64, 0)),
-                try Box(false, fyr.Vec3(128, 0, 0)),
+                try Box("1", true, fyr.Vec3(0, 64, 0)),
+                try Box("2", false, fyr.Vec3(128, 0, 0)),
             });
 
             fyr.scripts(.{
