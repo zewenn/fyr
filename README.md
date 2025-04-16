@@ -41,32 +41,30 @@ Setting up a project with `fyr` is so easy, even your grandma could do it :smile
 > You can follow the documentation, or take a look at the [demo project](./src/demo/main.zig)
 
 ```zig
-// This handles the entire program, from start to finish
-// All your code must be configured within these blocks
-fyr.project({
-    // This block will run before initalising the raylib window
-    // Great place to configure default behaviours
+const window = fyr.window;
 
-    // Set the title of the window
-    fyr.title("fyr-demo");
-    // Resize to 720p
-    fyr.winSize(fyr.Vec2(1280, 720));
+pub fn main() !void {
+    fyr.project({
+        window.title("fyr-demo");
+        window.size.set(fyr.Vec2(1280, 720));
+        window.fps.setTarget(256);
+        window.resizing.enable();
 
-    // Set the path of the debug assets dir
-    fyr.useAssetDebugPath("./src/demo/assets/");
-})({
-    // This codeblock will run after the initalisation, but before the loop
-    // Code here is used to configure scenes, entities, scripts and uis
+        // Paths for the assets directory
+        fyr.useAssetPaths(.{
+            .debug = "./src/demo/assets/",
+        });
+    })({
+        // The default scene will be automatically loaded.
+        fyr.scene("default")({
+            fyr.entities(.{
+                // Add entities here
+            });
 
-    // Create the "default" scene, fyr will auto load the scene with this id
-    fyr.scene("default")({
-        // This block is used to configure the scene itself
-
-        // Adding entities for example
-        fyr.entities(.{
-            try Player(),
-            try Box(),
+            fyr.scripts(.{
+                // Add scripts here
+            });
         });
     });
-});
+}
 ```
