@@ -8,8 +8,8 @@ pub fn Player() !*fyr.Entity {
     return try fyr.entity("Player", .{
         fyr.Transform{
             .position = .{
-                .x = 0,
-                .y = 0,
+                .x = -64,
+                .y = -64,
                 .z = 0,
             },
         },
@@ -35,11 +35,6 @@ pub fn Player() !*fyr.Entity {
                 64,
                 64,
             ),
-            .onCollisionEnter = struct {
-                pub fn callback(other: *fyr.Entity) !void {
-                    std.log.info("other: {s}", .{other.id});
-                }
-            }.callback
         }),
 
         fyr.RectCollider.init(.{
@@ -52,11 +47,11 @@ pub fn Player() !*fyr.Entity {
                 64 * 3,
                 64 * 3,
             ),
-            .onTriggerEnter = struct {
-                pub fn callback(other: *fyr.Entity) !void {
-                    std.log.info("trigger: {s}\n", .{other.id});
+            .onCollisionEnter = struct {
+                pub fn callback(_: *fyr.Entity, other: *fyr.Entity) !void {
+                    (try fyr.activeScene()).removeEntityByUuid(other.uuid);
                 }
-            }.callback
+            }.callback,
         }),
 
         fyr.Children.init(

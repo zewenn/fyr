@@ -128,8 +128,7 @@ pub const RectCollider = struct {
         verticies: ?RectangleVertices = null,
         weight: f32 = 1,
         dynamic: bool = true,
-        onCollisionEnter: ?*const fn (other: *fyr.Entity) anyerror!void = null,
-        onTriggerEnter: ?*const fn (other: *fyr.Entity) anyerror!void = null,
+        onCollisionEnter: ?*const fn (self: *fyr.Entity, other: *fyr.Entity) anyerror!void = null,
     };
 
     entity: ?*fyr.Entity = null,
@@ -171,7 +170,7 @@ pub const RectCollider = struct {
             break :Blk self_collider.verticies.?;
         };
 
-        other_loop: for (collidables.items) |other| {
+        for (collidables.items) |other| {
             const other_entity = other.entity orelse continue;
             if (self_entity.uuid == other_entity.uuid) continue;
 
@@ -186,17 +185,12 @@ pub const RectCollider = struct {
             if (other.config.trigger) continue;
             if (!self_vertices.overlaps(other_vertices)) continue;
 
-            callbacks: switch (self.config.trigger) {
-                true => {
-                    (self.config.onTriggerEnter orelse continue)(other_entity) catch {
-                        std.log.info("Trigger collision error ({s})", .{self_entity.id});
-                    };
-                    continue :other_loop;
-                },
-                false => (self.config.onCollisionEnter orelse break :callbacks)(other_entity) catch {
-                    std.log.info("Collision error ({s})", .{self_entity.id});
-                },
-            }
+            if (self.config.onCollisionEnter) |func|
+                func(self_entity, other_entity) catch {
+                    std.log.err("CollisionEnter function failed ({s}/{x})", .{self_entity.id, self_entity.uuid});
+                };
+
+            if (self.config.trigger) continue;
 
             if (!other_collider.dynamic) {
                 self_vertices.pushback(other_vertices, 1);
