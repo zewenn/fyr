@@ -47,11 +47,6 @@ pub fn Player() !*fyr.Entity {
                 64 * 3,
                 64 * 3,
             ),
-            .onCollisionEnter = struct {
-                pub fn callback(_: *fyr.Entity, other: *fyr.Entity) !void {
-                    (try fyr.activeScene()).removeEntityByUuid(other.uuid);
-                }
-            }.callback,
         }),
 
         fyr.Children.init(

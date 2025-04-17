@@ -102,13 +102,16 @@ pub const AnimatorBehaviour = struct {
 
     pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
         var animator = Animator.init();
+
+        defer self.animations.deinit();
         for (self.animations.items) |item| {
             try animator.chain(item);
         }
 
-        self.animations.deinit();
-
-        try entity.addComonent(animator);
+        entity.addComonent(animator) catch {
+            std.log.err("Failed to add Animator", .{});
+            return;
+        };
 
         self.animator = entity.getComponent(fyr.Animator) orelse return;
         self.transform = entity.getComponent(fyr.Transform) orelse return;

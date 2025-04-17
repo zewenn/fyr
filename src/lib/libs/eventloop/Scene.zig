@@ -134,6 +134,8 @@ pub fn addEntity(self: *Self, entity: *Entity) !void {
     const behaviours = try entity.getBehaviours();
     for (behaviours) |b| {
         b.callSafe(.awake, entity);
+    }
+    for (behaviours) |b| {
         b.callSafe(.start, entity);
     }
 

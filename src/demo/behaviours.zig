@@ -7,6 +7,7 @@ pub const MovementBehaviour = struct {
     const Self = @This();
 
     transform: ?*fyr.Transform = null,
+    animator: ?*fyr.Animator = null,
     speed: f32 = 350,
 
     pub fn init(speed: f32) Self {
@@ -15,13 +16,17 @@ pub const MovementBehaviour = struct {
         };
     }
 
-    pub fn Awake(cache: *Self, entity: *fyr.Entity) !void {
+    pub fn Start(self: *Self, entity: *fyr.Entity) !void {
         const transform = entity.getComponent(fyr.Transform);
-        cache.transform = transform;
+        self.transform = transform;
+
+        const animator = entity.getComponent(fyr.Animator);
+        self.animator = animator;
+        std.log.debug("animator: {any}", .{self.animator});
     }
 
-    pub fn Update(cache: *Self, entity: *fyr.Entity) !void {
-        const transform = cache.transform orelse return;
+    pub fn Update(self: *Self, _: *fyr.Entity) !void {
+        const transform = self.transform orelse return;
 
         var move_vec = fyr.Vec3(0, 0, 0);
 
@@ -42,7 +47,7 @@ pub const MovementBehaviour = struct {
 
         transform.position = transform.position.add(
             move_vec.multiply(
-                fyr.Vec3(cache.speed, cache.speed, 0),
+                fyr.Vec3(self.speed, self.speed, 0),
             ).multiply(
                 fyr.Vec3(
                     fyr.time.deltaTime(),
@@ -53,8 +58,9 @@ pub const MovementBehaviour = struct {
         );
 
         if (move_vec.length() < 0.5) return;
-        const animator = entity.getComponent(fyr.Animator) orelse return;
 
-        try animator.play("test");
+        if (self.animator) |animator| {
+            try animator.play("test");
+        }
     }
 };
