@@ -1,11 +1,11 @@
-<h1 align="center"><font style="font-size: 72pt;">ᚠᛁᚱ</font></h1>
+<p align="center"><img src=".readme/logo_large.png" width="400"/><p>
 <p align="center"><a href="./docs/">Docs</a> | <a href="./src/demo/">Demo Project</a></p>
 
-**fyr** is a custom **zig-based** wrapper of [Not-Nik](https://github.com/Not-Nik)'s [raylib-zig](https://github.com/Not-Nik/raylib-zig); containing an entity component system, asset loading, automatic rendering and many more features...
+**fyr** is a wrapper of [Not-Nik](https://github.com/Not-Nik)'s [raylib-zig](https://github.com/Not-Nik/raylib-zig) using [johan0A](https://github.com/johan0A)'s [clay-zig-bindings](https://github.com/johan0A/clay-zig-bindings). **fyr** also contains a fully functional ECS (Entity Component System) and a caching asset handling solution.
 
 > [!IMPORTANT]
 > This project is still very much under development! Contributions are welcome. <br>
-> Also the project uses zig version `0.14.0` and the latest version of the bindings.
+> The project uses zig version `0.14.0` and the latest version of the bindings.
 
 ## Add the `fyr` library
 
