@@ -22,7 +22,6 @@ pub const MovementBehaviour = struct {
 
         const animator = entity.getComponent(fyr.Animator);
         self.animator = animator;
-        std.log.debug("animator: {any}", .{self.animator});
     }
 
     pub fn Update(self: *Self, _: *fyr.Entity) !void {

@@ -9,7 +9,7 @@ const target = builtin.target;
 
 var random: std.Random = undefined;
 
-// ^Library Inf
+// ^Library Information
 // --------------------------------------------------------------------------------
 pub const lib_info = struct {
     pub const lib_name = "fyr";
@@ -346,8 +346,8 @@ pub const normal_control_flow = struct {
         if (allocators.AI_generic.interface) |*intf| {
             const state = intf.deinit();
             switch (state) {
-                .ok => std.log.info("GA exit without memory leaks!", .{}),
-                .leak => std.log.warn("GA exit with memory leak(s)!", .{}),
+                .ok => logInfo("GA exit without memory leaks!", .{}),
+                .leak => logInfo("GA exit with memory leak(s)!", .{}),
             }
         }
     }
@@ -549,3 +549,61 @@ pub fn randColor() rl.Color {
 }
 
 pub const setTickTarget = eventloop.setTickTarget;
+
+// ^Logging
+// --------------------------------------------------------------------------------
+pub const LogLevel = enum(u4) {
+    const Self = @This();
+
+    debug,
+    info,
+    warn,
+    err,
+    fatal,
+    none,
+
+    pub inline fn toString(self: Self) []const u8 {
+        if (self == .none) return "";
+
+        return "(" ++ switch (self) {
+            .debug => "debug",
+            .info => "info",
+            .warn => "warning",
+            .err => "error",
+            .fatal => "fatal",
+            else => "LOG_ERROR",
+        } ++ ") ";
+    }
+};
+
+pub var log_level: LogLevel = switch (lib_info.build_mode) {
+    .Debug => .debug,
+    .ReleaseFast => .err,
+    else => .none,
+};
+
+pub fn log(comptime level: LogLevel, comptime fmt: []const u8, args: anytype) void {
+    if (@intFromEnum(log_level) > @intFromEnum(level)) return;
+    std.debug.print(level.toString() ++ fmt ++ "\n", args);
+}
+
+pub fn logDebug(comptime fmt: []const u8, args: anytype) void {
+    log(.debug, fmt, args);
+}
+
+pub fn logInfo(comptime fmt: []const u8, args: anytype) void {
+    log(.info, fmt, args);
+}
+
+pub fn logWarn(comptime fmt: []const u8, args: anytype) void {
+    log(.warn, fmt, args);
+}
+
+pub fn logError(comptime fmt: []const u8, args: anytype) void {
+    log(.err, fmt, args);
+}
+
+pub fn logFatal(comptime fmt: []const u8, args: anytype) noreturn {
+    log(.fatal, fmt, args);
+    @panic("FATAL ERROR!");
+}

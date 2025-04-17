@@ -29,5 +29,6 @@ pub fn main() !void {
                 scripts.DemoUI{},
             });
         });
+        fyr.log(.debug, "default scene created", .{});
     });
 }
