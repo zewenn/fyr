@@ -132,15 +132,15 @@ pub fn newEntity(self: *Self, id: []const u8, components: anytype) !*Entity {
 
 pub fn addEntity(self: *Self, entity: *Entity) !void {
     const behaviours = try entity.getBehaviours();
+    const entities = self.makeGetEntities();
+    try entities.append(entity);
+
     for (behaviours) |b| {
         b.callSafe(.awake, entity);
     }
     for (behaviours) |b| {
         b.callSafe(.start, entity);
     }
-
-    const entities = self.makeGetEntities();
-    try entities.append(entity);
 }
 
 pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) void {

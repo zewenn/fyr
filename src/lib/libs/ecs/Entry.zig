@@ -85,7 +85,7 @@ pub fn castBack(self: Self, comptime T: type) ?*T {
 }
 
 pub fn castBackBehaviour(self: Self, comptime T: type) ?*T {
-    if (self.hash != comptime calculateHash(fyr.Behaviour)) return null;
+    if (self.store_hash != comptime calculateHash(fyr.Behaviour)) return null;
     const behaviour: *fyr.Behaviour = @ptrCast(@alignCast(self.ptr));
 
     return @ptrCast(@alignCast(behaviour.cache));

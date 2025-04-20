@@ -44,6 +44,12 @@ pub inline fn allocator(self: *Self) Allocator {
 
 pub fn addComonent(self: *Self, value: anytype) !void {
     const isBehaviour = fyr.Behaviour.isBehaviourBase(value);
+
+    fyr.logInfo("c({s}): {s}", .{
+        if (isBehaviour) "behaviour" else "normal",
+        @typeName(@TypeOf(value)),
+    });
+
     try self.list.append(
         if (isBehaviour)
             Entry.initBehaviour(

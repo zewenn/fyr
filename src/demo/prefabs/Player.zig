@@ -51,7 +51,7 @@ pub fn Player() !*fyr.Entity {
 
         fyr.Children.init(
             .create(.{
-                // try Box(),
+                try Box("player", false, fyr.Vec3(0, 0, 20)),
             }),
         ),
 

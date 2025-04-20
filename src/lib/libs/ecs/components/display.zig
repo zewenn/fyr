@@ -4,6 +4,8 @@ const rl = fyr.rl;
 const assets = fyr.assets;
 
 const Transform = @import("../components.zig").Transform;
+const Child = @import("children.zig").Child;
+const EntityRef = @import("children.zig").EntityRef;
 
 pub const Display = struct {
     img: []const u8,
@@ -34,6 +36,8 @@ pub const Renderer = struct {
     display: ?*Display = null,
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
+    is_child: bool = false,
+    parent: ?*Transform = null,
 
     pub fn init(args: Display) Self {
         return Self{
@@ -71,6 +75,13 @@ pub const Renderer = struct {
         self.display_cache = entity.getComponent(DisplayCache);
     }
 
+    pub fn Start(self: *Self, entity: *fyr.Entity) !void {
+        if (entity.getComponent(Child)) |child_component| {
+            self.parent = child_component.parent.ptr.?.getComponent(Transform);
+        }
+        std.log.debug("entity: {s}@{x}", .{ entity.id, entity.uuid });
+    }
+
     pub fn Update(self: *Self, _: *fyr.Entity) !void {
         const display_cache = self.display_cache orelse return;
         const transform = self.transform orelse return;
@@ -101,17 +112,26 @@ pub const Renderer = struct {
             );
         }
 
+        var parent_position = fyr.vec3();
+        if (self.parent) |parent| {
+            parent_position = parent.position;
+        }
+
         const texture = display_cache.texture orelse return;
         try fyr.display.add(.{
             .texture = texture.*,
-            .transform = transform.*,
+            .transform = Transform{
+                .position = transform.*.position.add(parent_position),
+                .rotation = transform.*.rotation,
+                .scale = transform.*.scale,
+            },
             .display = display.*,
         });
     }
 
     pub fn End(self: *Self, _: *fyr.Entity) !void {
-        const c_display_cache = self.display_cache orelse return;
+        const display_cache = self.display_cache orelse return;
 
-        c_display_cache.free();
+        display_cache.free();
     }
 };
