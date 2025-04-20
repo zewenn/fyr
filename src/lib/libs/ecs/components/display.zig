@@ -49,27 +49,16 @@ pub const Renderer = struct {
         try entity.addComonent(self.base);
         self.display = entity.getComponent(Display);
 
-        self.transform = entity.getComponent(Transform);
-        if (self.transform == null) {
-            try entity.addComonent(Transform{});
-            self.transform = entity.getComponent(Transform);
-        }
+        const display = self.display.?;
 
-        const c_transform = self.transform.?;
-        const c_display = self.display.?;
-
-        var display_cache = DisplayCache{
-            .path = c_display.img,
-            .transform = c_transform.*,
+        const display_cache = DisplayCache{
+            .path = display.img,
+            .transform = Transform{},
+            .texture = assets.texture.get(
+                display.img,
+                .{ 0, 0 },
+            ),
         };
-
-        display_cache.texture = assets.texture.get(
-            display_cache.path,
-            .{
-                c_transform.scale.x,
-                c_transform.scale.y,
-            },
-        );
 
         try entity.addComonent(display_cache);
         self.display_cache = entity.getComponent(DisplayCache);
@@ -79,7 +68,10 @@ pub const Renderer = struct {
         if (entity.getComponent(Child)) |child_component| {
             self.parent = child_component.parent.ptr.?.getComponent(Transform);
         }
-        std.log.debug("entity: {s}@{x}", .{ entity.id, entity.uuid });
+
+        if (entity.getComponent(Transform)) |transform| {
+            self.transform = transform;
+        }
     }
 
     pub fn Update(self: *Self, _: *fyr.Entity) !void {
@@ -101,27 +93,23 @@ pub const Renderer = struct {
             display_cache.* = DisplayCache{
                 .path = display.img,
                 .transform = transform.*,
+                .texture = assets.texture.get(
+                    display.img,
+                    .{ transform.scale.x, transform.scale.y },
+                ),
             };
-
-            display_cache.texture = assets.texture.get(
-                display_cache.path,
-                .{
-                    transform.scale.x,
-                    transform.scale.y,
-                },
-            );
-        }
-
-        var parent_position = fyr.vec3();
-        if (self.parent) |parent| {
-            parent_position = parent.position;
         }
 
         const texture = display_cache.texture orelse return;
         try fyr.display.add(.{
             .texture = texture.*,
             .transform = Transform{
-                .position = transform.*.position.add(parent_position),
+                .position = transform.*.position.add(
+                    if (self.parent) |parent|
+                        parent.position
+                    else
+                        fyr.vec3(),
+                ),
                 .rotation = transform.*.rotation,
                 .scale = transform.*.scale,
             },
@@ -131,7 +119,6 @@ pub const Renderer = struct {
 
     pub fn End(self: *Self, _: *fyr.Entity) !void {
         const display_cache = self.display_cache orelse return;
-
         display_cache.free();
     }
 };

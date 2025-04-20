@@ -11,28 +11,26 @@ store_hash: u64,
 is_behaviour: bool = false,
 
 pub inline fn calculateHash(comptime T: type) u64 {
-    const b: comptime_int = comptime get: {
-        break :get switch (@typeInfo(T)) {
-            .@"struct", .@"enum" => Blk: {
-                var fieldsum: comptime_int = 1;
+    const b: comptime_int = comptime switch (@typeInfo(T)) {
+        .@"struct", .@"enum" => Blk: {
+            var fieldsum: comptime_int = 1;
 
-                for (std.meta.fields(T), 0..) |field, index| {
-                    for (field.name, 0..) |char, jndex| {
-                        fieldsum += @as(comptime_int, @intCast(char)) *
-                            (@as(comptime_int, @intCast(jndex)) + 1) *
-                            (@as(comptime_int, @intCast(index)) + 1);
-                    }
-                }
-
-                for (@typeName(T)) |char| {
+            for (std.meta.fields(T), 0..) |field, index| {
+                for (field.name, 0..) |char, jndex| {
                     fieldsum += @as(comptime_int, @intCast(char)) *
-                        @as(comptime_int, @intCast(@alignOf(T)));
+                        (@as(comptime_int, @intCast(jndex)) + 1) *
+                        (@as(comptime_int, @intCast(index)) + 1);
                 }
+            }
 
-                break :Blk fieldsum;
-            },
-            else => 1,
-        };
+            for (@typeName(T)) |char| {
+                fieldsum += @as(comptime_int, @intCast(char)) *
+                    @as(comptime_int, @intCast(@alignOf(T)));
+            }
+
+            break :Blk fieldsum;
+        },
+        else => 1,
     };
 
     return @max(1, @sizeOf(T)) * @max(1, @alignOf(T)) +

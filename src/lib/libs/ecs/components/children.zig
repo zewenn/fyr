@@ -67,7 +67,6 @@ pub const Children = struct {
         for (list.items) |*item| {
             const ptr = item.ptr orelse continue;
             try ptr.addComonent(Child.init(entity));
-            std.log.debug("asd: {any}", .{ptr.getComponent(Child) != null});
             fyr.entities(.{ptr});
         }
     }

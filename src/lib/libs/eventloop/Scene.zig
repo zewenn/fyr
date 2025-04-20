@@ -94,10 +94,10 @@ pub fn call(self: *Self, event: anytype) !void {
     for (items) |action| {
         action.fn_ptr() catch switch (action.on_fail) {
             .ignore => {
-                std.log.warn("Ignored function failiure!", .{});
+                fyr.logWarn("Ignored function failiure!", .{});
             },
             .remove => {
-                std.log.warn("Removed function failiure!", .{});
+                fyr.logWarn("Removed function failiure!", .{});
                 for (ptr.items, 0..) |item, index| {
                     if (!std.meta.eql(item, action)) continue;
 
