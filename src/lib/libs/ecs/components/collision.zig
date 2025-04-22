@@ -156,7 +156,7 @@ pub const RectCollider = struct {
         try collidables.append(self);
     }
 
-    pub fn Update(self: *Self, _: *fyr.Entity) !void {
+    pub fn Update(self: *Self) !void {
         const collidables = collidables_or_null orelse return;
 
         const self_entity = self.entity orelse return;
@@ -210,7 +210,7 @@ pub const RectCollider = struct {
         }
     }
 
-    pub fn End(self: *Self, _: *fyr.Entity) !void {
+    pub fn End(self: *Self) !void {
         const collidables = &(collidables_or_null orelse return);
         for (collidables.items, 0..) |item, index| {
             if (item != self) continue;

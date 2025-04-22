@@ -72,6 +72,8 @@ pub fn init(x: anytype) !Self {
 }
 
 pub fn deinit(self: Self) void {
+    self.hash = 0;
+    self.store_hash = 0;
     std.c.free(self.ptr);
 }
 
