@@ -76,13 +76,20 @@ pub fn deinit(self: Self) void {
 }
 
 pub fn castBack(self: Self, comptime T: type) ?*T {
-    if ((self.hash != comptime calculateHash(T)) and (self.store_hash != comptime calculateHash(T))) return null;
+    const isBehaviourType = comptime fyr.Behaviour.isBehvaiourBaseType(T);
+
+    if ((self.hash != comptime calculateHash(T)) and
+        (self.store_hash != comptime calculateHash(T)))
+        return null;
+
+    if (isBehaviourType and
+        self.is_behaviour and
+        self.store_hash == comptime calculateHash(fyr.Behaviour))
+    {
+        const behaviour: *fyr.Behaviour = @ptrCast(@alignCast(self.ptr));
+
+        return @ptrCast(@alignCast(behaviour.cache));
+    }
+
     return @ptrCast(@alignCast(self.ptr));
-}
-
-pub fn castBackBehaviour(self: Self, comptime T: type) ?*T {
-    if (self.store_hash != comptime calculateHash(fyr.Behaviour)) return null;
-    const behaviour: *fyr.Behaviour = @ptrCast(@alignCast(self.ptr));
-
-    return @ptrCast(@alignCast(behaviour.cache));
 }

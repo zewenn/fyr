@@ -51,9 +51,9 @@ pub fn getComponent(self: *Self, T: type) ?*T {
 
     for (self.list.items) |item| {
         if (item.hash != hash) continue;
-        if (item.is_behaviour and fyr.Behaviour.isBehvaiourBaseType(T)) {
-            return item.castBackBehaviour(T);
-        }
+        // if (item.is_behaviour and fyr.Behaviour.isBehvaiourBaseType(T)) {
+        //     return item.castBackBehaviour(T);
+        // }
 
         return item.castBack(T);
     }
@@ -69,7 +69,6 @@ pub fn getComponents(self: *Self, T: type) ![]*T {
 
     for (self.list.items) |item| {
         if (item.hash != hash) continue;
-
         const ptr = item.castBack(T) orelse continue;
 
         try arr.append(ptr);

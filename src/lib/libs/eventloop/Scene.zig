@@ -42,6 +42,14 @@ pub fn deinit(self: *Self) void {
         entry.value_ptr.deinit();
     }
 
+    if (self.scripts) |scripts| {
+        for (scripts.items) |script| {
+            self.allocator().destroy(script);
+        }
+
+        scripts.deinit();
+    }
+
     emap.deinit();
     self.reset();
     self.arena.deinit();
@@ -232,7 +240,7 @@ pub fn newScript(self: *Self, value: anytype) !void {
     if (!Script.isScript(value)) return;
 
     const script = try Script.from(value);
-    const ptr = try fyr.allocators.generic().create(Script);
+    const ptr = try self.allocator().create(Script);
     ptr.* = script;
 
     const scripts = self.makeGetScripts();
