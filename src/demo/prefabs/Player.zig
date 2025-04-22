@@ -12,6 +12,10 @@ pub fn Player() !*fyr.Entity {
                 .y = -64,
                 .z = 0,
             },
+            .scale = .{
+                .x = 64,
+                .y = 32,
+            }
         },
 
         MovementBehaviour.init(400),
@@ -51,7 +55,7 @@ pub fn Player() !*fyr.Entity {
 
         fyr.Children.init(
             .create(.{
-                try Box("player", false, fyr.Vec3(0, 0, 20)),
+                try Box("player", false, fyr.Vec3(0, 100, 20)),
             }),
         ),
 
