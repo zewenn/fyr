@@ -28,6 +28,33 @@ you can flag the type as a behaviour type. Now you can define the event handler 
 > [!IMPORTANT]
 > When defining an event handler function - such as `Update` - you must capitalise the first letter, this is so that we can differentiate event handlers from regular functions.
 
+These functions can take up to two arguments: one for the entity (`*fyr.Entity`), and the other for `self` (`*@This()`).
+
+```zig
+const myBehaviour = struct {
+    pub const FYR_BEHAVIOUR = {};
+    const Self = @This();
+
+    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {...}
+
+    // but could be
+
+    pub fn Awake(entity: *fyr.Entity, self: *Self) !void {...}
+
+    // you can also exclude arguments:
+
+    pub fn Awake(self: *Self) !void {...}
+
+    // also:
+
+    pub fn Awake(entity: *fyr.Entity) !void {...}
+
+    // or you can exclude all arguments:
+
+    pub fn Awake() !void {...}
+};
+```
+
 You can define five different event handlers:
 
 ### `Awake`
