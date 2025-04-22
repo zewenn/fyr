@@ -4,6 +4,8 @@ const rl = fyr.rl;
 const assets = fyr.assets;
 
 const Transform = @import("../components.zig").Transform;
+const Child = @import("children.zig").Child;
+const EntityRef = @import("children.zig").EntityRef;
 
 pub const Display = struct {
     img: []const u8,
@@ -34,6 +36,8 @@ pub const Renderer = struct {
     display: ?*Display = null,
     transform: ?*Transform = null,
     display_cache: ?*DisplayCache = null,
+    is_child: bool = false,
+    parent: ?*Transform = null,
 
     pub fn init(args: Display) Self {
         return Self{
@@ -45,30 +49,29 @@ pub const Renderer = struct {
         try entity.addComonent(self.base);
         self.display = entity.getComponent(Display);
 
-        self.transform = entity.getComponent(Transform);
-        if (self.transform == null) {
-            try entity.addComonent(Transform{});
-            self.transform = entity.getComponent(Transform);
-        }
+        const display = self.display.?;
 
-        const c_transform = self.transform.?;
-        const c_display = self.display.?;
-
-        var display_cache = DisplayCache{
-            .path = c_display.img,
-            .transform = c_transform.*,
+        const display_cache = DisplayCache{
+            .path = display.img,
+            .transform = Transform{},
+            .texture = assets.texture.get(
+                display.img,
+                .{ 0, 0 },
+            ),
         };
-
-        display_cache.texture = assets.texture.get(
-            display_cache.path,
-            .{
-                c_transform.scale.x,
-                c_transform.scale.y,
-            },
-        );
 
         try entity.addComonent(display_cache);
         self.display_cache = entity.getComponent(DisplayCache);
+    }
+
+    pub fn Start(self: *Self, entity: *fyr.Entity) !void {
+        if (entity.getComponent(Child)) |child_component| {
+            self.parent = child_component.parent.ptr.?.getComponent(Transform);
+        }
+
+        if (entity.getComponent(Transform)) |transform| {
+            self.transform = transform;
+        }
     }
 
     pub fn Update(self: *Self, _: *fyr.Entity) !void {
@@ -90,28 +93,32 @@ pub const Renderer = struct {
             display_cache.* = DisplayCache{
                 .path = display.img,
                 .transform = transform.*,
+                .texture = assets.texture.get(
+                    display.img,
+                    .{ transform.scale.x, transform.scale.y },
+                ),
             };
-
-            display_cache.texture = assets.texture.get(
-                display_cache.path,
-                .{
-                    transform.scale.x,
-                    transform.scale.y,
-                },
-            );
         }
 
         const texture = display_cache.texture orelse return;
         try fyr.display.add(.{
             .texture = texture.*,
-            .transform = transform.*,
+            .transform = Transform{
+                .position = transform.*.position.add(
+                    if (self.parent) |parent|
+                        parent.position
+                    else
+                        fyr.vec3(),
+                ),
+                .rotation = transform.*.rotation,
+                .scale = transform.*.scale,
+            },
             .display = display.*,
         });
     }
 
     pub fn End(self: *Self, _: *fyr.Entity) !void {
-        const c_display_cache = self.display_cache orelse return;
-
-        c_display_cache.free();
+        const display_cache = self.display_cache orelse return;
+        display_cache.free();
     }
 };

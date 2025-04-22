@@ -61,14 +61,13 @@ pub const Children = struct {
         return this;
     }
 
-    pub fn Awake(self: *Self, entity: *fyr.Entity) !void {
+    pub fn Start(self: *Self, entity: *fyr.Entity) !void {
         const list = self.getMakeList();
 
-        const scene = fyr.activeScene() catch return;
         for (list.items) |*item| {
-            if (!scene.isEntityAliveUuid(item.uuid)) continue;
-
-            try item.ptr.?.addComonent(Child.init(entity));
+            const ptr = item.ptr orelse continue;
+            try ptr.addComonent(Child.init(entity));
+            fyr.entities(.{ptr});
         }
     }
 

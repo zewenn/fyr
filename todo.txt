@@ -1,5 +1,0 @@
-
-+v0.3 - Logging
-
-Add fyr.log
-Add log levels

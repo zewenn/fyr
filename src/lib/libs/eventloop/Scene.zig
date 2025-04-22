@@ -42,6 +42,14 @@ pub fn deinit(self: *Self) void {
         entry.value_ptr.deinit();
     }
 
+    if (self.scripts) |scripts| {
+        for (scripts.items) |script| {
+            self.allocator().destroy(script);
+        }
+
+        scripts.deinit();
+    }
+
     emap.deinit();
     self.reset();
     self.arena.deinit();
@@ -94,10 +102,10 @@ pub fn call(self: *Self, event: anytype) !void {
     for (items) |action| {
         action.fn_ptr() catch switch (action.on_fail) {
             .ignore => {
-                std.log.warn("Ignored function failiure!", .{});
+                fyr.logWarn("Ignored function failiure!", .{});
             },
             .remove => {
-                std.log.warn("Removed function failiure!", .{});
+                fyr.logWarn("Removed function failiure!", .{});
                 for (ptr.items, 0..) |item, index| {
                     if (!std.meta.eql(item, action)) continue;
 
@@ -132,15 +140,15 @@ pub fn newEntity(self: *Self, id: []const u8, components: anytype) !*Entity {
 
 pub fn addEntity(self: *Self, entity: *Entity) !void {
     const behaviours = try entity.getBehaviours();
+    const entities = self.makeGetEntities();
+    try entities.append(entity);
+
     for (behaviours) |b| {
         b.callSafe(.awake, entity);
     }
     for (behaviours) |b| {
         b.callSafe(.start, entity);
     }
-
-    const entities = self.makeGetEntities();
-    try entities.append(entity);
 }
 
 pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) void {
@@ -232,7 +240,7 @@ pub fn newScript(self: *Self, value: anytype) !void {
     if (!Script.isScript(value)) return;
 
     const script = try Script.from(value);
-    const ptr = try fyr.allocators.generic().create(Script);
+    const ptr = try self.allocator().create(Script);
     ptr.* = script;
 
     const scripts = self.makeGetScripts();

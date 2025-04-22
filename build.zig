@@ -18,7 +18,6 @@ pub fn build(b: *std.Build) !void {
 
     const uuid_dep = b.dependency("uuid", .{ .target = target, .optimize = optimize });
     const uuid = uuid_dep.module("uuid");
-    const uuid_artifact = uuid_dep.artifact("uuid-zig");
 
     const zclay_dep = b.dependency("zclay", .{
         .target = target,
@@ -43,7 +42,6 @@ pub fn build(b: *std.Build) !void {
     fyr_module.linkLibrary(raylib_artifact);
 
     fyr_module.addImport("uuid", uuid);
-    fyr_module.linkLibrary(uuid_artifact);
 
     fyr_module.addImport("zclay", zclay);
 
@@ -65,7 +63,6 @@ pub fn build(b: *std.Build) !void {
     lib.root_module.linkLibrary(raylib_artifact);
 
     lib.root_module.addImport("uuid", uuid);
-    lib.root_module.linkLibrary(uuid_artifact);
 
     lib.root_module.addImport("zclay", zclay);
 
