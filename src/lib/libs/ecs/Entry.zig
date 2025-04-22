@@ -2,6 +2,9 @@ const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 
 const fyr = @import("../../main.zig");
+const Error = error{
+    OutOfMemory,
+};
 
 const Self = @This();
 
@@ -17,15 +20,15 @@ pub inline fn calculateHash(comptime T: type) u64 {
 
             for (std.meta.fields(T), 0..) |field, index| {
                 for (field.name, 0..) |char, jndex| {
-                    fieldsum += @as(comptime_int, @intCast(char)) *
+                    fieldsum += (@as(comptime_int, @intCast(char)) *
                         (@as(comptime_int, @intCast(jndex)) + 1) *
-                        (@as(comptime_int, @intCast(index)) + 1);
+                        (@as(comptime_int, @intCast(index)) + 1)) % std.math.maxInt(u63);
                 }
             }
 
             for (@typeName(T)) |char| {
                 fieldsum += @as(comptime_int, @intCast(char)) *
-                    @as(comptime_int, @intCast(@alignOf(T)));
+                    (@as(comptime_int, @intCast(@alignOf(T))) + 1);
             }
 
             break :Blk fieldsum;
@@ -33,43 +36,38 @@ pub inline fn calculateHash(comptime T: type) u64 {
         else => 1,
     };
 
-    return @max(1, @sizeOf(T)) * @max(1, @alignOf(T)) +
+    return (@max(1, @sizeOf(T)) * @max(1, @alignOf(T)) +
         @max(1, @bitSizeOf(T)) * @max(1, @alignOf(T)) +
-        b * @max(1, @alignOf(T)) * 13;
+        b * @max(1, @alignOf(T)) * 13) % std.math.maxInt(u63);
 }
 
-pub fn init(x: anytype) ?Self {
+pub fn init(x: anytype) !Self {
+    const isBehaviour = fyr.Behaviour.isBehaviourBase(x);
     const T: type = @TypeOf(x);
 
-    const allocated = @as(?*T, @ptrCast(@alignCast(std.c.malloc(@sizeOf(T)))));
+    const valure_ptr: *anyopaque = switch (isBehaviour) {
+        true => behaviour: {
+            const ptr = @as(?*fyr.Behaviour, @ptrCast(@alignCast(std.c.malloc(@sizeOf(fyr.Behaviour))))) orelse return Error.OutOfMemory;
+            ptr.* = try fyr.asBehaviour(x);
 
-    if (allocated == null) return null;
-    const ptr = allocated.?;
+            break :behaviour ptr;
+        },
+        false => normal: {
+            const ptr = @as(?*T, @ptrCast(@alignCast(std.c.malloc(@sizeOf(T))))) orelse return Error.OutOfMemory;
+            ptr.* = x;
 
-    ptr.* = x;
-
-    return Self{
-        .ptr = @ptrCast(@alignCast(ptr)),
-        .hash = comptime calculateHash(T),
-        .store_hash = comptime calculateHash(T),
-        .is_behaviour = T == fyr.Behaviour,
+            break :normal ptr;
+        },
     };
-}
-
-/// Use the original type as key for a behaviour
-pub fn initBehaviour(comptime T: type, b: fyr.Behaviour) ?Self {
-    const allocated = @as(?*fyr.Behaviour, @ptrCast(@alignCast(std.c.malloc(@sizeOf(fyr.Behaviour)))));
-
-    if (allocated == null) return null;
-    const ptr = allocated.?;
-
-    ptr.* = b;
 
     return Self{
-        .ptr = @ptrCast(@alignCast(ptr)),
+        .ptr = valure_ptr,
         .hash = comptime calculateHash(T),
-        .store_hash = comptime calculateHash(fyr.Behaviour),
-        .is_behaviour = true,
+        .store_hash = switch (isBehaviour) {
+            true => comptime calculateHash(fyr.Behaviour),
+            false => comptime calculateHash(T),
+        },
+        .is_behaviour = isBehaviour,
     };
 }
 

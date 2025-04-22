@@ -63,7 +63,7 @@ pub fn init() !void {
     const arena: clay.Arena = clay.createArenaWithCapacityAndMemory(memory);
 
     _ = clay.initialize(arena, .{ .h = 1280, .w = 720 }, .{});
-    clay.setMeasureTextFunction({}, renderer.measureText);
+    clay.setMeasureTextFunction(void, {}, renderer.measureText);
 
     renderer.raylib_fonts[0] = try rl.getFontDefault();
 }

@@ -43,21 +43,7 @@ pub inline fn allocator(self: *Self) Allocator {
 }
 
 pub fn addComonent(self: *Self, value: anytype) !void {
-    const isBehaviour = fyr.Behaviour.isBehaviourBase(value);
-
-    try self.list.append(
-        if (isBehaviour)
-            Entry.initBehaviour(
-                @TypeOf(value),
-                try fyr.asBehaviour(value),
-            ) orelse
-                return ComponentErrors.ItemCreationError
-        else
-            Entry.init(
-                value,
-            ) orelse
-                return ComponentErrors.ItemCreationError,
-    );
+    try self.list.append(try Entry.init(value));
 }
 
 pub fn getComponent(self: *Self, T: type) ?*T {

@@ -4,16 +4,16 @@
     .fingerprint = 0xf3edbc2fefcce355,
     .dependencies = .{
         .uuid = .{
-            .url = "git+https://github.com/r4gus/uuid-zig.git#6d3f2701b84220ddcfdb2a153b7036e8058f3d13",
-            .hash = "uuid-0.3.0-oOieIY5nAABN9gM-xe_yC_WsXX346XaqdsT-aU6CksyV",
+            .url = "git+https://github.com/r4gus/uuid-zig.git#9d66e23e32cd7208d1becb4fd9352f8a27f89551",
+            .hash = "uuid-0.3.0-oOieIYF1AAA_BtE7FvVqqTn5uEYTvvz7ycuVnalCOf8C",
         },
         .raylib_zig = .{
-            .url = "git+https://github.com/Not-Nik/raylib-zig#5bbafa4f86eb3e3f41a107bbec6b8822e0f87c93",
-            .hash = "raylib_zig-5.6.0-dev-KE8REE0uBQD5Lzuc6qSZPtE5li3iPyU4iGQEMPqOPI11",
+            .url = "git+https://github.com/Not-Nik/raylib-zig#0de5f8aed0565f2dbd8bc6851499c85df9e73534",
+            .hash = "raylib_zig-5.6.0-dev-KE8REGMrBQCs5X69dptNzjw9Z7MYM1fgdaKrnuKf8zyr",
         },
         .zclay = .{
-            .url = "git+https://github.com/johan0A/clay-zig-bindings#b4365bad8ebbf20c5e54d3f07db1207170e8ef1d",
-            .hash = "zclay-0.0.0-Ej1rkHd5AADma7wDB3By1hoJnqdX8UHnlIQ7IZquevuu",
+            .url = "git+https://github.com/johan0A/clay-zig-bindings#582095c4b7c5437f5a4fc9e0cebee289cff9ae47",
+            .hash = "zclay-0.0.0-Ej1rkHDHAAAhiGLPEcSBnJks-km949W9HO4lO0Kr1k4U",
         },
     },
     .paths = .{
