@@ -6,17 +6,14 @@ const Box = @import("./Box.zig").Box;
 
 pub fn Player() !*fyr.Entity {
     return try fyr.entity("Player", .{
-        fyr.Transform{
-            .position = .{
-                .x = -64,
-                .y = -64,
-                .z = 0,
-            },
-            .scale = .{
-                .x = 64,
-                .y = 32,
-            }
-        },
+        fyr.Transform{ .position = .{
+            .x = -64,
+            .y = -64,
+            .z = 0,
+        }, .scale = .{
+            .x = 64,
+            .y = 32,
+        } },
 
         MovementBehaviour.init(400),
 
@@ -52,12 +49,6 @@ pub fn Player() !*fyr.Entity {
                 64 * 3,
             ),
         }),
-
-        fyr.Children.init(
-            .create(.{
-                try Box("player", false, fyr.Vec3(0, 100, 20)),
-            }),
-        ),
 
         fyr.AnimatorBehaviour.init(.create(
             .{
