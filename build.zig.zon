@@ -12,6 +12,10 @@
             .url = "git+https://github.com/Not-Nik/raylib-zig.git#0de5f8aed0565f2dbd8bc6851499c85df9e73534",
             .hash = "raylib_zig-5.6.0-dev-KE8REGMrBQCs5X69dptNzjw9Z7MYM1fgdaKrnuKf8zyr",
         },
+        .uuid = .{
+            .url = "git+https://github.com/r4gus/uuid-zig.git#9d66e23e32cd7208d1becb4fd9352f8a27f89551",
+            .hash = "uuid-0.3.0-oOieIYF1AAA_BtE7FvVqqTn5uEYTvvz7ycuVnalCOf8C",
+        },
     },
     .paths = .{
         "build.zig",

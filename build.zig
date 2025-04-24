@@ -19,9 +19,14 @@ pub fn build(b: *std.Build) !void {
     const raygui = raylib_dep.module("raygui"); // raygui module
     const raylib_artifact = raylib_dep.artifact("raylib"); // raylib C library
 
+    const uuid_dep = b.dependency("uuid", .{ .target = target, .optimize = optimize });
+    const uuid = uuid_dep.module("uuid");
+
     loom_mod.addImport("raylib", raylib);
     loom_mod.addImport("raygui", raygui);
     loom_mod.linkLibrary(raylib_artifact);
+
+    loom_mod.addImport("uuid", uuid);
 
     const exe_mod = b.createModule(.{
         .root_source_file = b.path("src/demo/main.zig"),
