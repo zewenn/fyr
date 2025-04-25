@@ -14,34 +14,6 @@ const FunctionType = enum {
     empty,
 };
 
-pub inline fn calculateHash(comptime T: type) u64 {
-    const b: comptime_int = comptime switch (@typeInfo(T)) {
-        .@"struct", .@"enum" => Blk: {
-            var fieldsum: comptime_int = 1;
-
-            for (std.meta.fields(T), 0..) |field, index| {
-                for (field.name, 0..) |char, jndex| {
-                    fieldsum += (@as(comptime_int, @intCast(char)) *
-                        (@as(comptime_int, @intCast(jndex)) + 1) *
-                        (@as(comptime_int, @intCast(index)) + 1)) % std.math.maxInt(u63);
-                }
-            }
-
-            for (@typeName(T)) |char| {
-                fieldsum += @as(comptime_int, @intCast(char)) *
-                    (@as(comptime_int, @intCast(@alignOf(T))) + 1);
-            }
-
-            break :Blk fieldsum;
-        },
-        else => 1,
-    };
-
-    return (@max(1, @sizeOf(T)) * @max(1, @alignOf(T)) +
-        @max(1, @bitSizeOf(T)) * @max(1, @alignOf(T)) +
-        b * @max(1, @alignOf(T)) * 13) % std.math.maxInt(u63);
-}
-
 const Self = @This();
 
 cache: *anyopaque,
@@ -86,12 +58,10 @@ pub fn add(self: *Self, event: Events, callback: FnType) void {
 pub fn callSafe(self: *Self, event: Events, entity: *Entity) void {
     if (!self.is_alive) return;
 
-    defer FreeingCAllocations: {
-        if (event != .end) break :FreeingCAllocations;
-
+    defer if (event == .end) {
         self.is_alive = false;
         std.c.free(self.cache);
-    }
+    };
 
     const func = switch (event) {
         .awake => self.awake,
@@ -102,7 +72,9 @@ pub fn callSafe(self: *Self, event: Events, entity: *Entity) void {
     } orelse return;
 
     func(self.cache, entity) catch {
-        std.log.err("failed to call behaviour event ({s}.{s})", .{
+        std.log.err("behaviour event failed ({s}({x})->{s}.{s})", .{
+            entity.name,
+            entity.uuid,
             self.name,
             switch (event) {
                 .awake => "Awake",
@@ -144,6 +116,7 @@ fn attachEvents(self: *Self, comptime T: type) void {
     const wrapper = struct {
         fn call(comptime fn_name: []const u8, cache: *anyopaque, entity: *Entity) !void {
             std.debug.assert(std.meta.hasFn(T, fn_name));
+            
             const func = comptime @field(T, fn_name);
             const typeinfo = comptime @typeInfo(@TypeOf(func)).@"fn";
 
@@ -185,9 +158,37 @@ fn attachEvents(self: *Self, comptime T: type) void {
 }
 
 pub fn castBack(self: *Self, comptime T: type) ?*T {
-    return if (self.is(T)) @ptrCast(@alignCast(self.cache)) else null;
+    return if (self.isType(T)) @ptrCast(@alignCast(self.cache)) else null;
 }
 
-pub inline fn is(self: *Self, comptime T: type) bool {
+pub inline fn isType(self: *Self, comptime T: type) bool {
     return self.hash == comptime calculateHash(T);
+}
+
+pub inline fn calculateHash(comptime T: type) u64 {
+    const name_hash: comptime_int = comptime switch (@typeInfo(T)) {
+        .@"struct", .@"enum" => blk: {
+            var fieldsum: comptime_int = 1;
+
+            for (std.meta.fields(T), 0..) |field, index| {
+                for (field.name, 0..) |char, jndex| {
+                    fieldsum += (@as(comptime_int, @intCast(char)) *
+                        (@as(comptime_int, @intCast(jndex)) + 1) *
+                        (@as(comptime_int, @intCast(index)) + 1)) % std.math.maxInt(u63);
+                }
+            }
+
+            for (@typeName(T)) |char| {
+                fieldsum += @as(comptime_int, @intCast(char)) *
+                    (@as(comptime_int, @intCast(@alignOf(T))) + 1);
+            }
+
+            break :blk fieldsum;
+        },
+        else => 1,
+    };
+
+    return (@max(1, @sizeOf(T)) * @max(1, @alignOf(T)) +
+        @max(1, @bitSizeOf(T)) * @max(1, @alignOf(T)) +
+        name_hash * @max(1, @alignOf(T)) * 13) % std.math.maxInt(u63);
 }
