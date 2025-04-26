@@ -3,7 +3,7 @@ const Allocator = @import("std").mem.Allocator;
 
 const Entity = @import("./Entity.zig");
 
-pub const PrefabFn = fn (Allocator) anyerror!*Entity;
+pub const PrefabFn = *const fn (Allocator) anyerror!*Entity;
 const Self = @This();
 
 func: PrefabFn,

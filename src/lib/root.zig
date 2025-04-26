@@ -2,12 +2,63 @@ const std = @import("std");
 const builtin = @import("builtin");
 const Allocator = @import("std").mem.Allocator;
 
-const rl = @import("raylib");
+pub const rl = @import("raylib");
+pub const uuid = @import("uuid");
 
 pub const ecs = struct {
     pub const Behaviour = @import("./ecs/Behaviour.zig");
     pub const Entity = @import("./ecs/Entity.zig");
     pub const Prefab = @import("./ecs/Prefab.zig");
+};
+
+test ecs {
+    const TestComponent = struct {
+        pub var counter: usize = 0;
+
+        pub fn Awake(entity: *ecs.Entity) !void {
+            counter += 1;
+            std.log.debug("{s} Awake", .{entity.id});
+        }
+
+        pub fn Start(entity: *ecs.Entity) !void {
+            counter += 1;
+            std.log.debug("{s} Start", .{entity.id});
+        }
+
+        pub fn Update(entity: *ecs.Entity) !void {
+            counter += 1;
+            std.log.debug("{s} Update", .{entity.id});
+        }
+
+        pub fn Tick(entity: *ecs.Entity) !void {
+            counter += 1;
+            std.log.debug("{s} Tick", .{entity.id});
+        }
+
+        pub fn End(entity: *ecs.Entity) !void {
+            counter += 1;
+            std.log.debug("{s} End", .{entity.id});
+        }
+    };
+
+    const Player = ecs.Prefab.new("Player", .{
+        TestComponent{},
+    });
+
+    var player = try Player.makeInstance(std.testing.allocator);
+    defer player.destroy();
+
+    player.dispatchEvent(.awake);
+    player.dispatchEvent(.start);
+    player.dispatchEvent(.update);
+    player.dispatchEvent(.tick);
+    player.dispatchEvent(.end);
+
+    try std.testing.expect(TestComponent.counter == 5);
+}
+
+pub const eventloop = struct {
+    pub const Scene = @import("./eventloop/Scene.zig");
 };
 
 pub const allocators = struct {
@@ -58,3 +109,6 @@ pub const allocators = struct {
 pub const Behaviour = ecs.Behaviour;
 pub const Entity = ecs.Entity;
 pub const Prefab = ecs.Prefab;
+pub const Scene = eventloop.Scene;
+
+pub const UUIDv7 = uuid.v7.new;

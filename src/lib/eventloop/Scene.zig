@@ -1,0 +1,152 @@
+const std = @import("std");
+const Allocator = @import("std").mem.Allocator;
+
+const loom = @import("../root.zig");
+const Entity = loom.Entity;
+
+const Self = @This();
+var active: ?*Self = null;
+
+id: []const u8,
+uuid: u128,
+alloc: Allocator,
+
+prefabs: std.ArrayList(loom.Prefab),
+entities: std.ArrayList(*loom.Entity),
+
+is_active: bool = false,
+is_alive: bool = false,
+
+pub fn init(allocator: Allocator, id: []const u8) Self {
+    return Self{
+        .id = id,
+        .uuid = loom.UUIDv7(),
+        .alloc = allocator,
+        .is_alive = true,
+        .prefabs = .init(allocator),
+        .entities = .init(allocator),
+    };
+}
+
+pub fn deinit(self: *Self) void {
+    self.unload();
+    self.prefabs.deinit();
+}
+
+pub fn load(self: *Self) !void {
+    if (!self.is_alive) return;
+
+    for (self.prefabs.items) |prefabs| {
+        const entity = try prefabs.makeInstance(self.alloc);
+        try self.entities.append(entity);
+        entity.dispatchEvent(.awake);
+    }
+
+    for (self.entities.items) |entity| {
+        entity.dispatchEvent(.start);
+    }
+}
+
+pub fn unload(self: *Self) void {
+    for (self.entities.items) |entity| {
+        entity.destroy();
+    }
+    self.entities.clearAndFree();
+}
+
+pub fn addPrefab(self: *Self, prefab: loom.Prefab) !void {
+    if (!self.is_alive) return;
+
+    try self.prefabs.append(prefab);
+}
+
+pub fn addPrefabs(self: *Self, prefabs: anytype) !void {
+    if (!self.is_alive) return;
+
+    inline for (prefabs) |prefab| {
+        const T = @TypeOf(prefab);
+
+        if (T == loom.Prefab) try self.addPrefab(prefab);
+    }
+}
+
+pub fn newEntity(self: *Self, id: []const u8, components: anytype) !void {
+    const entity = try loom.Entity.create(self.alloc, id);
+    entity.addComponents(components);
+
+    self.addEntity(entity);
+}
+
+pub fn addEntity(self: *Self, entity: *loom.Entity) !void {
+    if (!self.is_alive) return;
+
+    try self.entities.append(entity);
+    entity.dispatchEvent(.awake);
+    entity.dispatchEvent(.start);
+}
+
+pub fn getEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) ?*Entity {
+    for (self.entities.items) |entity| {
+        if (eqls(value, entity)) return entity;
+    }
+    return null;
+}
+
+pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) void {
+    for (self.entities.items, 0..) |entity, index| {
+        if (!eqls(value, entity)) continue;
+
+        entity.destroy();
+        self.entities.swapRemove(index);
+    }
+}
+
+pub fn isEntityAlive(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) bool {
+    const entities = self.entities orelse return false;
+    for (entities.items) |entity| {
+        if (!eqls(value, entity)) continue;
+        return true;
+    }
+
+    return false;
+}
+
+fn ptrEqls(ptr: *Entity, entity: *Entity) bool {
+    return @intFromPtr(ptr) == @intFromPtr(entity);
+}
+
+fn idEqls(string: []const u8, entity: *Entity) bool {
+    return std.mem.eql(u8, string, entity.id);
+}
+
+fn uuidEqls(uuid: u128, entity: *Entity) bool {
+    return uuid == entity.uuid;
+}
+
+pub fn removeEntityByPtr(self: *Self, entity: *Entity) void {
+    removeEntity(self, entity, ptrEqls);
+}
+
+pub fn removeEntityById(self: *Self, id: []const u8) void {
+    removeEntity(self, id, idEqls);
+}
+
+pub fn removeEntityByUuid(self: *Self, uuid: u128) void {
+    removeEntity(self, uuid, uuidEqls);
+}
+
+pub fn getEntityById(self: *Self, id: []const u8) ?*Entity {
+    return getEntity(self, id, idEqls);
+}
+
+pub fn getEntityByUuid(self: *Self, uuid: u128) ?*Entity {
+    return getEntity(self, uuid, uuidEqls);
+}
+
+pub fn isEntityAliveId(self: *Self, id: []const u8) bool {
+    return isEntityAlive(self, id, idEqls);
+}
+
+pub fn isEntityAliveUuid(self: *Self, uuid: u128) bool {
+    return isEntityAlive(self, uuid, uuidEqls);
+}

@@ -73,7 +73,7 @@ pub fn callSafe(self: *Self, event: Events, entity: *Entity) void {
 
     func(self.cache, entity) catch {
         std.log.err("behaviour event failed ({s}({x})->{s}.{s})", .{
-            entity.name,
+            entity.id,
             entity.uuid,
             self.name,
             switch (event) {
