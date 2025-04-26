@@ -18,7 +18,7 @@ pub fn main() !void {
         pub fn Tick(entity: *loom.Entity) !void {
             std.log.debug("{s} Tick", .{entity.id});
         }
-        
+
         pub fn End(entity: *loom.Entity) !void {
             std.log.debug("{s} End", .{entity.id});
         }
@@ -28,12 +28,17 @@ pub fn main() !void {
         TestComponent{},
     });
 
-    var default = loom.Scene.init(loom.allocators.generic(), "default");
-    defer default.deinit();
+    try loom.project({})({
+        loom.scene("default")({
+            loom.prefabs(.{
+                player,
+            });
+        });
 
-    try default.addPrefabs(.{
-        player,
+        loom.scene("other")({
+            loom.prefabs(.{
+                player,
+            });
+        });
     });
-
-    try default.load();
 }

@@ -28,9 +28,21 @@ pub fn init(allocator: Allocator, id: []const u8) Self {
     };
 }
 
+pub fn create(allocator: Allocator, id: []const u8) !*Self {
+    const ptr = try allocator.create(Self);
+    ptr.* = .init(allocator, id);
+
+    return ptr;
+}
+
 pub fn deinit(self: *Self) void {
     self.unload();
     self.prefabs.deinit();
+}
+
+pub fn destroy(self: *Self) void {
+    self.deinit();
+    self.alloc.destroy(self);
 }
 
 pub fn load(self: *Self) !void {
@@ -45,6 +57,8 @@ pub fn load(self: *Self) !void {
     for (self.entities.items) |entity| {
         entity.dispatchEvent(.start);
     }
+
+    self.is_active = true;
 }
 
 pub fn unload(self: *Self) void {
@@ -52,6 +66,8 @@ pub fn unload(self: *Self) void {
         entity.destroy();
     }
     self.entities.clearAndFree();
+
+    self.is_active = false;
 }
 
 pub fn addPrefab(self: *Self, prefab: loom.Prefab) !void {
@@ -60,19 +76,19 @@ pub fn addPrefab(self: *Self, prefab: loom.Prefab) !void {
     try self.prefabs.append(prefab);
 }
 
-pub fn addPrefabs(self: *Self, prefabs: anytype) !void {
+pub fn addPrefabs(self: *Self, prefab_tuple: anytype) !void {
     if (!self.is_alive) return;
 
-    inline for (prefabs) |prefab| {
+    inline for (prefab_tuple) |prefab| {
         const T = @TypeOf(prefab);
 
         if (T == loom.Prefab) try self.addPrefab(prefab);
     }
 }
 
-pub fn newEntity(self: *Self, id: []const u8, components: anytype) !void {
+pub fn newEntity(self: *Self, id: []const u8, component_tuple: anytype) !void {
     const entity = try loom.Entity.create(self.alloc, id);
-    entity.addComponents(components);
+    entity.addComponents(component_tuple);
 
     self.addEntity(entity);
 }
