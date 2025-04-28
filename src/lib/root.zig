@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 const Allocator = @import("std").mem.Allocator;
 
 pub const rl = @import("raylib");
+pub const clay = @import("zclay");
 pub const uuid = @import("uuid");
 pub const window = @import("window.zig");
 
@@ -83,16 +84,18 @@ pub const assets = @import("assets.zig");
 pub const display = @import("display.zig");
 pub const time = @import("time.zig");
 pub const input = @import("input.zig");
+pub const ui = @import("gui/export.zig");
 
 pub const useAssetPaths = assets.files.paths.use;
 
-pub fn project(_: void) *const fn (void) anyerror!void {
+pub fn project(_: void) *const fn (void) void {
     rl.setTraceLogLevel(.warning);
 
     time.init();
 
     window.init();
     display.init();
+    ui.init() catch @panic("UI INIT FAILED");
     eventloop.init(allocators.arena());
 
     var seed: u64 = undefined;
@@ -103,11 +106,14 @@ pub fn project(_: void) *const fn (void) anyerror!void {
     random = x.random();
 
     return struct {
-        pub fn callback(_: void) !void {
+        pub fn callback(_: void) void {
             defer window.deinit();
             defer display.deinit();
+            defer ui.deinit();
 
-            try eventloop.setActive("default");
+            eventloop.setActive("default") catch {
+                std.log.info("no default scene", .{});
+            };
 
             while (!window.shouldClose()) {
                 if (input.getKeyDown(.f3) and input.getKey(.left_alt))
@@ -116,13 +122,27 @@ pub fn project(_: void) *const fn (void) anyerror!void {
                 time.update();
                 display.reset();
 
-                try eventloop.execute();
+                const mouse_position = rl.getMousePosition();
+
+                clay.setPointerState(.{
+                    .x = mouse_position.x,
+                    .y = mouse_position.y,
+                }, rl.isMouseButtonDown(.left));
+
+                clay.beginLayout();
+
+                eventloop.execute() catch {
+                    std.log.err("failed to execute eventloop", .{});
+                };
 
                 rl.beginDrawing();
                 defer rl.endDrawing();
 
                 window.clearBackground();
                 display.render();
+                ui.update() catch {
+                    std.log.err("UI update failed", .{});
+                };
             }
 
             eventloop.deinit();

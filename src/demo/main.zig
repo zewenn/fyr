@@ -45,6 +45,57 @@ pub fn main() !void {
                         .multiply(loom.Vec2(self.speed, self.speed)),
                 ),
             );
+
+            const clay = loom.clay;
+
+            clay.UI()(.{
+                .id = .ID("test"),
+
+                .layout = .{
+                    .sizing = .{
+                        .w = .fixed(300),
+                        .h = .percent(100),
+                    },
+                    .padding = .all(10),
+                    .child_gap = 10,
+                    .direction = .top_to_bottom,
+                },
+                .background_color = .{ 250, 250, 255, 255 },
+            })({
+                clay.UI()(.{
+                    .id = .ID("test"),
+                    .layout = .{
+                        .sizing = .{
+                            .w = .grow,
+                            .h = .fixed(300),
+                        },
+                    },
+                    .background_color = loom.ui.color(20, 120, 220, 255),
+                })({
+                    clay.text("Clay - UI Library", .{
+                        .font_size = 12,
+                        .letter_spacing = 1,
+                        .color = .{ 0, 0, 0, 255 },
+                        .font_id = loom.ui.fontID("press_play.ttf"),
+                    });
+                });
+                clay.UI()(.{
+                    .id = .ID("test"),
+                    .layout = .{
+                        .sizing = .{
+                            .w = .grow,
+                            .h = .fixed(100),
+                        },
+                    },
+                })({
+                    clay.text("Clay - UI Library", .{
+                        .font_size = 12,
+                        .letter_spacing = 1,
+                        .color = .{ 0, 0, 0, 255 },
+                        .font_id = loom.ui.fontID("press_play.ttf"),
+                    });
+                });
+            });
         }
 
         pub fn End(entity: *loom.Entity) !void {
@@ -63,7 +114,7 @@ pub fn main() !void {
         },
     });
 
-    try loom.project({
+    loom.project({
         loom.window.resizing.enable();
         loom.window.size.set(loom.Vec2(1440, 720));
 

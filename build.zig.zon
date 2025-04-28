@@ -16,6 +16,10 @@
             .url = "git+https://github.com/r4gus/uuid-zig.git#9d66e23e32cd7208d1becb4fd9352f8a27f89551",
             .hash = "uuid-0.3.0-oOieIYF1AAA_BtE7FvVqqTn5uEYTvvz7ycuVnalCOf8C",
         },
+        .zclay = .{
+            .url = "git+https://github.com/johan0A/clay-zig-bindings.git#582095c4b7c5437f5a4fc9e0cebee289cff9ae47",
+            .hash = "zclay-0.0.0-Ej1rkHDHAAAhiGLPEcSBnJks-km949W9HO4lO0Kr1k4U",
+        },
     },
     .paths = .{
         "build.zig",
