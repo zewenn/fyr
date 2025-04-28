@@ -55,7 +55,7 @@ pub fn addComponents(self: *Self, components: anytype) !void {
 
 pub fn getComponent(self: *Self, comptime T: type) ?*T {
     for (self.components.items) |component| {
-        if (component.is(T)) return component.castBack(T);
+        if (component.isType(T)) return component.castBack(T);
     }
     return null;
 }
@@ -64,7 +64,7 @@ pub fn getComponents(self: *Self, comptime T: type) ![]*T {
     var list = std.ArrayList(*T).init(self.alloc);
 
     for (self.components.items) |component| {
-        if (!component.is(T)) continue;
+        if (!component.isType(T)) continue;
         try list.append(component.castBack(T) orelse continue);
     }
 
@@ -73,7 +73,7 @@ pub fn getComponents(self: *Self, comptime T: type) ![]*T {
 
 pub fn removeComponent(self: *Self, comptime T: type) void {
     for (self.components.items, 0..) |component, index| {
-        if (!component.is(T)) continue;
+        if (!component.isType(T)) continue;
 
         self.components.swapRemove(index);
         return;
@@ -82,7 +82,7 @@ pub fn removeComponent(self: *Self, comptime T: type) void {
 
 pub fn removeComponents(self: *Self, comptime T: type) void {
     for (self.components.items, 0..) |component, index| {
-        if (!component.is(T)) continue;
+        if (!component.isType(T)) continue;
 
         self.components.swapRemove(index);
     }

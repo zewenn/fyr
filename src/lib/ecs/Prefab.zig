@@ -8,7 +8,7 @@ const Self = @This();
 
 func: PrefabFn,
 
-pub fn new(comptime id: []const u8, components: anytype) Self {
+pub fn new(comptime id: []const u8, comptime components: anytype) Self {
     return Self{
         .func = struct {
             pub fn callback(alloc: Allocator) !*Entity {

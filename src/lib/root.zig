@@ -4,6 +4,27 @@ const Allocator = @import("std").mem.Allocator;
 
 pub const rl = @import("raylib");
 pub const uuid = @import("uuid");
+pub const window = @import("window.zig");
+
+pub const Array = @import("./types/Array.zig");
+pub const array = Array.array;
+pub const arrayAdvanced = Array.arrayAdvanced;
+
+var random: std.Random = undefined;
+
+pub const SharedPtr = @import("./types/SharedPointer.zig").SharedPtr;
+pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
+    return try SharedPtr(@TypeOf(value)).create(allocators.generic(), value);
+}
+
+pub const Vector2 = rl.Vector2;
+pub const Vector3 = rl.Vector3;
+pub const Vector4 = rl.Vector4;
+pub const Rectangle = rl.Rectangle;
+pub const Color = rl.Color;
+
+pub const Transform = @import("builtin-components/Transform.zig");
+pub const Renderer = @import("builtin-components/Renderer.zig");
 
 pub const ecs = struct {
     pub const Behaviour = @import("./ecs/Behaviour.zig");
@@ -58,14 +79,50 @@ test ecs {
 }
 
 pub const eventloop = @import("eventloop/eventloop.zig");
+pub const assets = @import("assets.zig");
+pub const display = @import("display.zig");
+pub const time = @import("time.zig");
+
+pub const useAssetPaths = assets.files.paths.use;
 
 pub fn project(_: void) *const fn (void) anyerror!void {
+    rl.setTraceLogLevel(.warning);
+
+    time.init();
+
+    window.init();
+    display.init();
     eventloop.init(allocators.arena());
+
+    var seed: u64 = undefined;
+    std.posix.getrandom(std.mem.asBytes(&seed)) catch {
+        seed = coerceTo(u64, rl.getTime()).?;
+    };
+    var x = std.Random.DefaultPrng.init(seed);
+    random = x.random();
 
     return struct {
         pub fn callback(_: void) !void {
+            defer window.deinit();
+            defer display.deinit();
+
             try eventloop.setActive("default");
+
+            while (!window.shouldClose()) {
+                time.update();
+                display.reset();
+
+                try eventloop.execute();
+
+                rl.beginDrawing();
+                defer rl.endDrawing();
+
+                window.clearBackground();
+                display.render();
+            }
+
             eventloop.deinit();
+            assets.deinit();
         }
     }.callback;
 }
@@ -321,4 +378,75 @@ test coerceTo {
     try expect(coerceTo(bool, &int) == (int_address != 0));
     try expect(coerceTo(x, @as(*anyopaque, @ptrFromInt(32))) == @"enum");
     try expect(coerceTo(*usize, anyopaque_ptr_of_int) == &int);
+}
+
+pub fn Vec2(x: anytype, y: anytype) Vector2 {
+    return Vector2{
+        .x = tof32(x),
+        .y = tof32(y),
+    };
+}
+
+pub fn Vec3(x: anytype, y: anytype, z: anytype) Vector3 {
+    return Vector3{
+        .x = tof32(x),
+        .y = tof32(y),
+        .z = tof32(z),
+    };
+}
+
+pub fn Vec4(x: anytype, y: anytype, z: anytype, w: anytype) Vector4 {
+    return Vector4{
+        .x = tof32(x),
+        .y = tof32(y),
+        .z = tof32(z),
+        .w = tof32(w),
+    };
+}
+
+pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
+    return Rectangle{
+        .x = tof32(x),
+        .y = tof32(y),
+        .width = tof32(width),
+        .height = tof32(height),
+    };
+}
+
+pub fn vec2() Vector2 {
+    return Vec2(0, 0);
+}
+
+pub fn vec3() Vector3 {
+    return Vec3(0, 0, 0);
+}
+
+pub fn vec4() Vector4 {
+    return Vec4(0, 0, 0, 0);
+}
+
+pub fn rect() Rectangle {
+    return Rect(0, 0, 0, 0);
+}
+
+pub fn vec2ToVec3(v2: Vector2) Vector3 {
+    return Vec3(v2.x, v2.y, 0);
+}
+
+pub fn vec3ToVec2(v3: Vector3) Vector2 {
+    return Vec2(v3.x, v3.y);
+}
+
+pub fn randColor() rl.Color {
+    return rl.Color.init(
+        random.int(u8),
+        random.int(u8),
+        random.int(u8),
+        random.int(u8),
+    );
+}
+
+pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
+    var cloned = try list.clone();
+    return try cloned.toOwnedSlice();
 }

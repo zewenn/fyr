@@ -10,7 +10,9 @@ const Error = error{
 var scenes: ?std.ArrayList(*Scene) = null;
 pub var active_scene: ?*Scene = null;
 pub var open_scene: ?*Scene = null;
+var next_scene: ?*Scene = null;
 var alloc = std.heap.smp_allocator;
+var unload_on_next_frame = false;
 
 pub fn init(allocator: Allocator) void {
     scenes = .init(allocator);
@@ -40,15 +42,30 @@ pub fn setActive(id: []const u8) !void {
     for (scenes_ptr.items) |scene| {
         if (!std.mem.eql(u8, scene.id, id)) continue;
 
-        if (active_scene) |ascene| {
-            ascene.unload();
-        }
+        // if (active_scene) |ascene| {
+        //     ascene.unload();
+        // }
 
-        active_scene = scene;
-        try scene.load();
+        next_scene = scene;
+        // try scene.load();
         return;
     }
     return Error.SceneNotFound;
+}
+
+pub fn execute() !void {
+    if (active_scene) |ascene| {
+        ascene.execute();
+
+        if (next_scene != null) ascene.unload();
+    }
+
+    if (next_scene) |nscene| {
+        active_scene = nscene;
+        try nscene.load();
+
+        next_scene = null;
+    }
 }
 
 pub fn close() void {

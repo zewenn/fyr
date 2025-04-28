@@ -17,6 +17,9 @@ entities: std.ArrayList(*loom.Entity),
 is_active: bool = false,
 is_alive: bool = false,
 
+last_tick_at: f64 = 0,
+ticks_per_second: u8 = 20,
+
 pub fn init(allocator: Allocator, id: []const u8) Self {
     return Self{
         .id = id,
@@ -68,6 +71,18 @@ pub fn unload(self: *Self) void {
     self.entities.clearAndFree();
 
     self.is_active = false;
+}
+
+pub fn execute(self: *Self) void {
+    const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.gameTime();
+    for (self.entities.items) |entity| {
+        entity.dispatchEvent(.update);
+
+        if (is_tick) {
+            entity.dispatchEvent(.tick);
+            self.last_tick_at = loom.time.gameTime();
+        }
+    }
 }
 
 pub fn addPrefab(self: *Self, prefab: loom.Prefab) !void {
