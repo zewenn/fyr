@@ -59,7 +59,7 @@ pub fn main() !void {
         },
         loom.Transform{
             .position = loom.Vec3(720, 360, 0),
-            .scale = loom.Vec2(128, 64),
+            .scale = loom.Vec2(88, 32),
         },
     });
 
