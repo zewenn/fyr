@@ -5,19 +5,46 @@ pub fn main() !void {
     const TestComponent = struct {
         const Self = @This();
 
-        myvar: usize = 42,
+        speed: usize = 420,
+        transform: ?*loom.Transform = null,
 
         pub fn Awake(entity: *loom.Entity) !void {
             std.log.debug("{s} Awake", .{entity.id});
         }
 
-        pub fn Start(entity: *loom.Entity) !void {
+        pub fn Start(self: *Self, entity: *loom.Entity) !void {
+            if (entity.getComponent(loom.Transform)) |transform| {
+                self.transform = transform;
+            }
+
             std.log.debug("{s} Start", .{entity.id});
         }
 
-        pub fn Update() !void {
-            if (loom.rl.isKeyPressed(.a))
-                try loom.eventloop.setActive("other");
+        pub fn Update(self: *Self) !void {
+            const transform = self.transform orelse return error.MissingTransform;
+            var move_vector = loom.vec2();
+
+            if (loom.input.getKey(.w)) {
+                move_vector.y -= 1;
+            }
+            if (loom.input.getKey(.s)) {
+                move_vector.y += 1;
+            }
+            if (loom.input.getKey(.a)) {
+                move_vector.x -= 1;
+            }
+            if (loom.input.getKey(.d)) {
+                move_vector.x += 1;
+            }
+
+            transform.position = transform.position.add(
+                loom.vec2ToVec3(
+                    move_vector
+                        .normalize()
+                        .multiply(loom.Vec2(loom.time.deltaTime(), loom.time.deltaTime()))
+                        .multiply(loom.Vec2(self.speed, self.speed)),
+                ),
+            );
         }
 
         pub fn End(entity: *loom.Entity) !void {

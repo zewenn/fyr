@@ -82,6 +82,7 @@ pub const eventloop = @import("eventloop/eventloop.zig");
 pub const assets = @import("assets.zig");
 pub const display = @import("display.zig");
 pub const time = @import("time.zig");
+pub const input = @import("input.zig");
 
 pub const useAssetPaths = assets.files.paths.use;
 
@@ -109,6 +110,9 @@ pub fn project(_: void) *const fn (void) anyerror!void {
             try eventloop.setActive("default");
 
             while (!window.shouldClose()) {
+                if (input.getKeyDown(.f3) and input.getKey(.left_alt))
+                    window.toggleDebugLines();
+
                 time.update();
                 display.reset();
 
