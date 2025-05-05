@@ -26,6 +26,7 @@ pub const Color = rl.Color;
 
 pub const Transform = @import("builtin-components/Transform.zig");
 pub const Renderer = @import("builtin-components/Renderer.zig");
+pub const RectCollider = @import("builtin-components/collision.zig").RectCollider;
 
 pub const ecs = struct {
     pub const Behaviour = @import("./ecs/Behaviour.zig");

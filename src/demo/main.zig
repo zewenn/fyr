@@ -112,6 +112,26 @@ pub fn main() !void {
             .position = loom.Vec3(720, 360, 0),
             .scale = loom.Vec2(88, 32),
         },
+        loom.RectCollider.init(.{
+            .rect = loom.Rect(0, 0, 88, 32),
+            .dynamic = true,
+            .weight = 1,
+        }),
+    });
+
+    const box = loom.Prefab.new("Box", .{
+        loom.Renderer{
+            .img_path = "logo_large.png",
+        },
+        loom.Transform{
+            .position = loom.Vec3(820, 360, 0),
+            .scale = loom.Vec2(88, 32),
+        },
+        loom.RectCollider.init(.{
+            .rect = loom.Rect(0, 0, 88, 32),
+            .dynamic = true,
+            .weight = 100,
+        }),
     });
 
     loom.project({
@@ -125,6 +145,7 @@ pub fn main() !void {
         loom.scene("default")({
             loom.prefabs(.{
                 player,
+                box,
             });
         });
 
