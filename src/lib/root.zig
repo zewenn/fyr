@@ -27,6 +27,22 @@ pub const Color = rl.Color;
 pub const Transform = @import("builtin-components/Transform.zig");
 pub const Renderer = @import("builtin-components/Renderer.zig");
 pub const RectCollider = @import("builtin-components/collision.zig").RectCollider;
+pub const CameraTarget = @import("builtin-components/camera.zig").CameraTarget;
+
+pub var camera: rl.Camera2D = .{
+    .offset = Vec2(0, 0),
+    .target = Vec2(0, 0),
+    .zoom = 1,
+    .rotation = 0,
+};
+
+pub fn screenToWorldPos(pos: Vector2) Vector2 {
+    return rl.getScreenToWorld2D(pos, camera);
+}
+
+pub fn worldToScreenPos(pos: Vector2) Vector2 {
+    return rl.getWorldToScreen2D(pos, camera);
+}
 
 pub const ecs = struct {
     pub const Behaviour = @import("./ecs/Behaviour.zig");
@@ -120,6 +136,11 @@ pub fn project(_: void) *const fn (void) void {
                 if (input.getKeyDown(.f3) and input.getKey(.left_alt))
                     window.toggleDebugLines();
 
+                camera.offset = Vec2(
+                    tof32(rl.getScreenWidth()) / 2,
+                    tof32(rl.getScreenHeight()) / 2,
+                );
+
                 time.update();
                 display.reset();
 
@@ -140,10 +161,20 @@ pub fn project(_: void) *const fn (void) void {
                 defer rl.endDrawing();
 
                 window.clearBackground();
-                display.render();
+                {
+                    camera.begin();
+                    defer camera.end();
+
+                    display.render();
+                }
+
+                ui.raygui.callDrawFn();
                 ui.update() catch {
                     std.log.err("UI update failed", .{});
                 };
+
+                if (window.use_debug_lines)
+                    rl.drawFPS(10, 10);
             }
 
             eventloop.deinit();

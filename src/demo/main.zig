@@ -117,6 +117,7 @@ pub fn main() !void {
             .dynamic = true,
             .weight = 1,
         }),
+        loom.CameraTarget{},
     });
 
     const box = loom.Prefab.new("Box", .{
