@@ -109,7 +109,7 @@ pub fn main() !void {
             .img_path = "logo_large.png",
         },
         loom.Transform{
-            .position = loom.Vec3(720, 360, 0),
+            .position = loom.Vec3(0, 0, 0),
             .scale = loom.Vec2(88, 32),
         },
         loom.RectCollider.init(.{
@@ -117,7 +117,7 @@ pub fn main() !void {
             .dynamic = true,
             .weight = 1,
         }),
-        loom.CameraTarget{},
+        // loom.CameraTarget{},
     });
 
     const box = loom.Prefab.new("Box", .{
@@ -125,13 +125,13 @@ pub fn main() !void {
             .img_path = "logo_large.png",
         },
         loom.Transform{
-            .position = loom.Vec3(820, 360, 0),
+            .position = loom.Vec3(100, 0, 0),
             .scale = loom.Vec2(88, 32),
         },
         loom.RectCollider.init(.{
             .rect = loom.Rect(0, 0, 88, 32),
             .dynamic = true,
-            .weight = 100,
+            .weight = 2,
         }),
     });
 
