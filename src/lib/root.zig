@@ -133,7 +133,7 @@ pub fn project(_: void) *const fn (void) void {
             };
 
             while (!window.shouldClose()) {
-                if (input.getKeyDown(.f3) and input.getKey(.left_alt))
+                if (input.getKeyDown(.enter) and input.getKey(.left_alt))
                     window.toggleDebugLines();
 
                 camera.offset = Vec2(
