@@ -218,6 +218,9 @@ pub const image = AssetCache(
             const str: [:0]const u8 = loom.allocators.generic().dupeZ(u8, filetype) catch ".png";
             defer loom.allocators.generic().free(str);
 
+            if (mods.at(0) == 0) mods.set(0, 1);
+            if (mods.at(1) == 0) mods.set(1, 1);
+
             var img = try loom.rl.loadImageFromMemory(str, data);
             loom.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
 
@@ -243,6 +246,9 @@ pub const texture = AssetCache(
 
             var img = try loom.rl.loadImageFromMemory(str, data);
             defer loom.rl.unloadImage(img);
+
+            if (mods.at(0) == 0) mods.set(0, 1);
+            if (mods.at(1) == 0) mods.set(1, 1);
 
             loom.rl.imageResizeNN(&img, mods.at(0) orelse 0, mods.at(1) orelse 0);
 
