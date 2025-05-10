@@ -111,6 +111,10 @@ pub fn project(_: void) *const fn (void) void {
     time.init();
 
     window.init();
+    window.save_state.load() catch {
+        std.log.err("failed to load window state", .{});
+    };
+
     display.init();
     ui.init() catch @panic("UI INIT FAILED");
     eventloop.init(allocators.arena());
@@ -179,6 +183,10 @@ pub fn project(_: void) *const fn (void) void {
 
             eventloop.deinit();
             assets.deinit();
+
+            window.save_state.save() catch {
+                std.log.err("failed to save window state", .{});
+            };
         }
     }.callback;
 }
@@ -361,6 +369,11 @@ pub fn toisize(value: anytype) isize {
 /// Shorthand for coerceTo
 pub fn tousize(value: anytype) usize {
     return coerceTo(usize, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
+pub fn tou16(value: anytype) u16 {
+    return coerceTo(u16, value) orelse 0;
 }
 
 test coerceTo {

@@ -5,7 +5,7 @@ pub fn main() !void {
     const TestComponent = struct {
         const Self = @This();
 
-        speed: usize = 420,
+        speed: usize = 430,
         transform: ?*loom.Transform = null,
 
         pub fn Awake(entity: *loom.Entity) !void {

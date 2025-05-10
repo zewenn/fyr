@@ -1,3 +1,4 @@
+const std = @import("std");
 const loom = @import("root.zig");
 const rl = loom.rl;
 
@@ -143,5 +144,79 @@ pub const title = struct {
 
     pub fn get() [:0]const u8 {
         return current_title;
+    }
+};
+
+pub const save_state = struct {
+    var use: bool = true;
+
+    pub fn enable() void {
+        use = true;
+    }
+
+    pub fn disable() void {
+        use = false;
+    }
+
+    pub fn save() !void {
+        if (!use) return;
+
+        const exepath = try std.fs.selfExeDirPathAlloc(loom.allocators.generic());
+        defer loom.allocators.generic().free(exepath);
+
+        const path = try std.fmt.allocPrint(loom.allocators.generic(), "{s}{s}{s}", .{ exepath, std.fs.path.sep_str, ".loom.winstate" });
+        defer loom.allocators.generic().free(path);
+
+        var file = try std.fs.createFileAbsolute(path, .{});
+        defer file.close();
+
+        const win_size = size.get();
+        const win_size_x: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), win_size.x));
+        const win_size_y: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), win_size.y));
+
+        const win_pos = rl.getWindowPosition();
+        const win_pos_x: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), @round(win_pos.x)));
+        const win_pos_y: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), win_pos.y));
+
+        const writer = file.writer();
+
+        try writer.writeByte(loom.coerceTo(u8, win_pos_x >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, (win_pos_x << 8) >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, win_pos_y >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, (win_pos_y << 8) >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, win_size_x >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, (win_size_x << 8) >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, win_size_y >> 8) orelse 0);
+        try writer.writeByte(loom.coerceTo(u8, (win_size_y << 8) >> 8) orelse 0);
+    }
+
+    pub fn load() !void {
+        if (!use) return;
+
+        const exepath = try std.fs.selfExeDirPathAlloc(loom.allocators.generic());
+        defer loom.allocators.generic().free(exepath);
+
+        const path = try std.fmt.allocPrint(loom.allocators.generic(), "{s}{s}{s}", .{ exepath, std.fs.path.sep_str, ".loom.winstate" });
+        defer loom.allocators.generic().free(path);
+
+        var file = try std.fs.openFileAbsolute(path, .{ .mode = .read_only });
+        defer file.close();
+
+        var reader = file.reader();
+
+        const pos_x_str = [2]u8{ try reader.readByte(), try reader.readByte() };
+        const pos_x: u16 = @intCast((loom.tou16(pos_x_str[0]) << 8) + loom.tou16(pos_x_str[1]));
+
+        const pos_y_str = [2]u8{ try reader.readByte(), try reader.readByte() };
+        const pos_y: u16 = @intCast((loom.tou16(pos_y_str[0]) << 8) + loom.tou16(pos_y_str[1]));
+
+        const size_x_str = [2]u8{ try reader.readByte(), try reader.readByte() };
+        const size_x: u16 = @intCast((loom.tou16(size_x_str[0]) << 8) + loom.tou16(size_x_str[1]));
+
+        const size_y_str = [2]u8{ try reader.readByte(), try reader.readByte() };
+        const size_y: u16 = @intCast((loom.tou16(size_y_str[0]) << 8) + loom.tou16(size_y_str[1]));
+
+        rl.setWindowPosition(@intCast(pos_x), @intCast(pos_y));
+        size.set(loom.Vec2(size_x, size_y));
     }
 };

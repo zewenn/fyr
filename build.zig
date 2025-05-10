@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     const exe = b.addExecutable(.{
-        .name = "loom",
+        .name = "loom-demo",
         .root_module = exe_mod,
     });
     b.installArtifact(exe);
