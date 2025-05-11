@@ -42,7 +42,9 @@ pub fn init(path: []const u8) Self {
 pub fn Awake(self: *Self, entity: *loom.Entity) !void {
     const display_cache = DisplayCache{
         .img_path = self.img_path,
-        .transform = Transform{},
+        .transform = Transform{
+            .scale = .init(-1, -1),
+        },
         .texture = assets.texture.get(
             self.img_path,
             .{ 0, 0 },
