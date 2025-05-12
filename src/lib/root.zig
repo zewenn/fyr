@@ -7,9 +7,10 @@ pub const clay = @import("zclay");
 pub const uuid = @import("uuid");
 pub const window = @import("window.zig");
 
-pub const Array = @import("./types/Array.zig");
-pub const array = Array.array;
-pub const arrayAdvanced = Array.arrayAdvanced;
+pub const arrays = @import("./types/Array.zig");
+pub const Array = arrays.Array;
+pub const array = arrays.array;
+pub const arrayAdvanced = arrays.arrayAdvanced;
 
 var random: std.Random = undefined;
 
