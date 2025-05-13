@@ -116,7 +116,7 @@ pub fn project(_: void) *const fn (void) void {
     time.init();
 
     window.init();
-    window.save_state.load() catch {
+    window.restore_state.load() catch {
         std.log.err("failed to load window state", .{});
     };
 
@@ -189,7 +189,7 @@ pub fn project(_: void) *const fn (void) void {
             eventloop.deinit();
             assets.deinit();
 
-            window.save_state.save() catch {
+            window.restore_state.save() catch {
                 std.log.err("failed to save window state", .{});
             };
         }

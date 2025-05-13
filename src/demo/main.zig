@@ -9,6 +9,8 @@ pub fn main() !void {
         transform: ?*loom.Transform = null,
         animator: ?*loom.Animator = null,
 
+        borderless: bool = false,
+
         pub fn Awake(entity: *loom.Entity) !void {
             std.log.debug("{s} Awake", .{entity.id});
         }
@@ -45,6 +47,18 @@ pub fn main() !void {
 
             if (loom.input.getKeyDown(.e)) {
                 try animator.play("test");
+            }
+
+            if (loom.input.getKey(.left_alt)) {
+                if (loom.input.getKeyDown(.h)) {
+                    loom.window.borderless.toggle();
+                }
+                if (loom.input.getKeyDown(.j)) {
+                    loom.window.fullscreen.toggle();
+                }
+                if (loom.input.getKeyDown(.k)) {
+                    loom.window.resizing.toggle();
+                }
             }
 
             transform.position = transform.position.add(

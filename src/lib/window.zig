@@ -84,49 +84,101 @@ pub const size = struct {
 };
 
 pub const resizing = struct {
-    inline fn update() void {
-        if (!is_alive) {
-            config_flags.set(.{ .window_resizable = is_resizable });
-            return;
-        }
-        config_flags.set(.{ .window_resizable = is_resizable });
+    pub fn toggle() void {
+        set(!is_resizable);
     }
 
     pub inline fn enable() void {
-        if (is_resizable) return;
-
-        is_resizable = true;
-        update();
+        set(true);
     }
 
     pub inline fn disable() void {
-        if (!is_resizable) return;
-        is_resizable = false;
-        update();
+        set(false);
     }
 
-    pub inline fn setStatus(to: bool) void {
+    pub inline fn set(to: bool) void {
+        if (to == is_resizable) return;
+
         is_resizable = to;
-        update();
+        config_flags.set(.{ .window_resizable = true }, is_resizable);
     }
 
-    pub inline fn getStatus() bool {
-        is_resizable = config_flags.get(.{ .window_resizable = true });
+    pub inline fn get() bool {
         return is_resizable;
+    }
+};
+
+pub const borderless = struct {
+    var state: bool = false;
+
+    pub fn enable() void {
+        set(true);
+    }
+
+    pub fn disable() void {
+        set(false);
+    }
+
+    pub fn toggle() void {
+        set(!state);
+    }
+
+    pub fn set(to: bool) void {
+        if (state == to) return;
+
+        rl.toggleBorderlessWindowed();
+        state = !state;
+    }
+
+    pub fn get() bool {
+        return state;
+    }
+};
+
+pub const fullscreen = struct {
+    var state: bool = false;
+
+    pub fn enable() void {
+        set(true);
+    }
+
+    pub fn disable() void {
+        set(false);
+    }
+
+    pub fn toggle() void {
+        set(!state);
+    }
+
+    pub fn set(to: bool) void {
+        if (state == to) return;
+
+        rl.toggleFullscreen();
+        state = !state;
+    }
+
+    pub fn get() bool {
+        return state;
     }
 };
 
 pub const ConfigFlags = rl.ConfigFlags;
 pub const config_flags = struct {
-    pub inline fn set(flags: ConfigFlags) void {
+    pub fn set(flags: ConfigFlags, enable: bool) void {
         if (!is_alive) {
-            rl.setConfigFlags(flags);
+            if (enable) rl.setConfigFlags(flags);
             return;
         }
+
+        if (enable) {
+            rl.clearWindowState(flags);
+            return;
+        }
+
         rl.setWindowState(flags);
     }
 
-    pub inline fn get(flag: ConfigFlags) ?ConfigFlags {
+    pub fn get(flag: ConfigFlags) bool {
         return rl.isWindowState(flag);
     }
 };
@@ -147,7 +199,13 @@ pub const title = struct {
     }
 };
 
-pub const save_state = struct {
+/// ## `restore_state`
+/// Restore state handles window position and size saving and loading.
+///
+/// **This feature is enabled by default!**
+///
+/// You can toggle this setting via `.enable()` and `.disable()`.
+pub const restore_state = struct {
     var use: bool = true;
 
     pub fn enable() void {
@@ -200,6 +258,14 @@ pub const save_state = struct {
         try writer.writeByte(loom.coerceTo(u8, (win_size_x << 8) >> 8) orelse 0);
         try writer.writeByte(loom.coerceTo(u8, win_size_y >> 8) orelse 0);
         try writer.writeByte(loom.coerceTo(u8, (win_size_y << 8) >> 8) orelse 0);
+
+        // 8th bit - fullsceen - 0b0000_0001
+        // 7th bit - borderless - 0b0000_0010
+        var config_flags_bits: u8 = 0b0000_0000;
+        if (fullscreen.get()) config_flags_bits |= 0b0000_0001;
+        if (borderless.get()) config_flags_bits |= 0b0000_0010;
+
+        try writer.writeByte(config_flags_bits);
     }
 
     pub fn load() !void {
@@ -228,7 +294,12 @@ pub const save_state = struct {
         const size_y_str = [_]u8{ try reader.readByte(), try reader.readByte() };
         const size_y: i16 = @bitCast(@as(u16, @intCast((loom.tou16(size_y_str[0]) << 8) + loom.tou16(size_y_str[1]))));
 
+        const config_flag_bits = try reader.readByte();
+
         rl.setWindowPosition(@intCast(pos_x), @intCast(pos_y));
         size.set(loom.Vec2(size_x, size_y));
+
+        if (config_flag_bits & 0b0000_0001 > 0) fullscreen.enable();
+        if (config_flag_bits & 0b0000_0010 > 0) borderless.enable();
     }
 };
