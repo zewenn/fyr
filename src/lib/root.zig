@@ -12,7 +12,7 @@ pub const Array = arrays.Array;
 pub const array = arrays.array;
 pub const arrayAdvanced = arrays.arrayAdvanced;
 
-var random: std.Random = undefined;
+pub var random: std.Random = undefined;
 
 pub const SharedPtr = @import("./types/SharedPointer.zig").SharedPtr;
 pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
@@ -29,6 +29,10 @@ pub const Transform = @import("builtin-components/Transform.zig");
 pub const Renderer = @import("builtin-components/Renderer.zig");
 pub const RectCollider = @import("builtin-components/collision.zig").RectCollider;
 pub const CameraTarget = @import("builtin-components/camera.zig").CameraTarget;
+pub const Animator = @import("builtin-components/animator/Animator.zig");
+pub const Animation = @import("builtin-components/animator/Animation.zig");
+pub const Keyframe = @import("builtin-components/animator/Keyframe.zig");
+pub const interpolation = @import("builtin-components/animator/interpolation.zig");
 
 pub var camera: rl.Camera2D = .{
     .offset = Vec2(0, 0),

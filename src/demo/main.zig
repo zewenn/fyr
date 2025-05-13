@@ -7,6 +7,7 @@ pub fn main() !void {
 
         speed: usize = 430,
         transform: ?*loom.Transform = null,
+        animator: ?*loom.Animator = null,
 
         pub fn Awake(entity: *loom.Entity) !void {
             std.log.debug("{s} Awake", .{entity.id});
@@ -17,11 +18,16 @@ pub fn main() !void {
                 self.transform = transform;
             }
 
+            if (entity.getComponent(loom.Animator)) |animator| {
+                self.animator = animator;
+            }
+
             std.log.debug("{s} Start", .{entity.id});
         }
 
         pub fn Update(self: *Self) !void {
             const transform = self.transform orelse return error.MissingTransform;
+            const animator = self.animator orelse return error.MissingTransform;
             var move_vector = loom.vec2();
 
             if (loom.input.getKey(.w)) {
@@ -35,6 +41,10 @@ pub fn main() !void {
             }
             if (loom.input.getKey(.d)) {
                 move_vector.x += 1;
+            }
+
+            if (loom.input.getKeyDown(.e)) {
+                try animator.play("test");
             }
 
             transform.position = transform.position.add(
@@ -116,6 +126,20 @@ pub fn main() !void {
             .rect = loom.Rect(0, 0, 88, 32),
             .dynamic = true,
             .weight = 1,
+        }),
+
+        loom.Animator.init(&.{
+            loom.Animation.init("test", 1, loom.interpolation.lerp, &.{
+                loom.Keyframe{
+                    .rotation = 0,
+                },
+                loom.Keyframe{
+                    .rotation = 180,
+                },
+                loom.Keyframe{
+                    .rotation = 0,
+                },
+            }),
         }),
         // loom.CameraTarget{},
     });

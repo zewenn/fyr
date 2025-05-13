@@ -171,12 +171,24 @@ pub const save_state = struct {
         defer file.close();
 
         const win_size = size.get();
-        const win_size_x: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), win_size.x));
-        const win_size_y: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), win_size.y));
+        const win_size_x: u16 = @bitCast(@as(i16, @intFromFloat(@min(
+            @as(f32, @floatFromInt(std.math.maxInt(i16))),
+            @round(win_size.x),
+        ))));
+        const win_size_y: u16 = @bitCast(@as(i16, @intFromFloat(@min(
+            @as(f32, @floatFromInt(std.math.maxInt(i16))),
+            @round(win_size.y),
+        ))));
 
         const win_pos = rl.getWindowPosition();
-        const win_pos_x: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), @round(win_pos.x)));
-        const win_pos_y: u16 = @intFromFloat(@min(@as(f32, @floatFromInt(std.math.maxInt(u16))), win_pos.y));
+        const win_pos_x: u16 = @bitCast(@as(i16, @intFromFloat(@min(
+            @as(f32, @floatFromInt(std.math.maxInt(i16))),
+            @round(win_pos.x),
+        ))));
+        const win_pos_y: u16 = @bitCast(@as(i16, @intFromFloat(@min(
+            @as(f32, @floatFromInt(std.math.maxInt(i16))),
+            @round(win_pos.y),
+        ))));
 
         const writer = file.writer();
 
@@ -204,17 +216,17 @@ pub const save_state = struct {
 
         var reader = file.reader();
 
-        const pos_x_str = [2]u8{ try reader.readByte(), try reader.readByte() };
-        const pos_x: u16 = @intCast((loom.tou16(pos_x_str[0]) << 8) + loom.tou16(pos_x_str[1]));
+        const pos_x_str = [_]u8{ try reader.readByte(), try reader.readByte() };
+        const pos_x: i16 = @bitCast(@as(u16, @intCast((loom.tou16(pos_x_str[0]) << 8) + loom.tou16(pos_x_str[1]))));
 
-        const pos_y_str = [2]u8{ try reader.readByte(), try reader.readByte() };
-        const pos_y: u16 = @intCast((loom.tou16(pos_y_str[0]) << 8) + loom.tou16(pos_y_str[1]));
+        const pos_y_str = [_]u8{ try reader.readByte(), try reader.readByte() };
+        const pos_y: i16 = @bitCast(@as(u16, @intCast((loom.tou16(pos_y_str[0]) << 8) + loom.tou16(pos_y_str[1]))));
 
-        const size_x_str = [2]u8{ try reader.readByte(), try reader.readByte() };
-        const size_x: u16 = @intCast((loom.tou16(size_x_str[0]) << 8) + loom.tou16(size_x_str[1]));
+        const size_x_str = [_]u8{ try reader.readByte(), try reader.readByte() };
+        const size_x: i16 = @bitCast(@as(u16, @intCast((loom.tou16(size_x_str[0]) << 8) + loom.tou16(size_x_str[1]))));
 
-        const size_y_str = [2]u8{ try reader.readByte(), try reader.readByte() };
-        const size_y: u16 = @intCast((loom.tou16(size_y_str[0]) << 8) + loom.tou16(size_y_str[1]));
+        const size_y_str = [_]u8{ try reader.readByte(), try reader.readByte() };
+        const size_y: i16 = @bitCast(@as(u16, @intCast((loom.tou16(size_y_str[0]) << 8) + loom.tou16(size_y_str[1]))));
 
         rl.setWindowPosition(@intCast(pos_x), @intCast(pos_y));
         size.set(loom.Vec2(size_x, size_y));
