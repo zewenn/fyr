@@ -32,6 +32,9 @@ pub fn main() !void {
             const animator = self.animator orelse return error.MissingTransform;
             var move_vector = loom.vec2();
 
+            if (loom.input.getKeyDown(.f))
+                try animator.play("walk-left");
+
             if (loom.input.getKey(.w)) {
                 move_vector.y -= 1;
             }
@@ -143,15 +146,18 @@ pub fn main() !void {
         }),
 
         loom.Animator.init(&.{
-            loom.Animation.init("test", 1, loom.interpolation.lerp, &.{
+            .init("walk-left", 3, loom.interpolation.lerp, &.{
                 loom.Keyframe{
                     .rotation = 0,
+                    .sprite = "img2.png",
                 },
                 loom.Keyframe{
-                    .rotation = 180,
+                    .rotation = -15,
+                    .sprite = "img3.png",
                 },
                 loom.Keyframe{
                     .rotation = 0,
+                    .sprite = "img2.png",
                 },
             }),
         }),

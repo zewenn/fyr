@@ -113,7 +113,7 @@ fn AssetCache(
                 var hash_value: u64 = 0;
 
                 for (str) |char| {
-                    hash_value = (hash_value + (char - @min(char, 'a') + 1) * power) % MAX;
+                    hash_value = (hash_value + (char - @min(char, '0') + 1) * power) % MAX;
                     power = (RANDOM_PRIME * power) % POWER_MAX;
                 }
 
