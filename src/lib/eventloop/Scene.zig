@@ -80,7 +80,7 @@ pub fn execute(self: *Self) void {
 
     for (self.new_entities.items) |entity| {
         if (entity.remove_next_frame) continue;
-        try self.entities.append(entity);
+        self.entities.append(entity) catch continue;
     }
     self.new_entities.clearAndFree();
 
