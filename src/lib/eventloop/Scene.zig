@@ -13,6 +13,7 @@ alloc: Allocator,
 
 prefabs: std.ArrayList(loom.Prefab),
 entities: std.ArrayList(*loom.Entity),
+new_entities: std.ArrayList(*loom.Entity),
 
 is_active: bool = false,
 is_alive: bool = false,
@@ -28,6 +29,7 @@ pub fn init(allocator: Allocator, id: []const u8) Self {
         .is_alive = true,
         .prefabs = .init(allocator),
         .entities = .init(allocator),
+        .new_entities = .init(allocator),
     };
 }
 
@@ -75,6 +77,12 @@ pub fn unload(self: *Self) void {
 
 pub fn execute(self: *Self) void {
     const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.gameTime();
+
+    for (self.new_entities.items) |entity| {
+        if (entity.remove_next_frame) continue;
+        try self.entities.append(entity);
+    }
+    self.new_entities.clearAndFree();
 
     var waiting_for_removal: usize = 0;
     for (self.entities.items) |entity| {
@@ -130,9 +138,7 @@ pub fn newEntity(self: *Self, id: []const u8, component_tuple: anytype) !void {
 pub fn addEntity(self: *Self, entity: *loom.Entity) !void {
     if (!self.is_alive) return;
 
-    try self.entities.append(entity);
-    entity.dispatchEvent(.awake);
-    entity.dispatchEvent(.start);
+    try self.new_entities.append(entity);
 }
 
 pub fn getEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) ?*Entity {
