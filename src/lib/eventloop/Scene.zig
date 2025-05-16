@@ -75,7 +75,26 @@ pub fn unload(self: *Self) void {
 
 pub fn execute(self: *Self) void {
     const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.gameTime();
+
+    var waiting_for_removal: usize = 0;
     for (self.entities.items) |entity| {
+        if (entity.remove_next_frame) waiting_for_removal += 1;
+    }
+
+    while (waiting_for_removal > 0) {
+        inner: for (self.entities.items, 0..) |entity, index| {
+            if (!entity.remove_next_frame) continue :inner;
+
+            entity.destroy();
+            _ = self.entities.swapRemove(index);
+            waiting_for_removal -= 1;
+            break :inner;
+        }
+    }
+
+    for (self.entities.items) |entity| {
+        if (entity.remove_next_frame) unreachable;
+
         entity.dispatchEvent(.update);
 
         if (is_tick) {
@@ -124,11 +143,10 @@ pub fn getEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *
 }
 
 pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) void {
-    for (self.entities.items, 0..) |entity, index| {
+    for (self.entities.items) |entity| {
         if (!eqls(value, entity)) continue;
 
-        entity.destroy();
-        self.entities.swapRemove(index);
+        entity.remove_next_frame = true;
     }
 }
 

@@ -10,6 +10,7 @@ id: []const u8,
 uuid: u128,
 components: std.ArrayList(*Behaviour),
 alloc: Allocator,
+remove_next_frame: bool = false,
 
 pub fn init(allocator: Allocator, id: []const u8) Self {
     return Self{
