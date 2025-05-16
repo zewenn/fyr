@@ -182,7 +182,7 @@ pub fn main() !void {
     loom.project({
         loom.window.resizing.enable();
         loom.window.size.set(loom.Vec2(1440, 720));
-        loom.window.fps.setTarget(180);
+        loom.window.fpsTarget.set(180);
 
         loom.useAssetPaths(.{
             .debug = "./src/demo/assets/",

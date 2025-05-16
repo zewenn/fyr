@@ -150,6 +150,12 @@ pub fn project(_: void) *const fn (void) void {
                     tof32(rl.getScreenHeight()) / 2,
                 );
 
+                camera.zoom = get: {
+                    const window_size = window.size.get();
+
+                    break :get (window_size.x + window_size.y) / 2000;
+                };
+
                 time.update();
                 display.reset();
 

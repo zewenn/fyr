@@ -41,22 +41,22 @@ pub fn toggleDebugLines() void {
 }
 
 /// FPS: frames per second
-pub const fps = struct {
-    var _target: i32 = 60;
+pub const fpsTarget = struct {
+    var state: i32 = 60;
 
     /// Set the maximum FPS the program can run at
-    pub inline fn setTarget(to: anytype) void {
-        _target = loom.coerceTo(i32, to) orelse 60;
-        rl.setTargetFPS(_target);
+    pub inline fn set(to: anytype) void {
+        state = loom.coerceTo(i32, to) orelse 60;
+        rl.setTargetFPS(state);
     }
 
     /// Get the maximum FPS the program can run at
-    pub inline fn getTarget() i32 {
-        return _target;
+    pub inline fn get() i32 {
+        return state;
     }
 
     /// Get the currect FPS
-    pub const get = rl.getFPS();
+    pub const getCurrent = rl.getFPS();
 };
 
 pub const size = struct {
@@ -154,6 +154,42 @@ pub const fullscreen = struct {
         if (state == to) return;
 
         rl.toggleFullscreen();
+        state = !state;
+    }
+
+    pub fn get() bool {
+        return state;
+    }
+};
+
+pub const vsync = struct {
+    var state: bool = false;
+    var before: i32 = 60;
+
+    pub fn enable() void {
+        set(true);
+    }
+
+    pub fn disable() void {
+        set(false);
+    }
+
+    pub fn toggle() void {
+        set(!state);
+    }
+
+    pub fn set(to: bool) void {
+        if (state == to) return;
+
+        if (to) {
+            before = fpsTarget.get();
+            fpsTarget.set(rl.getMonitorRefreshRate(rl.getCurrentMonitor()));
+
+            std.log.info("fps target: {d}", .{rl.getMonitorRefreshRate(rl.getCurrentMonitor())});
+        } else {
+            fpsTarget.set(before);
+        }
+
         state = !state;
     }
 
