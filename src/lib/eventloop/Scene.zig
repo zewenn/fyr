@@ -81,6 +81,9 @@ pub fn execute(self: *Self) void {
     for (self.new_entities.items) |entity| {
         if (entity.remove_next_frame) continue;
         self.entities.append(entity) catch continue;
+
+        entity.dispatchEvent(.awake);
+        entity.dispatchEvent(.start);
     }
     self.new_entities.clearAndFree();
 
