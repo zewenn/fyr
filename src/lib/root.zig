@@ -219,6 +219,12 @@ pub fn prefabs(prefab_tuple: anytype) void {
     };
 }
 
+pub fn summon(entities: []const *Entity) !void {
+    const ascene = eventloop.active_scene orelse return;
+
+    for (entities) |entity| try ascene.addEntity(entity);
+}
+
 pub const allocators = struct {
     fn AllocatorInstance(comptime T: type) type {
         return struct {
