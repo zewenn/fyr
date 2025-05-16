@@ -2,6 +2,9 @@ const std = @import("std");
 const loom = @import("loom");
 
 pub fn main() !void {
+    const myvec2 = loom.vec(.vec3, .{ 0, 1 });
+    std.log.debug("{any}", .{myvec2});
+
     const TestComponent = struct {
         const Self = @This();
 

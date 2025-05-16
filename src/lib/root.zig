@@ -493,6 +493,25 @@ pub fn Rect(x: anytype, y: anytype, width: anytype, height: anytype) Rectangle {
     };
 }
 
+pub fn vec(comptime target: enum {
+    vec2,
+    vec3,
+    vec4,
+}, tuple: anytype) switch (target) {
+    .vec2 => Vector2,
+    .vec3 => Vector3,
+    .vec4 => Vector4,
+} {
+    var arr = array(f32, tuple);
+    defer arr.deinit();
+
+    return switch (target) {
+        .vec2 => Vec2(arr.at(0) orelse 0, arr.at(1) orelse 0),
+        .vec3 => Vec3(arr.at(0) orelse 0, arr.at(1) orelse 0, arr.at(2) orelse 0),
+        .vec4 => Vec4(arr.at(0) orelse 0, arr.at(1) orelse 0, arr.at(2) orelse 0, arr.at(3) orelse 0),
+    };
+}
+
 pub fn vec2() Vector2 {
     return Vec2(0, 0);
 }
