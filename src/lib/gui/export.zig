@@ -69,6 +69,12 @@ pub fn init() !void {
 }
 
 pub fn update() !void {
+    const win_size = loom.window.size.get();
+    clay.setLayoutDimensions(.{
+        .w = win_size.x,
+        .h = win_size.y,
+    });
+
     var render_commands = clay.endLayout();
 
     try renderer.clayRaylibRender(&render_commands, loom.allocators.generic());
