@@ -120,6 +120,10 @@ pub fn project(_: void) *const fn (void) void {
         std.log.err("failed to load window state", .{});
     };
 
+    // Switcheroo to make sure vsync actually gets set :D
+    window.vsync.set(!window.vsync.get());
+    window.vsync.set(!window.vsync.get());
+
     display.init();
     ui.init() catch @panic("UI INIT FAILED");
     eventloop.init(allocators.arena());
