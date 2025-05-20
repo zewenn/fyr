@@ -33,6 +33,20 @@ pub const raygui = struct {
     }
 };
 
+/// Opens a new clay element with the given config.
+pub fn new(config: clay.ElementDeclaration) *const fn (void) void {
+    clay.cdefs.Clay__OpenElement();
+    clay.cdefs.Clay__ConfigureOpenElement(config);
+
+    return struct {
+        pub fn callback(_: void) void {
+            clay.cdefs.Clay__CloseElement();
+        }
+    }.callback;
+}
+
+pub const text = clay.text;
+
 var memory: []u8 = undefined;
 
 const FontEntry = struct {

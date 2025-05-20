@@ -1,6 +1,8 @@
 const std = @import("std");
 const loom = @import("loom");
 
+const ui = loom.ui;
+
 pub fn main() !void {
     const TestComponent = struct {
         const Self = @This();
@@ -73,9 +75,7 @@ pub fn main() !void {
                 ),
             );
 
-            const clay = loom.clay;
-
-            clay.UI()(.{
+            ui.new(.{
                 .id = .ID("test"),
 
                 .layout = .{
@@ -89,7 +89,7 @@ pub fn main() !void {
                 },
                 .background_color = .{ 250, 250, 255, 255 },
             })({
-                clay.UI()(.{
+                ui.new(.{
                     .id = .ID("test"),
                     .layout = .{
                         .sizing = .{
@@ -99,14 +99,14 @@ pub fn main() !void {
                     },
                     .background_color = loom.ui.color(20, 120, 220, 255),
                 })({
-                    clay.text("Clay - UI Library", .{
+                    ui.text("Clay - UI Library", .{
                         .font_size = 12,
                         .letter_spacing = 1,
                         .color = .{ 0, 0, 0, 255 },
                         .font_id = loom.ui.fontID("press_play.ttf"),
                     });
                 });
-                clay.UI()(.{
+                ui.new(.{
                     .id = .ID("test"),
                     .layout = .{
                         .sizing = .{
@@ -115,7 +115,7 @@ pub fn main() !void {
                         },
                     },
                 })({
-                    clay.text("Clay - UI Library", .{
+                    ui.text("Clay - UI Library", .{
                         .font_size = 12,
                         .letter_spacing = 1,
                         .color = .{ 0, 0, 0, 255 },
