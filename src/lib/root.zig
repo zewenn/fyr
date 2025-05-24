@@ -154,12 +154,6 @@ pub fn project(_: void) *const fn (void) void {
                     tof32(rl.getScreenHeight()) / 2,
                 );
 
-                camera.zoom = get: {
-                    const window_size = window.size.get();
-
-                    break :get (window_size.x + window_size.y) / 2000;
-                };
-
                 time.update();
                 display.reset();
 
@@ -174,6 +168,14 @@ pub fn project(_: void) *const fn (void) void {
 
                 eventloop.execute() catch {
                     std.log.err("failed to execute eventloop", .{});
+                };
+
+                const zoom = camera.zoom;
+                defer camera.zoom = zoom;
+                camera.zoom = get: {
+                    const window_size = window.size.get();
+
+                    break :get (window_size.x / 1920 + window_size.y / 1080) * zoom;
                 };
 
                 rl.beginDrawing();
