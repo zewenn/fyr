@@ -170,12 +170,10 @@ pub fn project(_: void) *const fn (void) void {
                     std.log.err("failed to execute eventloop", .{});
                 };
 
-                const zoom = camera.zoom;
-                defer camera.zoom = zoom;
                 camera.zoom = get: {
                     const window_size = window.size.get();
 
-                    break :get (window_size.x / 1920 + window_size.y / 1080) * zoom;
+                    break :get (window_size.x / 1920 + window_size.y / 1080);
                 };
 
                 rl.beginDrawing();
