@@ -166,13 +166,7 @@ pub fn project(_: void) *const fn (void) void {
                 eventloop.execute() catch {
                     std.log.err("failed to execute eventloop", .{});
                 };
-
-                camera.zoom = get: {
-                    const window_size = window.size.get();
-
-                    break :get (window_size.x / 1920 + window_size.y / 1080);
-                };
-
+                
                 rl.beginDrawing();
                 defer rl.endDrawing();
 
