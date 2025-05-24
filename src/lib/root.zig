@@ -189,7 +189,6 @@ pub fn project(_: void) *const fn (void) void {
                     display.render();
                 }
 
-                ui.raygui.callDrawFn();
                 ui.update() catch {
                     std.log.err("UI update failed", .{});
                 };

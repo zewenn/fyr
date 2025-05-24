@@ -8,31 +8,6 @@ const rg = @import("raygui");
 
 const renderer = @import("clay_rl_backend.zig");
 
-pub const raygui = struct {
-    var fnptr: ?(*const fn () anyerror!void) = null;
-
-    pub fn loadStyle(filename: []const u8) !void {
-        const full_path = try loom.assets.files.getFilePath(filename);
-        defer loom.allocators.generic().free(full_path);
-
-        const cpath = @as([:0]const u8, try loom.allocators.generic().dupeZ(u8, full_path));
-        defer loom.allocators.generic().free(std.mem.span(cpath));
-
-        rg.guiLoadStyle(cpath);
-    }
-
-    pub fn setRayGuiFunction(ptr: *const fn () anyerror!void) void {
-        fnptr = ptr;
-    }
-
-    pub fn callDrawFn() void {
-        (fnptr orelse return)() catch {
-            std.log.warn("Failed to call raygui fn", .{});
-            return;
-        };
-    }
-};
-
 /// Opens a new clay element with the given config.
 pub fn new(config: clay.ElementDeclaration) *const fn (void) void {
     clay.cdefs.Clay__OpenElement();
