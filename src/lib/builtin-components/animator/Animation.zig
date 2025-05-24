@@ -193,6 +193,7 @@ pub fn current(self: *Self) ?shared.Keyframe {
         continue;
     }
 
+    self.current_index = loom.tousize(last);
     return keyframes.get(loom.toi32(last));
 }
 

@@ -146,13 +146,13 @@ pub fn main() !void {
         }),
 
         loom.Animator.init(&.{
-            .init("walk-left", 3, loom.interpolation.lerp, &.{
+            .init("walk-left", 30, loom.interpolation.lerp, &.{
                 loom.Keyframe{
                     .rotation = 0,
                     .sprite = "img2.png",
                 },
                 loom.Keyframe{
-                    .rotation = -15,
+                    .rotation = 180,
                     .sprite = "img3.png",
                 },
                 loom.Keyframe{

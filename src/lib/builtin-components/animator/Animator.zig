@@ -128,21 +128,19 @@ pub fn Update(self: *Self, _: *loom.Entity) !void {
         const next = animation.next();
 
         const current_keyframe = current orelse continue;
-
-        if (next == null) {
+        const next_keyframe = next orelse {
             current_keyframe.apply(transform, display);
             continue;
-        }
-
-        const next_keyframe = next orelse continue;
+        };
 
         const interpolation_factor =
             @min(1, @max(0, (loom.time.gameTime() - loom.tof32(animation.start_time)) / loom.tof32(animation.length)));
 
         const anim_progress_percent = animation.timing_function(0, 1, interpolation_factor);
         const next_index_percent = animation.timing_function(0, 1, loom.tof32(animation.next_index) / 100);
+        const current_index_percent = animation.timing_function(0, 1, loom.tof32(animation.current_index) / 100);
 
-        const percent = @min(1, @max(0, anim_progress_percent / next_index_percent));
+        const percent = @min(1, @max(0, (anim_progress_percent - current_index_percent) / (next_index_percent - current_index_percent)));
 
         current_keyframe
             .interpolate(next_keyframe, shared.interpolation.lerp, percent)
