@@ -12,7 +12,9 @@ pub const Array = arrays.Array;
 pub const array = arrays.array;
 pub const arrayAdvanced = arrays.arrayAdvanced;
 
-pub var random: std.Random = undefined;
+var seed: u64 = undefined;
+var xoshiro: std.Random.Xoshiro256 = .init(0);
+pub var random: std.Random = xoshiro.random();
 
 pub const SharedPtr = @import("./types/SharedPointer.zig").SharedPtr;
 pub fn sharedPtr(value: anytype) !*SharedPtr(@TypeOf(value)) {
@@ -128,19 +130,14 @@ pub fn project(_: void) *const fn (void) void {
     ui.init() catch @panic("UI INIT FAILED");
     eventloop.init(allocators.arena());
 
-    var seed: u64 = undefined;
     std.posix.getrandom(std.mem.asBytes(&seed)) catch {
         seed = coerceTo(u64, rl.getTime()).?;
     };
-    var x = std.Random.DefaultPrng.init(seed);
-    random = x.random();
+    xoshiro = std.Random.DefaultPrng.init(seed);
+    random = xoshiro.random();
 
     return struct {
         pub fn callback(_: void) void {
-            defer window.deinit();
-            defer display.deinit();
-            defer ui.deinit();
-
             eventloop.setActive("default") catch {
                 std.log.info("no default scene", .{});
             };
@@ -201,6 +198,10 @@ pub fn project(_: void) *const fn (void) void {
             window.restore_state.save() catch {
                 std.log.err("failed to save window state", .{});
             };
+
+            ui.deinit();
+            display.deinit();
+            window.deinit();
         }
     }.callback;
 }
