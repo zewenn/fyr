@@ -88,6 +88,7 @@ fn calculatef32Property(
 pub fn apply(self: Self, transofrm: *Transform, renderer: *Renderer) void {
     transofrm.position.x = self.pos_x orelse transofrm.position.x;
     transofrm.position.y = self.pos_y orelse transofrm.position.y;
+    transofrm.position.z = self.pos_z orelse transofrm.position.z;
 
     transofrm.rotation = self.rotation orelse transofrm.rotation;
 
