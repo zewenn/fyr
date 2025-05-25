@@ -96,14 +96,15 @@ pub fn execute(self: *Self) void {
         for (self.entities.items, 0..) |original, index| {
             if (original.uuid != entity.uuid) continue;
 
+            original.dispatchEvent(.end);
+            original.destroy();
+
             _ = self.entities.swapRemove(index);
             break;
         }
     }
 
     for (self.entities.items) |entity| {
-        if (entity.remove_next_frame) unreachable;
-
         entity.dispatchEvent(.update);
 
         if (is_tick) {
