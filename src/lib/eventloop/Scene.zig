@@ -87,19 +87,17 @@ pub fn execute(self: *Self) void {
     }
     self.new_entities.clearAndFree();
 
-    var waiting_for_removal: usize = 0;
-    for (self.entities.items) |entity| {
-        if (entity.remove_next_frame) waiting_for_removal += 1;
-    }
+    const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
+    defer loom.allocators.generic().free(clone);
 
-    while (waiting_for_removal > 0) {
-        inner: for (self.entities.items, 0..) |entity, index| {
-            if (!entity.remove_next_frame) continue :inner;
+    for (clone) |entity| {
+        if (!entity.remove_next_frame) continue;
 
-            entity.destroy();
+        for (self.entities.items, 0..) |original, index| {
+            if (original.uuid != entity.uuid) continue;
+
             _ = self.entities.swapRemove(index);
-            waiting_for_removal -= 1;
-            break :inner;
+            break;
         }
     }
 
