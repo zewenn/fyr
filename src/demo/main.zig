@@ -127,6 +127,7 @@ pub fn main() !void {
 
         pub fn End(entity: *loom.Entity) !void {
             std.log.debug("{s} End", .{entity.id});
+            loom.eventloop.active_scene.?.removeEntityById("Box");
         }
     };
 
@@ -176,6 +177,11 @@ pub fn main() !void {
             .rect = loom.Rect(0, 0, 88, 32),
             .dynamic = true,
             .weight = 2,
+            .onCollisionEnter = struct {
+                pub fn callback(_: *loom.Entity, other: *loom.Entity) !void {
+                    loom.eventloop.active_scene.?.removeEntityByUuid(other.uuid);
+                }
+            }.callback,
         }),
     });
 

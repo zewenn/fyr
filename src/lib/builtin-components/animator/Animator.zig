@@ -124,6 +124,11 @@ pub fn Update(self: *Self, _: *loom.Entity) !void {
     const display = self.display orelse return;
 
     for (self.playing.items) |animation| {
+        if (!animation.playing) {
+            self.stop(animation.name);
+            break;
+        }
+
         const current = animation.current();
         const next = animation.next();
 
@@ -149,10 +154,6 @@ pub fn Update(self: *Self, _: *loom.Entity) !void {
         if (percent != 1) continue;
 
         animation.incrementCurrentPercent(loom.toi32(interpolation_factor * 100));
-        if (!animation.playing) {
-            self.stop(animation.name);
-            break;
-        }
     }
 }
 
