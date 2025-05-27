@@ -102,7 +102,6 @@ pub fn stop(self: *Self, name: []const u8) void {
         }
 
         anim.playing = false;
-
         break;
     }
 }
@@ -135,6 +134,7 @@ pub fn Update(self: *Self, _: *loom.Entity) !void {
         const current_keyframe = current orelse continue;
         const next_keyframe = next orelse {
             current_keyframe.apply(transform, display);
+            animation.playing = false;
             continue;
         };
 
@@ -154,6 +154,20 @@ pub fn Update(self: *Self, _: *loom.Entity) !void {
         if (percent != 1) continue;
 
         animation.incrementCurrentPercent(loom.toi32(interpolation_factor * 100));
+    }
+
+    var clone = try loom.OwnedSlice(*Animation).fromArrayList(self.playing);
+    defer clone.deinit();
+
+    for (clone.slice) |item| {
+        if (item.playing) continue;
+
+        for (self.playing.items, 0..) |anim, index| {
+            if (anim.uuid != item.uuid) continue;
+
+            _ = self.playing.swapRemove(index);
+            break;
+        }
     }
 }
 

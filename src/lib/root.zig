@@ -166,7 +166,7 @@ pub fn project(_: void) *const fn (void) void {
                 eventloop.execute() catch {
                     std.log.err("failed to execute eventloop", .{});
                 };
-                
+
                 rl.beginDrawing();
                 defer rl.endDrawing();
 
@@ -545,4 +545,42 @@ pub fn randColor() rl.Color {
 pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     var cloned = try list.clone();
     return try cloned.toOwnedSlice();
+}
+
+pub fn OwnedSlice(comptime T: type) type {
+    return struct {
+        const Self = @This();
+
+        slice: []T,
+        alive: bool = true,
+        allocator: Allocator = std.heap.smp_allocator,
+
+        pub fn init(base_slice: []const T) !Self {
+            var list = std.ArrayList(T).init(allocators.generic());
+            defer list.deinit();
+
+            for (base_slice) |item| {
+                try list.append(item);
+            }
+
+            return Self{
+                .slice = try list.toOwnedSlice(),
+                .allocator = allocators.generic(),
+            };
+        }
+
+        pub fn fromArrayList(list: std.ArrayList(T)) !Self {
+            return Self{
+                .slice = try cloneToOwnedSlice(T, list),
+                .allocator = list.allocator,
+            };
+        }
+
+        pub fn deinit(self: *Self) void {
+            if (!self.alive) return;
+
+            self.alive = false;
+            self.allocator.free(self.slice);
+        }
+    };
 }
