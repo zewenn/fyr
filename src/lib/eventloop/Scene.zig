@@ -78,14 +78,18 @@ pub fn unload(self: *Self) void {
 pub fn execute(self: *Self) void {
     const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.gameTime();
 
-    for (self.new_entities.items) |entity| {
+    var new_entities_clone = loom.OwnedSlice(*Entity).fromArrayList(self.new_entities) catch loom.OwnedSlice(*Entity){ .slice = &.{} };
+    defer new_entities_clone.deinit();
+
+    self.new_entities.clearAndFree();
+
+    for (new_entities_clone.slice) |entity| {
         if (entity.remove_next_frame) continue;
         self.entities.append(entity) catch continue;
 
         entity.dispatchEvent(.awake);
         entity.dispatchEvent(.start);
     }
-    self.new_entities.clearAndFree();
 
     const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
     defer loom.allocators.generic().free(clone);
