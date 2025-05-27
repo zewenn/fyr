@@ -11,6 +11,7 @@ uuid: u128,
 components: std.ArrayList(*Behaviour),
 alloc: Allocator,
 remove_next_frame: bool = false,
+end_dispatched: bool = false,
 
 pub fn init(allocator: Allocator, id: []const u8) Self {
     return Self{
@@ -30,7 +31,8 @@ pub fn create(allocator: Allocator, id: []const u8) !*Self {
 
 pub fn deinit(self: *Self) void {
     for (self.components.items) |item| {
-        item.callSafe(.end, self);
+        if (!self.end_dispatched)
+            item.callSafe(.end, self);
         self.alloc.destroy(item);
     }
     self.components.deinit();
@@ -90,6 +92,8 @@ pub fn removeComponents(self: *Self, comptime T: type) void {
 }
 
 pub fn dispatchEvent(self: *Self, event: Behaviour.Events) void {
+    if (event == .end) self.end_dispatched = true;
+
     for (self.components.items) |item| {
         item.callSafe(event, self);
     }

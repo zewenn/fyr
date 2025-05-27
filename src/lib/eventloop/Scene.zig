@@ -68,8 +68,13 @@ pub fn load(self: *Self) !void {
 
 pub fn unload(self: *Self) void {
     for (self.entities.items) |entity| {
-        entity.destroy();
+        entity.remove_next_frame = true;
     }
+
+    while (self.entities.items.len != 0) {
+        self.execute();
+    }
+
     self.entities.clearAndFree();
 
     self.is_active = false;
@@ -96,12 +101,12 @@ pub fn execute(self: *Self) void {
 
     for (clone) |entity| {
         if (!entity.remove_next_frame) continue;
+        entity.dispatchEvent(.end);
 
         for (self.entities.items, 0..) |original, index| {
             if (original.uuid != entity.uuid) continue;
 
             original.destroy();
-
             _ = self.entities.swapRemove(index);
             break;
         }
