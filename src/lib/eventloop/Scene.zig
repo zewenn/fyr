@@ -100,7 +100,6 @@ pub fn execute(self: *Self) void {
         for (self.entities.items, 0..) |original, index| {
             if (original.uuid != entity.uuid) continue;
 
-            original.dispatchEvent(.end);
             original.destroy();
 
             _ = self.entities.swapRemove(index);
@@ -163,7 +162,7 @@ pub fn removeEntity(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value)
 }
 
 pub fn isEntityAlive(self: *Self, value: anytype, eqls: *const fn (@TypeOf(value), *Entity) bool) bool {
-    const entities = self.entities orelse return false;
+    const entities = self.entities;
     for (entities.items) |entity| {
         if (!eqls(value, entity)) continue;
         return true;

@@ -195,6 +195,7 @@ pub fn project(_: void) *const fn (void) void {
 
             ui.deinit();
             display.deinit();
+
             window.deinit();
         }
     }.callback;
