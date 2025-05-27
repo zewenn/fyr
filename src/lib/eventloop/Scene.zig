@@ -71,8 +71,21 @@ pub fn unload(self: *Self) void {
         entity.remove_next_frame = true;
     }
 
-    while (self.entities.items.len != 0) {
-        self.execute();
+    const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
+    defer loom.allocators.generic().free(clone);
+
+    for (self.entities.items) |item| {
+        item.dispatchEvent(.end);
+    }
+
+    for (clone) |entity| {
+        for (self.entities.items, 0..) |original, index| {
+            if (original.uuid != entity.uuid) continue;
+
+            original.destroy();
+            _ = self.entities.swapRemove(index);
+            break;
+        }
     }
 
     self.entities.clearAndFree();
