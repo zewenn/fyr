@@ -144,7 +144,7 @@ pub fn project(_: void) *const fn (void) void {
 
             while (!window.shouldClose()) {
                 if (input.getKeyDown(.enter) and input.getKey(.left_alt))
-                    window.toggleDebugLines();
+                    window.toggleDebugMode();
 
                 camera.offset = Vec2(
                     tof32(rl.getScreenWidth()) / 2,
@@ -182,7 +182,7 @@ pub fn project(_: void) *const fn (void) void {
                     std.log.err("UI update failed", .{});
                 };
 
-                if (window.use_debug_lines)
+                if (window.use_debug_mode)
                     rl.drawFPS(10, 10);
             }
 

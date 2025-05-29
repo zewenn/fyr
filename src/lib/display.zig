@@ -47,7 +47,7 @@ pub fn render() void {
     std.sort.insertion(Renderer, buf.items, {}, sort);
 
     for (buf.items) |item| {
-        if (builtin.mode == .Debug and loom.window.use_debug_lines)
+        if (builtin.mode == .Debug and loom.window.use_debug_mode) {
             rl.drawRectanglePro(
                 loom.Rect(
                     item.transform.position.x - 2,
@@ -59,6 +59,18 @@ pub fn render() void {
                 item.transform.rotation,
                 rl.Color.lime,
             );
+            rl.drawRectanglePro(
+                loom.Rect(
+                    item.transform.position.x,
+                    item.transform.position.y,
+                    item.transform.scale.x,
+                    item.transform.scale.y,
+                ),
+                loom.Vec2(item.transform.scale.x / 2, item.transform.scale.y / 2),
+                item.transform.rotation,
+                loom.window.clear_color,
+            );
+        }
 
         rl.drawTexturePro(
             item.texture,

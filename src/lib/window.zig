@@ -9,7 +9,7 @@ var is_resizable = false;
 var is_alive = false;
 
 pub var clear_color: rl.Color = rl.Color.black;
-pub var use_debug_lines = false;
+pub var use_debug_mode = false;
 
 pub fn init() void {
     defer is_alive = true;
@@ -36,8 +36,9 @@ pub fn clearBackground() void {
 
 pub const shouldClose = rl.windowShouldClose;
 
-pub fn toggleDebugLines() void {
-    use_debug_lines = !use_debug_lines;
+pub fn toggleDebugMode() void {
+    use_debug_mode = !use_debug_mode;
+    loom.clay.setDebugModeEnabled(use_debug_mode);
 }
 
 /// FPS: frames per second
