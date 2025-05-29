@@ -5,6 +5,10 @@ const tof32 = @import("root.zig").tof32;
 var count_game_time = true;
 var game_time: f32 = 0;
 
+pub fn paused() bool {
+    return count_game_time;
+}
+
 pub fn pause() void {
     count_game_time = false;
 }
