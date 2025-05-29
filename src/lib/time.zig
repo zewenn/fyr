@@ -6,7 +6,19 @@ var count_game_time = true;
 var game_time: f32 = 0;
 
 pub fn paused() bool {
-    return count_game_time;
+    return !count_game_time;
+}
+
+pub fn togglePause() void {
+    count_game_time = !count_game_time;
+}
+
+pub fn setPauseState(to: bool) void {
+    count_game_time = !to;
+}
+
+pub fn getPauseState() bool {
+    return !count_game_time;
 }
 
 pub fn pause() void {
