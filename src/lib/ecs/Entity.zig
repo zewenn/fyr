@@ -53,12 +53,13 @@ pub fn addPreparedComponents(self: *Self, dispatch_events: bool) !void {
 
     for (self.prepared_components.items) |component| {
         try self.components.append(component);
-
-        if (!dispatch_events) continue;
-
-        component.callSafe(.awake, self);
-        component.callSafe(.start, self);
     }
+
+    if (dispatch_events) for (self.prepared_components.items) |item| {
+        item.callSafe(.awake, self);
+        item.callSafe(.start, self);
+    };
+
     self.prepared_components.clearAndFree();
 }
 
@@ -87,16 +88,37 @@ pub fn getComponent(self: *Self, comptime T: type) ?*T {
     return null;
 }
 
+fn UnsafeReult(comptime T: type) type {
+    return struct {
+        initalised: bool = false,
+        result: ?*T,
+
+        pub fn init(from: *Behaviour) UnsafeReult(T) {
+            return UnsafeReult(T){
+                .initalised = from.initalised,
+                .result = from.castBack(T),
+            };
+        }
+
+        pub fn unwrap(self: UnsafeReult(T)) !*T {
+            return self.result orelse err: {
+                std.log.err("Unwrap failed: {any}", .{T});
+                break :err error.ComponentNotFound;
+            };
+        }
+    };
+}
+
 /// This function can return uninitalised components.
 /// A component gets initalised when `Awake` is called, but this method can access it before the event is dispatched. **Use with care.**
-pub fn getComponentUnsafe(self: *Self, comptime T: type) ?*T {
+pub fn getComponentUnsafe(self: *Self, comptime T: type) UnsafeReult(T) {
     for (self.components.items) |component| {
-        if (component.isType(T)) return component.castBack(T);
+        if (component.isType(T)) return UnsafeReult(T).init(component);
     }
     for (self.prepared_components.items) |component| {
-        if (component.isType(T)) return component.castBack(T);
+        if (component.isType(T)) return UnsafeReult(T).init(component);
     }
-    return null;
+    return UnsafeReult(T){ .result = null };
 }
 
 pub fn pullComponent(self: *Self, comptime T: type) !*T {

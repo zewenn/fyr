@@ -52,7 +52,7 @@ pub fn Awake(self: *Self, entity: *loom.Entity) !void {
     };
 
     try entity.addComponent(display_cache);
-    self.display_cache = entity.getComponentUnsafe(DisplayCache);
+    self.display_cache = try entity.getComponentUnsafe(DisplayCache).unwrap();
 }
 
 pub fn Start(self: *Self, entity: *loom.Entity) !void {

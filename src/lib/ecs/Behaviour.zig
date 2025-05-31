@@ -20,6 +20,7 @@ cache: *anyopaque,
 name: []const u8 = "[UNNAMED]",
 hash: u64,
 is_alive: bool = false,
+initalised: bool = false,
 
 awake: FnType = null,
 start: FnType = null,
@@ -61,6 +62,10 @@ pub fn callSafe(self: *Self, event: Events, entity: *Entity) void {
     defer if (event == .end) {
         self.is_alive = false;
         std.c.free(self.cache);
+    };
+
+    defer if (event == .awake) {
+        self.initalised = true;
     };
 
     const func = switch (event) {
@@ -116,7 +121,7 @@ fn attachEvents(self: *Self, comptime T: type) void {
     const wrapper = struct {
         fn call(comptime fn_name: []const u8, cache: *anyopaque, entity: *Entity) !void {
             std.debug.assert(std.meta.hasFn(T, fn_name));
-            
+
             const func = comptime @field(T, fn_name);
             const typeinfo = comptime @typeInfo(@TypeOf(func)).@"fn";
 
