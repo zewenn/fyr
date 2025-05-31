@@ -164,8 +164,8 @@ pub const Color = struct {
         return [4]f32{ self.red, self.green, self.blue, self.alpha };
     }
 
-    pub const white: Color = finalise(.{ .red = 255, .green = 255, .blue = 255 });
-    pub const black: Color = finalise(.{});
+    pub const white: clay.Color = finalise(.{ .red = 255, .green = 255, .blue = 255 });
+    pub const black: clay.Color = finalise(.{});
 };
 
 pub fn loadImage(comptime path: [:0]const u8) !rl.Texture2D {
