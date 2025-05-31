@@ -1,3 +1,4 @@
+const std = @import("std");
 const loom = @import("../root.zig");
 
 const Self = @This();
@@ -16,4 +17,14 @@ pub fn eqlSkipPosition(self: Self, other: Self) bool {
     if (self.scale.equals(other.scale) == 0) return false;
 
     return true;
+}
+
+pub fn distance(self: Self, other: Self) f32 {
+    return @sqrt(std.math.pow(f32, (self.position.x - other.position.x), 2) +
+        std.math.pow(f32, (self.position.y - other.position.y), 2) +
+        std.math.pow(f32, (self.position.z - other.position.z), 2));
+}
+
+pub fn distance2D(self: Self, other: Self) f32 {
+    return std.math.hypot(self.position.x - other.position.x, self.position.y - other.position.y);
 }
