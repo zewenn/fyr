@@ -63,6 +63,13 @@ pub fn getComponent(self: *Self, comptime T: type) ?*T {
     return null;
 }
 
+pub fn pullComponent(self: *Self, comptime T: type) !*T {
+    return self.getComponent(T) orelse err: {
+        std.log.err("[{s}@{x}] Missing component: {any}", .{ self.id, self.uuid, T });
+        break :err error.ComponentNotFound;
+    };
+}
+
 pub fn getComponents(self: *Self, comptime T: type) ![]*T {
     var list = std.ArrayList(*T).init(self.alloc);
 

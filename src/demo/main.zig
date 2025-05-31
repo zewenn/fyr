@@ -18,9 +18,7 @@ pub fn main() !void {
         }
 
         pub fn Start(self: *Self, entity: *loom.Entity) !void {
-            if (entity.getComponent(loom.Transform)) |transform| {
-                self.transform = transform;
-            }
+            self.transform = try entity.pullComponent(loom.Transform);
 
             if (entity.getComponent(loom.Animator)) |animator| {
                 self.animator = animator;
@@ -30,7 +28,7 @@ pub fn main() !void {
         }
 
         pub fn Update(self: *Self) !void {
-            const transform = self.transform orelse return error.MissingTransform;
+            const transform: *loom.Transform = try loom.ensureComponent(self.transform);
             const animator = self.animator orelse return error.MissingTransform;
             var move_vector = loom.vec2();
 

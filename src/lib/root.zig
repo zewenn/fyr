@@ -534,6 +534,24 @@ pub fn vec3ToVec2(v3: Vector3) Vector2 {
     return Vec2(v3.x, v3.y);
 }
 
+fn ErrorFromOptional(comptime Optional: type) type {
+    const typeinfo = @typeInfo(Optional);
+
+    return switch (typeinfo) {
+        .optional => |T| {
+            return anyerror!T.child;
+        },
+        else => @compileError("expected optional type"),
+    };
+}
+
+pub fn ensureComponent(value: anytype) ErrorFromOptional(@TypeOf(value)) {
+    return value orelse err: {
+        std.log.err("Component didn't load: {any}", .{@TypeOf(value)});
+        break :err error.ComponentDidntLoad;
+    };
+}
+
 pub fn randColor() rl.Color {
     return rl.Color.init(
         random.int(u8),
