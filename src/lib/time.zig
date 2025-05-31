@@ -51,7 +51,7 @@ pub inline fn deltaTimeVector3() rl.Vector3 {
 }
 
 pub inline fn appTime() f32 {
-    return rl.getTime();
+    return tof32(rl.getTime());
 }
 
 pub inline fn gameTime() f32 {
