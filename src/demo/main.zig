@@ -95,7 +95,7 @@ pub fn main() !void {
                             .h = .fixed(300),
                         },
                     },
-                    .background_color = loom.ui.color(20, 120, 220, 255),
+                    .background_color = loom.ui.rgb(20, 120, 220),
                 })({
                     ui.text("Clay - UI Library", .{
                         .font_size = 12,

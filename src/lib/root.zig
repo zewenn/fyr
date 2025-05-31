@@ -108,7 +108,7 @@ pub const assets = @import("assets.zig");
 pub const display = @import("display.zig");
 pub const time = @import("time.zig");
 pub const input = @import("input.zig");
-pub const ui = @import("gui/export.zig");
+pub const ui = @import("ui/ui.zig");
 
 pub const useAssetPaths = assets.files.paths.use;
 
@@ -160,6 +160,9 @@ pub fn project(_: void) *const fn (void) void {
                     .x = mouse_position.x,
                     .y = mouse_position.y,
                 }, rl.isMouseButtonDown(.left));
+
+                const scroll = rl.getMouseWheelMoveV();
+                clay.updateScrollContainers(true, .{ .x = scroll.x, .y = scroll.y }, time.deltaTime());
 
                 clay.beginLayout();
 

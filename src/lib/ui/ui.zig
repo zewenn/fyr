@@ -137,6 +137,37 @@ pub fn color(r: f32, g: f32, b: f32, a: f32) clay.Color {
     return .{ r, g, b, a };
 }
 
+pub fn rgba(r: f32, g: f32, b: f32, a: f32) clay.Color {
+    return Color.finalise(.{
+        .red = r,
+        .green = g,
+        .blue = b,
+        .alpha = a,
+    });
+}
+
+pub fn rgb(r: f32, g: f32, b: f32) clay.Color {
+    return Color.finalise(.{
+        .red = r,
+        .green = g,
+        .blue = b,
+    });
+}
+
+pub const Color = struct {
+    red: f32 = 0,
+    green: f32 = 0,
+    blue: f32 = 0,
+    alpha: f32 = 255,
+
+    pub fn finalise(self: Color) [4]f32 {
+        return [4]f32{ self.red, self.green, self.blue, self.alpha };
+    }
+
+    pub const white: Color = finalise(.{ .red = 255, .green = 255, .blue = 255 });
+    pub const black: Color = finalise(.{});
+};
+
 pub fn loadImage(comptime path: [:0]const u8) !rl.Texture2D {
     const texture = try rl.loadTextureFromImage(try rl.loadImageFromMemory(@ptrCast(std.fs.path.extension(path)), @embedFile(path)));
     rl.setTextureFilter(texture, .bilinear);
