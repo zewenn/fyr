@@ -56,6 +56,9 @@ pub fn load(self: *Self) !void {
     for (self.prefabs.items) |prefabs| {
         const entity = try prefabs.makeInstance(self.alloc);
         try self.entities.append(entity);
+
+        try entity.addPreparedComponents(false);
+
         entity.dispatchEvent(.awake);
     }
 
@@ -105,8 +108,7 @@ pub fn execute(self: *Self) void {
         if (entity.remove_next_frame) continue;
         self.entities.append(entity) catch continue;
 
-        entity.dispatchEvent(.awake);
-        entity.dispatchEvent(.start);
+        entity.addPreparedComponents(true) catch continue;
     }
 
     const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
@@ -126,6 +128,7 @@ pub fn execute(self: *Self) void {
     }
 
     for (self.entities.items) |entity| {
+        entity.addPreparedComponents(true) catch {};
         entity.dispatchEvent(.update);
 
         if (is_tick) {

@@ -52,22 +52,18 @@ pub fn Awake(self: *Self, entity: *loom.Entity) !void {
     };
 
     try entity.addComponent(display_cache);
-    self.display_cache = entity.getComponent(DisplayCache);
+    self.display_cache = entity.getComponentPossiblyIncomplete(DisplayCache);
 }
 
 pub fn Start(self: *Self, entity: *loom.Entity) !void {
-    // if (entity.getComponent(Child)) |child_component| {
-    //     self.parent = if (child_component.parent.ptr) |parent| parent.getComponent(Transform) else null;
-    // }
-
     if (entity.getComponent(Transform)) |transform| {
         self.transform = transform;
     }
 }
 
 pub fn Update(self: *Self) !void {
-    const display_cache = self.display_cache orelse return;
-    const transform = self.transform orelse return;
+    const display_cache: *DisplayCache = try loom.ensureComponent(self.display_cache);
+    const transform: *Transform = try loom.ensureComponent(self.transform);
 
     if (transform.scale.x == 0 or transform.scale.y == 0) return;
 

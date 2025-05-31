@@ -8,6 +8,8 @@ const Self = @This();
 
 id: []const u8,
 uuid: u128,
+
+prepared_components: std.ArrayList(*Behaviour),
 components: std.ArrayList(*Behaviour),
 alloc: Allocator,
 remove_next_frame: bool = false,
@@ -17,6 +19,7 @@ pub fn init(allocator: Allocator, id: []const u8) Self {
     return Self{
         .id = id,
         .uuid = UUID.v7.new(),
+        .prepared_components = .init(allocator),
         .components = .init(allocator),
         .alloc = allocator,
     };
@@ -36,6 +39,27 @@ pub fn deinit(self: *Self) void {
         self.alloc.destroy(item);
     }
     self.components.deinit();
+
+    for (self.prepared_components.items) |item| {
+        if (!self.end_dispatched)
+            item.callSafe(.end, self);
+        self.alloc.destroy(item);
+    }
+    self.prepared_components.deinit();
+}
+
+pub fn addPreparedComponents(self: *Self, dispatch_events: bool) !void {
+    if (self.prepared_components.items.len == 0) return;
+
+    for (self.prepared_components.items) |component| {
+        try self.components.append(component);
+
+        if (!dispatch_events) continue;
+
+        component.callSafe(.awake, self);
+        component.callSafe(.start, self);
+    }
+    self.prepared_components.clearAndFree();
 }
 
 pub fn destroy(self: *Self) void {
@@ -47,7 +71,7 @@ pub fn addComponent(self: *Self, component: anytype) !void {
     const ptr = try self.alloc.create(Behaviour);
     ptr.* = try Behaviour.init(component);
 
-    try self.components.append(ptr);
+    try self.prepared_components.append(ptr);
 }
 
 pub fn addComponents(self: *Self, components: anytype) !void {
@@ -58,6 +82,18 @@ pub fn addComponents(self: *Self, components: anytype) !void {
 
 pub fn getComponent(self: *Self, comptime T: type) ?*T {
     for (self.components.items) |component| {
+        if (component.isType(T)) return component.castBack(T);
+    }
+    return null;
+}
+
+/// This function can return uninitalised components.
+/// A component gets initalised when `Awake` is called, but this method can access it before the event is dispatched. **Use with care.**
+pub fn getComponentUnsafe(self: *Self, comptime T: type) ?*T {
+    for (self.components.items) |component| {
+        if (component.isType(T)) return component.castBack(T);
+    }
+    for (self.prepared_components.items) |component| {
         if (component.isType(T)) return component.castBack(T);
     }
     return null;
