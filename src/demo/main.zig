@@ -96,14 +96,11 @@ pub fn main() !void {
                         },
                     },
                     .background_color = loom.ui.rgb(20, 120, 220),
-                })({
-                    ui.text("Clay - UI Library", .{
-                        .font_size = 12,
-                        .letter_spacing = 1,
-                        .color = .{ 0, 0, 0, 255 },
-                        .font_id = loom.ui.fontID("press_play.ttf"),
-                    });
-                });
+                    .image = .{
+                        .image_data = try ui.loadImage("img3.png", .init(320, 240)),
+                        .source_dimensions = .{ .h = 240, .w = 320 },
+                    },
+                })({});
                 ui.new(.{
                     .id = .ID("test"),
                     .layout = .{

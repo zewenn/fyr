@@ -24,6 +24,14 @@ pub const text = clay.text;
 
 var memory: []u8 = undefined;
 
+const TextureCache = struct {
+    name: []const u8,
+
+    texture: *rl.Texture2D,
+    size: loom.Vector2,
+    refs: usize,
+};
+
 const FontEntry = struct {
     const Self = @This();
 
@@ -38,6 +46,7 @@ const FontEntry = struct {
     }
 };
 
+var textures: std.ArrayList(TextureCache) = undefined;
 var fonts: std.ArrayList(FontEntry) = undefined;
 var fonts_cache: std.ArrayList(FontEntry) = undefined;
 var font_index: usize = 1;
@@ -45,6 +54,7 @@ var font_index: usize = 1;
 pub fn init() !void {
     fonts = .init(loom.allocators.generic());
     fonts_cache = .init(loom.allocators.generic());
+    textures = .init(loom.allocators.generic());
 
     const min_memory_size: usize = loom.coerceTo(usize, clay.minMemorySize()).?;
     memory = try loom.allocators.generic().alloc(u8, min_memory_size);
@@ -87,6 +97,11 @@ pub fn update() !void {
     fonts_cache.deinit();
     fonts_cache = try fonts.clone();
     fonts.clearAndFree();
+
+    for (textures.items) |*texture| {
+        if (texture.refs == 0) loom.assets.texture.release(texture.name, .{ 1, 1 });
+        texture.refs = 0;
+    }
 }
 
 pub fn deinit() void {
@@ -94,8 +109,13 @@ pub fn deinit() void {
         loom.assets.font.release(entry.name, .{});
     }
 
+    for (textures.items) |texture| {
+        loom.assets.texture.release(texture.name, .{ texture.size.x, texture.size.y });
+    }
+
     fonts_cache.deinit();
     fonts.deinit();
+    textures.deinit();
 
     loom.allocators.generic().free(memory);
 }
@@ -168,8 +188,22 @@ pub const Color = struct {
     pub const black: clay.Color = finalise(.{});
 };
 
-pub fn loadImage(comptime path: [:0]const u8) !rl.Texture2D {
-    const texture = try rl.loadTextureFromImage(try rl.loadImageFromMemory(@ptrCast(std.fs.path.extension(path)), @embedFile(path)));
-    rl.setTextureFilter(texture, .bilinear);
-    return texture;
+pub fn loadImage(path: []const u8, size: loom.Vector2) !*rl.Texture2D {
+    for (textures.items) |*texture| {
+        if (!std.mem.eql(u8, path, texture.name)) continue;
+
+        texture.refs += 1;
+        return texture.texture;
+    }
+
+    const entry: TextureCache = .{
+        .name = path,
+        .refs = 1,
+        .size = size,
+        .texture = loom.assets.texture.get(path, .{ size.x, size.y }) orelse return error.NoImageFound,
+    };
+
+    try textures.append(entry);
+
+    return entry.texture;
 }

@@ -190,14 +190,14 @@ pub fn project(_: void) *const fn (void) void {
             }
 
             eventloop.deinit();
-            assets.deinit();
+            ui.deinit();
+            display.deinit();
 
             window.restore_state.save() catch {
                 std.log.err("failed to save window state", .{});
             };
 
-            ui.deinit();
-            display.deinit();
+            assets.deinit();
 
             window.deinit();
         }
