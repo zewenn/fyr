@@ -1,5 +1,6 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
+const loom = @import("../root.zig");
 
 pub const Scene = @import("./Scene.zig");
 const Error = error{
@@ -62,6 +63,9 @@ pub fn execute() !void {
 
     if (next_scene) |nscene| {
         active_scene = nscene;
+
+        _ = if (loom.allocators.AI_scene.interface) |*int| int.reset(.free_all);
+
         try nscene.load();
 
         next_scene = null;

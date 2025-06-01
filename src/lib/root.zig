@@ -245,6 +245,7 @@ pub const allocators = struct {
 
     pub var AI_generic: AllocatorInstance(std.heap.DebugAllocator(.{})) = .{};
     pub var AI_arena: AllocatorInstance(std.heap.ArenaAllocator) = .{};
+    pub var AI_scene: AllocatorInstance(std.heap.ArenaAllocator) = .{};
 
     /// Generic allocator, warns at program exit if a memory leak happened.
     /// In the Debug and ReleaseFast modes this is a `DebugAllocator`,
@@ -275,8 +276,13 @@ pub const allocators = struct {
     /// If `eventloop` has an Scene loaded, this is a shorthand for
     /// `fyr.eventloop.active_scene.allocator()`, otherwise this is the
     /// same as `arena`.
-    pub inline fn scene() noreturn {
-        @panic("Not Implemented");
+    pub inline fn scene() Allocator {
+        return AI_scene.allocator orelse Blk: {
+            AI_scene.interface = std.heap.ArenaAllocator.init(generic());
+            AI_scene.allocator = AI_scene.interface.?.allocator();
+
+            break :Blk AI_scene.allocator.?;
+        };
     }
 };
 
