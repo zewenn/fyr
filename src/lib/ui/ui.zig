@@ -188,12 +188,15 @@ pub const Color = struct {
     pub const black: clay.Color = finalise(.{});
 };
 
-pub fn loadImage(path: []const u8, size: loom.Vector2) !*rl.Texture2D {
+pub fn image(path: []const u8, size: loom.Vector2) !clay.ImageElementConfig {
     for (textures.items) |*texture| {
         if (!std.mem.eql(u8, path, texture.name)) continue;
 
         texture.refs += 1;
-        return texture.texture;
+        return clay.ImageElementConfig{
+            .image_data = texture.texture,
+            .source_dimensions = loom.vec2ToDims(texture.size),
+        };
     }
 
     const entry: TextureCache = .{
@@ -205,5 +208,9 @@ pub fn loadImage(path: []const u8, size: loom.Vector2) !*rl.Texture2D {
 
     try textures.append(entry);
 
-    return entry.texture;
+    return clay.ImageElementConfig{
+        .image_data = entry.texture,
+        .source_dimensions = loom.vec2ToDims(size),
+    };
 }
+

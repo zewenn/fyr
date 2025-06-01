@@ -96,10 +96,7 @@ pub fn main() !void {
                         },
                     },
                     .background_color = loom.ui.rgb(20, 120, 220),
-                    .image = .{
-                        .image_data = try ui.loadImage("img3.png", .init(320, 240)),
-                        .source_dimensions = .{ .h = 240, .w = 320 },
-                    },
+                    .image = try ui.image("img3.png", .init(320, 240)),
                 })({});
                 ui.new(.{
                     .id = .ID("test"),

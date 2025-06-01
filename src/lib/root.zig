@@ -27,6 +27,8 @@ pub const Vector4 = rl.Vector4;
 pub const Rectangle = rl.Rectangle;
 pub const Color = rl.Color;
 
+pub const Dimensions = clay.Dimensions;
+
 pub const Transform = @import("builtin-components/Transform.zig");
 pub const Renderer = @import("builtin-components/Renderer.zig");
 pub const RectCollider = @import("builtin-components/collision.zig").RectCollider;
@@ -535,6 +537,27 @@ pub fn vec2ToVec3(v2: Vector2) Vector3 {
 
 pub fn vec3ToVec2(v3: Vector3) Vector2 {
     return Vec2(v3.x, v3.y);
+}
+
+pub fn vec2ToDims(vector: Vector2) Dimensions {
+    return .{
+        .w = vector.x,
+        .h = vector.y,
+    };
+}
+
+pub fn vec3ToDims(vector: Vector3) Dimensions {
+    return .{
+        .w = vector.x,
+        .h = vector.y,
+    };
+}
+
+pub fn dimsToVec2(dims: Dimensions) Vector2 {
+    return .{
+        .x = dims.w,
+        .y = dims.h,
+    };
 }
 
 fn ErrorFromOptional(comptime Optional: type) type {
