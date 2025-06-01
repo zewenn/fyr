@@ -142,7 +142,7 @@ pub const RectCollider = struct {
         self.entity = entity;
 
         const collidables = &(collidables_or_null orelse Blk: {
-            collidables_or_null = std.ArrayList(*Self).init(loom.allocators.generic());
+            collidables_or_null = std.ArrayList(*Self).init(loom.allocators.scene());
             break :Blk collidables_or_null.?;
         });
 
@@ -217,6 +217,9 @@ pub const RectCollider = struct {
             break;
         }
 
-        if (collidables.items.len == 0) collidables.deinit();
+        if (collidables.items.len == 0) {
+            collidables.deinit();
+            collidables_or_null = null;
+        }
     }
 };
