@@ -97,7 +97,7 @@ pub fn unload(self: *Self) void {
 }
 
 pub fn execute(self: *Self) void {
-    const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.gameTime();
+    const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.appTime();
 
     var new_entities_clone = loom.OwnedSlice(*Entity).fromArrayList(self.new_entities) catch loom.OwnedSlice(*Entity){ .slice = &.{} };
     defer new_entities_clone.deinit();
