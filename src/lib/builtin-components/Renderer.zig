@@ -26,6 +26,7 @@ pub const DisplayCache = struct {
 const Self = @This();
 
 img_path: []const u8,
+tile_size: ?loom.Vector2 = null,
 tint: rl.Color = rl.Color.white,
 
 transform: ?*Transform = null,
@@ -36,6 +37,13 @@ parent: ?*Transform = null,
 pub fn init(path: []const u8) Self {
     return Self{
         .img_path = path,
+    };
+}
+
+pub fn tile(path: []const u8, tile_size: loom.Vector2) Self {
+    return Self{
+        .img_path = path,
+        .tile_size = tile_size,
     };
 }
 
@@ -67,6 +75,8 @@ pub fn Update(self: *Self) !void {
 
     if (transform.scale.x == 0 or transform.scale.y == 0) return;
 
+    const tile_size = self.tile_size orelse transform.scale;
+
     const has_to_be_updated =
         transform.scale.equals(display_cache.transform.scale) == 0 or
         !std.mem.eql(u8, self.img_path, display_cache.img_path) or
@@ -80,7 +90,7 @@ pub fn Update(self: *Self) !void {
             .transform = transform.*,
             .texture = assets.texture.get(
                 self.img_path,
-                .{ transform.scale.x, transform.scale.y },
+                .{ tile_size.x, tile_size.y },
             ),
         };
     }

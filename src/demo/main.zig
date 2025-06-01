@@ -158,12 +158,10 @@ pub fn main() !void {
     });
 
     const box = loom.Prefab.new("Box", .{
-        loom.Renderer{
-            .img_path = "logo_large.png",
-        },
+        loom.Renderer.tile("img3.png", .init(88, 32)),
         loom.Transform{
             .position = loom.Vec3(100, 0, 0),
-            .scale = loom.Vec2(88, 32),
+            .scale = loom.Vec2(88 * 3, 32 * 2),
         },
         loom.RectCollider.init(.{
             .rect = loom.Rect(0, 0, 88, 32),
