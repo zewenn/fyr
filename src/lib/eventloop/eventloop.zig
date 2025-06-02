@@ -55,11 +55,9 @@ pub fn setActive(id: []const u8) !void {
 }
 
 pub fn execute() void {
-    if (active_scene) |ascene| {
-        ascene.execute();
+    const ascene = active_scene orelse return;
 
-        if (next_scene != null) ascene.unload();
-    }
+    ascene.execute();
 }
 
 pub fn loadNext() !void {
