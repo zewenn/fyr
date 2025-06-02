@@ -74,12 +74,12 @@ pub fn unload(self: *Self) void {
         entity.remove_next_frame = true;
     }
 
-    const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
-    defer loom.allocators.generic().free(clone);
-
     for (self.entities.items) |item| {
         item.dispatchEvent(.end);
     }
+
+    const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
+    defer loom.allocators.generic().free(clone);
 
     for (clone) |entity| {
         for (self.entities.items, 0..) |original, index| {
@@ -92,7 +92,6 @@ pub fn unload(self: *Self) void {
     }
 
     self.entities.clearAndFree();
-
     self.is_active = false;
 }
 
