@@ -389,6 +389,11 @@ pub fn toi32(value: anytype) i32 {
 }
 
 /// Shorthand for coerceTo
+pub fn tou32(value: anytype) u32 {
+    return coerceTo(u32, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
 pub fn toisize(value: anytype) isize {
     return coerceTo(isize, value) orelse 0;
 }
@@ -401,6 +406,21 @@ pub fn tousize(value: anytype) usize {
 /// Shorthand for coerceTo
 pub fn tou16(value: anytype) u16 {
     return coerceTo(u16, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
+pub fn toi16(value: anytype) i16 {
+    return coerceTo(i16, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
+pub fn tou8(value: anytype) u8 {
+    return coerceTo(u8, value) orelse 0;
+}
+
+/// Shorthand for coerceTo
+pub fn toi8(value: anytype) i8 {
+    return coerceTo(i8, value) orelse 0;
 }
 
 test coerceTo {
