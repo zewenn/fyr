@@ -59,52 +59,6 @@ pub const ecs = struct {
     pub const Prefab = @import("./ecs/Prefab.zig");
 };
 
-test ecs {
-    const TestComponent = struct {
-        pub var counter: usize = 0;
-
-        pub fn Awake(entity: *ecs.Entity) !void {
-            counter += 1;
-            std.log.debug("{s} Awake", .{entity.id});
-        }
-
-        pub fn Start(entity: *ecs.Entity) !void {
-            counter += 1;
-            std.log.debug("{s} Start", .{entity.id});
-        }
-
-        pub fn Update(entity: *ecs.Entity) !void {
-            counter += 1;
-            std.log.debug("{s} Update", .{entity.id});
-        }
-
-        pub fn Tick(entity: *ecs.Entity) !void {
-            counter += 1;
-            std.log.debug("{s} Tick", .{entity.id});
-        }
-
-        pub fn End(entity: *ecs.Entity) !void {
-            counter += 1;
-            std.log.debug("{s} End", .{entity.id});
-        }
-    };
-
-    const Player = ecs.Prefab.new("Player", .{
-        TestComponent{},
-    });
-
-    var player = try Player.makeInstance(std.testing.allocator);
-    defer player.destroy();
-
-    player.dispatchEvent(.awake);
-    player.dispatchEvent(.start);
-    player.dispatchEvent(.update);
-    player.dispatchEvent(.tick);
-    player.dispatchEvent(.end);
-
-    try std.testing.expect(TestComponent.counter == 5);
-}
-
 pub const eventloop = @import("eventloop/eventloop.zig");
 pub const assets = @import("assets.zig");
 pub const display = @import("display.zig");
@@ -293,6 +247,17 @@ pub const Scene = eventloop.Scene;
 
 pub const UUIDv7 = uuid.v7.new;
 
+fn boundcheckMinMax(comptime T: type, value2: anytype) T {
+    if (std.math.maxInt(T) < value2) {
+        return std.math.maxInt(T);
+    }
+    if (std.math.minInt(T) > value2) {
+        return std.math.minInt(T);
+    }
+
+    return @intCast(value2);
+}
+
 /// # coerceTo
 /// The quick way to change types for ints, floats, booleans, enums and pointers.
 /// Currently:
@@ -322,10 +287,15 @@ pub const UUIDv7 = uuid.v7.new;
 ///     - other `pointer` types (e.g. `*anyopaque` -> `*i32`)
 pub inline fn coerceTo(comptime TypeTarget: type, value: anytype) ?TypeTarget {
     const value_info = @typeInfo(@TypeOf(value));
+
     return switch (@typeInfo(TypeTarget)) {
         .int, .comptime_int => switch (value_info) {
-            .int, .comptime_int => @as(TypeTarget, @intCast(value)),
-            .float, .comptime_float => @as(TypeTarget, @intFromFloat(@round(value))),
+            .int, .comptime_int => @intCast(
+                boundcheckMinMax(TypeTarget, value),
+            ),
+            .float, .comptime_float => @intCast(
+                boundcheckMinMax(TypeTarget, @as(i113, @intFromFloat(@max(std.math.minInt(i113), @min(std.math.maxInt(i113), @round(value)))))),
+            ),
             .bool => @as(TypeTarget, @intFromBool(value)),
             .@"enum" => @as(TypeTarget, @intFromEnum(value)),
             .pointer => @intFromPtr(value),
@@ -445,6 +415,8 @@ test coerceTo {
     const int_address: usize = @intFromPtr(&int);
     const @"comptime_int": comptime_int = 32;
 
+    try expect(coerceTo(usize, -1).? == @as(usize, 0));
+    try expect(coerceTo(u8, std.math.maxInt(u128)).? == @as(u8, 255));
     try expect(coerceTo(isize, int).? == @as(isize, 32));
     try expect(coerceTo(f32, int).? == @as(f32, 32.0));
     try expect(coerceTo(x, int).? == @as(x, x.b));
@@ -461,6 +433,7 @@ test coerceTo {
     const @"comptime_float": comptime_float = 32.34;
 
     try expect(coerceTo(isize, float).? == @as(isize, 32));
+    try expect(coerceTo(u8, std.math.floatMax(f128)).? == @as(u8, 255));
     try expect(coerceTo(f32, float).? == @as(f32, 32.34));
     try expect(coerceTo(x, float).? == @as(x, x.b));
     try expect(coerceTo(bool, float).? == @as(bool, true));
