@@ -122,9 +122,12 @@ pub fn project(_: void) *const fn (void) void {
 
                 clay.beginLayout();
 
-                eventloop.execute() catch {
+                if (eventloop.execute() catch err: {
                     std.log.err("failed to execute eventloop", .{});
-                };
+                    break :err false;
+                }) {
+                    continue;
+                }
 
                 if (eventloop.isActiveBeingUnloaded()) {
                     _ = clay.endLayout();

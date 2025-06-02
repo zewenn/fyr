@@ -15,10 +15,6 @@ var next_scene: ?*Scene = null;
 var alloc = std.heap.smp_allocator;
 var unload_on_next_frame = false;
 
-pub fn isActiveBeingUnloaded() bool {
-    return next_scene != null;
-}
-
 pub fn init(allocator: Allocator) void {
     scenes = .init(allocator);
     alloc = allocator;
@@ -58,7 +54,7 @@ pub fn setActive(id: []const u8) !void {
     return Error.SceneNotFound;
 }
 
-pub fn execute() !void {
+pub fn execute() !bool {
     if (active_scene) |ascene| {
         ascene.execute();
 
@@ -73,7 +69,9 @@ pub fn execute() !void {
         try nscene.load();
 
         next_scene = null;
+        return true;
     }
+    return false;
 }
 
 pub fn close() void {
