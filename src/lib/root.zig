@@ -67,6 +67,11 @@ pub const input = @import("input.zig");
 pub const ui = @import("ui/ui.zig");
 
 pub const useAssetPaths = assets.files.paths.use;
+var running = true;
+
+pub fn quit() void {
+    running = false;
+}
 
 pub fn project(_: void) *const fn (void) void {
     rl.setTraceLogLevel(.warning);
@@ -98,7 +103,7 @@ pub fn project(_: void) *const fn (void) void {
                 std.log.info("no default scene", .{});
             };
 
-            while (!window.shouldClose()) {
+            while (!window.shouldClose() and running) {
                 if (input.getKeyDown(.enter) and input.getKey(.left_alt))
                     window.toggleDebugMode();
 

@@ -143,7 +143,7 @@ pub fn removeComponent(self: *Self, comptime T: type) void {
     for (self.components.items, 0..) |component, index| {
         if (!component.isType(T)) continue;
 
-        self.components.swapRemove(index);
+        _ = self.components.swapRemove(index);
         return;
     }
 }
@@ -152,7 +152,7 @@ pub fn removeComponents(self: *Self, comptime T: type) void {
     for (self.components.items, 0..) |component, index| {
         if (!component.isType(T)) continue;
 
-        self.components.swapRemove(index);
+        _ = self.components.swapRemove(index);
     }
 }
 
