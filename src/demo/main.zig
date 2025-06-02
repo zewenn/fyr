@@ -48,6 +48,10 @@ pub fn main() !void {
                 move_vector.x += 1;
             }
 
+            if (loom.input.getKeyDown(.k)) {
+                try loom.eventloop.setActive("other");
+            }
+
             if (loom.input.getKeyDown(.e)) {
                 try animator.play("test");
             }

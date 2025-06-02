@@ -116,7 +116,6 @@ pub fn project(_: void) *const fn (void) void {
                 display.reset();
 
                 const mouse_position = rl.getMousePosition();
-
                 clay.setPointerState(.{
                     .x = mouse_position.x,
                     .y = mouse_position.y,
@@ -139,13 +138,17 @@ pub fn project(_: void) *const fn (void) void {
                 {
                     camera.begin();
                     defer camera.end();
-                    
+
                     display.render();
                 }
 
-                if (!unloading) ui.update() catch {
-                    std.log.err("UI update failed", .{});
-                };
+                if (!unloading) {
+                    ui.update() catch {
+                        std.log.err("UI update failed", .{});
+                    };
+                } else {
+                    _ = clay.endLayout();
+                }
 
                 if (window.use_debug_mode)
                     rl.drawFPS(10, 10);
