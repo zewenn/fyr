@@ -129,11 +129,6 @@ pub fn project(_: void) *const fn (void) void {
                     continue;
                 }
 
-                if (eventloop.isActiveBeingUnloaded()) {
-                    _ = clay.endLayout();
-                    continue;
-                }
-
                 rl.beginDrawing();
                 defer rl.endDrawing();
 
