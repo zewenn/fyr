@@ -54,24 +54,25 @@ pub fn setActive(id: []const u8) !void {
     return Error.SceneNotFound;
 }
 
-pub fn execute() !bool {
+pub fn execute() void {
     if (active_scene) |ascene| {
         ascene.execute();
 
         if (next_scene != null) ascene.unload();
     }
+}
 
-    if (next_scene) |nscene| {
-        active_scene = nscene;
+pub fn loadNext() !void {
+    const nscene = next_scene orelse return;
+    if (active_scene) |ascene| ascene.unload();
 
-        _ = if (loom.allocators.AI_scene.interface) |*int| int.reset(.free_all);
+    active_scene = nscene;
 
-        try nscene.load();
+    _ = if (loom.allocators.AI_scene.interface) |*int| int.reset(.free_all);
 
-        next_scene = null;
-        return true;
-    }
-    return false;
+    try nscene.load();
+
+    next_scene = null;
 }
 
 pub fn close() void {

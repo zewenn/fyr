@@ -126,9 +126,9 @@ pub fn project(_: void) *const fn (void) void {
 
                 clay.beginLayout();
 
-                const unloading = eventloop.execute() catch err: {
-                    std.log.err("failed to execute eventloop", .{});
-                    break :err false;
+                eventloop.execute();
+                defer eventloop.loadNext() catch {
+                    std.log.debug("failed to load next scene!", .{});
                 };
 
                 rl.beginDrawing();
@@ -142,13 +142,9 @@ pub fn project(_: void) *const fn (void) void {
                     display.render();
                 }
 
-                if (!unloading) {
-                    ui.update() catch {
-                        std.log.err("UI update failed", .{});
-                    };
-                } else {
-                    _ = clay.endLayout();
-                }
+                ui.update() catch {
+                    std.log.err("UI update failed", .{});
+                };
 
                 if (window.use_debug_mode)
                     rl.drawFPS(10, 10);
