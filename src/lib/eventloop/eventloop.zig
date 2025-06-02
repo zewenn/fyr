@@ -15,6 +15,10 @@ var next_scene: ?*Scene = null;
 var alloc = std.heap.smp_allocator;
 var unload_on_next_frame = false;
 
+pub fn isActiveBeingUnloaded() bool {
+    return next_scene != null;
+}
+
 pub fn init(allocator: Allocator) void {
     scenes = .init(allocator);
     alloc = allocator;

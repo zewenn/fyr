@@ -126,6 +126,11 @@ pub fn project(_: void) *const fn (void) void {
                     std.log.err("failed to execute eventloop", .{});
                 };
 
+                if (eventloop.isActiveBeingUnloaded()) {
+                    _ = clay.endLayout();
+                    continue;
+                }
+
                 rl.beginDrawing();
                 defer rl.endDrawing();
 
