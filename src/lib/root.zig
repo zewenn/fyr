@@ -122,12 +122,10 @@ pub fn project(_: void) *const fn (void) void {
 
                 clay.beginLayout();
 
-                if (eventloop.execute() catch err: {
+                const unloading = eventloop.execute() catch err: {
                     std.log.err("failed to execute eventloop", .{});
                     break :err false;
-                }) {
-                    continue;
-                }
+                };
 
                 rl.beginDrawing();
                 defer rl.endDrawing();
@@ -136,11 +134,11 @@ pub fn project(_: void) *const fn (void) void {
                 {
                     camera.begin();
                     defer camera.end();
-
+                    
                     display.render();
                 }
 
-                ui.update() catch {
+                if (!unloading) ui.update() catch {
                     std.log.err("UI update failed", .{});
                 };
 
