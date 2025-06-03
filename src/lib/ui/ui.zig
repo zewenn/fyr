@@ -178,6 +178,10 @@ pub fn opacity(colour: clay.Color, target: f32) clay.Color {
     return .{ colour[0], colour[1], colour[2], target };
 }
 
+pub fn dim(colour: clay.Color, by: f32) clay.Color {
+    return .{ colour[0] - by, colour[1] - by, colour[2] - by, colour[3] };
+}
+
 /// Parses a hex color code (0xRRGGBBAA) into 4 f32 components (0-255).
 ///
 /// Args:
