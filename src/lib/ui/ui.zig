@@ -174,6 +174,10 @@ pub fn rgb(r: f32, g: f32, b: f32) clay.Color {
     });
 }
 
+pub fn opacity(colour: clay.Color, target: f32) clay.Color {
+    return .{ colour[0], colour[1], colour[2], target };
+}
+
 /// Parses a hex color code (0xRRGGBBAA) into 4 f32 components (0-255).
 ///
 /// Args:
@@ -186,7 +190,7 @@ pub fn rgb(r: f32, g: f32, b: f32) clay.Color {
 pub fn hex(hex_colour: u32) [4]f32 {
 
     // RR GG BB AA
-    // 
+    //
 
     const r = loom.tof32((hex_colour >> 24) & 0xFF);
     const g = loom.tof32((hex_colour >> 16) & 0xFF);
@@ -196,7 +200,7 @@ pub fn hex(hex_colour: u32) [4]f32 {
     return .{ r, g, b, a };
 }
 
-test "parseHexColorToF32" {
+test hex {
     const color1 = 0xFF0080FF; // Red: 255, Green: 0, Blue: 128, Alpha: 255
     const parsed_color1 = hex(color1);
     try std.testing.expectEqualF32(parsed_color1.r, 255.0);
