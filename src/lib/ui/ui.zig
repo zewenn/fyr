@@ -179,7 +179,7 @@ pub fn opacity(colour: clay.Color, target: f32) clay.Color {
 }
 
 pub fn dim(colour: clay.Color, by: f32) clay.Color {
-    return .{ colour[0] - by, colour[1] - by, colour[2] - by, colour[3] };
+    return .{ @max(0, colour[0] - by), @max(0, colour[1] - by), @max(0, colour[2] - by), colour[3] };
 }
 
 /// Parses a hex color code (0xRRGGBBAA) into 4 f32 components (0-255).
