@@ -89,7 +89,7 @@ pub fn main() !void {
                     .child_gap = 10,
                     .direction = .top_to_bottom,
                 },
-                .background_color = .{ 250, 250, 255, 255 },
+                .background_color = ui.hex(0xFFFFFFFF),
             })({
                 ui.new(.{
                     .id = .ID("test"),

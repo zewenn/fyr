@@ -174,6 +174,51 @@ pub fn rgb(r: f32, g: f32, b: f32) clay.Color {
     });
 }
 
+/// Parses a hex color code (0xRRGGBBAA) into 4 f32 components (0-255).
+///
+/// Args:
+///   hex_color: The 32-bit unsigned integer representing the hex color.
+///              Expected format is 0xRRGGBBAA.
+///
+/// Returns:
+///   A struct containing the red, green, blue, and alpha components as f32.
+///   Each component will be in the range of 0.0 to 255.0.
+pub fn hex(hex_colour: u32) [4]f32 {
+
+    // RR GG BB AA
+    // 
+
+    const r = loom.tof32((hex_colour >> 24) & 0xFF);
+    const g = loom.tof32((hex_colour >> 16) & 0xFF);
+    const b = loom.tof32((hex_colour >> 8) & 0xFF);
+    const a = loom.tof32(hex_colour & 0xFF);
+
+    return .{ r, g, b, a };
+}
+
+test "parseHexColorToF32" {
+    const color1 = 0xFF0080FF; // Red: 255, Green: 0, Blue: 128, Alpha: 255
+    const parsed_color1 = hex(color1);
+    try std.testing.expectEqualF32(parsed_color1.r, 255.0);
+    try std.testing.expectEqualF32(parsed_color1.g, 0.0);
+    try std.testing.expectEqualF32(parsed_color1.b, 128.0);
+    try std.testing.expectEqualF32(parsed_color1.a, 255.0);
+
+    const color2 = 0x00FF0080; // Red: 0, Green: 255, Blue: 0, Alpha: 128
+    const parsed_color2 = hex(color2);
+    try std.testing.expectEqualF32(parsed_color2.r, 0.0);
+    try std.testing.expectEqualF32(parsed_color2.g, 255.0);
+    try std.testing.expectEqualF32(parsed_color2.b, 0.0);
+    try std.testing.expectEqualF32(parsed_color2.a, 128.0);
+
+    const color3 = 0x12345678;
+    const parsed_color3 = hex(color3);
+    try std.testing.expectEqualF32(parsed_color3.r, 18.0);
+    try std.testing.expectEqualF32(parsed_color3.g, 52.0);
+    try std.testing.expectEqualF32(parsed_color3.b, 86.0);
+    try std.testing.expectEqualF32(parsed_color3.a, 120.0);
+}
+
 pub const Color = struct {
     red: f32 = 0,
     green: f32 = 0,
@@ -213,4 +258,3 @@ pub fn image(path: []const u8, size: loom.Vector2) !clay.ImageElementConfig {
         .source_dimensions = loom.vec2ToDims(size),
     };
 }
-
