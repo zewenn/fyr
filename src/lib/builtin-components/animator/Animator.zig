@@ -156,10 +156,10 @@ pub fn Update(self: *Self, _: *loom.Entity) !void {
         animation.incrementCurrentPercent(loom.toi32(interpolation_factor * 100));
     }
 
-    var clone = try loom.OwnedSlice(*Animation).fromArrayList(self.playing);
+    var clone = try loom.Array(*Animation).fromArrayList(self.playing);
     defer clone.deinit();
 
-    for (clone.slice) |item| {
+    for (clone.items) |item| {
         if (item.playing) continue;
 
         for (self.playing.items, 0..) |anim, index| {

@@ -78,8 +78,8 @@ pub fn unload(self: *Self) void {
         item.dispatchEvent(.end);
     }
 
-    const clone = loom.cloneToOwnedSlice(*loom.Entity, self.entities) catch return;
-    defer loom.allocators.generic().free(clone);
+    const clone = loom.Array(*loom.Entity).fromArrayList(self.entities) catch return;
+    defer clone.deinit();
 
     for (clone) |entity| {
         for (self.entities.items, 0..) |original, index| {
@@ -98,12 +98,12 @@ pub fn unload(self: *Self) void {
 pub fn execute(self: *Self) void {
     const is_tick = self.last_tick_at + 1.0 / loom.tof64(self.ticks_per_second) <= loom.time.appTime();
 
-    var new_entities_clone = loom.OwnedSlice(*Entity).fromArrayList(self.new_entities) catch loom.OwnedSlice(*Entity){ .slice = &.{} };
+    var new_entities_clone = loom.Array(*Entity).fromArrayList(self.new_entities) catch loom.Array(*Entity){ .items = &.{} };
     defer new_entities_clone.deinit();
 
     self.new_entities.clearAndFree();
 
-    for (new_entities_clone.slice) |entity| {
+    for (new_entities_clone.items) |entity| {
         if (entity.remove_next_frame) continue;
         self.entities.append(entity) catch continue;
 

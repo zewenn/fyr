@@ -299,7 +299,7 @@ pub inline fn coerceTo(comptime TypeTarget: type, value: anytype) ?TypeTarget {
                 boundcheckMinMax(TypeTarget, value),
             ),
             .float, .comptime_float => @intCast(
-                boundcheckMinMax(TypeTarget, @as(i113, @intFromFloat(@max(std.math.minInt(i113), @min(std.math.maxInt(i113), @round(value)))))),
+                boundcheckMinMax(TypeTarget, @as(i128, @intFromFloat(@max(std.math.minInt(i128), @min(std.math.maxInt(i128), @round(value)))))),
             ),
             .bool => @as(TypeTarget, @intFromBool(value)),
             .@"enum" => @as(TypeTarget, @intFromEnum(value)),
@@ -340,8 +340,8 @@ pub inline fn coerceTo(comptime TypeTarget: type, value: anytype) ?TypeTarget {
         },
         else => Catch: {
             std.log.warn(
-                "cannot change type of \"{any}\" to type \"{any}\" (fyr.changeType())",
-                .{ value, TypeTarget },
+                "cannot change type of \"{any}\" to type \"{any}\"",
+                .{ @TypeOf(value), TypeTarget },
             );
             break :Catch null;
         },
@@ -564,7 +564,7 @@ pub fn dimsToVec2(dims: Dimensions) Vector2 {
     };
 }
 
-fn ErrorFromOptional(comptime Optional: type) type {
+pub fn OptionalToError(comptime Optional: type) type {
     const typeinfo = @typeInfo(Optional);
 
     return switch (typeinfo) {
@@ -575,7 +575,7 @@ fn ErrorFromOptional(comptime Optional: type) type {
     };
 }
 
-pub fn ensureComponent(value: anytype) ErrorFromOptional(@TypeOf(value)) {
+pub fn ensureComponent(value: anytype) OptionalToError(@TypeOf(value)) {
     return value orelse err: {
         std.log.err("Component didn't load: {any}", .{@TypeOf(value)});
         break :err error.ComponentDidntLoad;
@@ -594,42 +594,4 @@ pub fn randColor() rl.Color {
 pub fn cloneToOwnedSlice(comptime T: type, list: std.ArrayList(T)) ![]T {
     var cloned = try list.clone();
     return try cloned.toOwnedSlice();
-}
-
-pub fn OwnedSlice(comptime T: type) type {
-    return struct {
-        const Self = @This();
-
-        slice: []T,
-        alive: bool = true,
-        allocator: Allocator = std.heap.smp_allocator,
-
-        pub fn init(base_slice: []const T) !Self {
-            var list = std.ArrayList(T).init(allocators.generic());
-            defer list.deinit();
-
-            for (base_slice) |item| {
-                try list.append(item);
-            }
-
-            return Self{
-                .slice = try list.toOwnedSlice(),
-                .allocator = allocators.generic(),
-            };
-        }
-
-        pub fn fromArrayList(list: std.ArrayList(T)) !Self {
-            return Self{
-                .slice = try cloneToOwnedSlice(T, list),
-                .allocator = list.allocator,
-            };
-        }
-
-        pub fn deinit(self: *Self) void {
-            if (!self.alive) return;
-
-            self.alive = false;
-            self.allocator.free(self.slice);
-        }
-    };
 }
