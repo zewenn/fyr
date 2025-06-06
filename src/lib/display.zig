@@ -11,6 +11,7 @@ pub const Renderer = struct {
         img_path: []const u8,
         tint: rl.Color,
     },
+    entity: ?*loom.Entity = null,
 };
 
 const BufferType = std.ArrayList(Renderer);
@@ -70,6 +71,17 @@ pub fn render() void {
                 item.transform.rotation,
                 loom.window.clear_color,
             );
+
+            if (item.entity) |entity| blk: {
+                const collider = entity.getComponent(loom.RectangleCollider) orelse break :blk;
+
+                const points = collider.points orelse break :blk;
+
+                rl.drawCircle(loom.toi32(points.A.x), loom.toi32(points.A.y), 2, rl.Color.pink);
+                rl.drawCircle(loom.toi32(points.B.x), loom.toi32(points.B.y), 2, rl.Color.pink);
+                rl.drawCircle(loom.toi32(points.C.x), loom.toi32(points.C.y), 2, rl.Color.pink);
+                rl.drawCircle(loom.toi32(points.D.x), loom.toi32(points.D.y), 2, rl.Color.pink);
+            }
         }
 
         rl.drawTexturePro(

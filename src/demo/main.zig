@@ -15,6 +15,18 @@ pub fn main() !void {
 
         pub fn Awake(entity: *loom.Entity) !void {
             std.log.debug("{s} Awake", .{entity.id});
+
+            const max: comptime_int = 14;
+
+            inline for (0..max) |row| {
+                inline for (0..max) |col| {
+                    const x: comptime_float = (@as(f32, @floatFromInt(col)) - @divFloor(max, 2)) * 256;
+                    const y: comptime_float = (@as(f32, @floatFromInt(row)) - @divFloor(max, 2)) * 256;
+
+                    const instance = try NewBox(.init(x, y)).makeInstance(loom.allocators.generic());
+                    try loom.summon(&.{instance});
+                }
+            }
         }
 
         pub fn Start(self: *Self, entity: *loom.Entity) !void {
@@ -127,20 +139,19 @@ pub fn main() !void {
         }
     };
 
-    const player = loom.Prefab.new("Player", .{
+    const player_new = loom.Prefab.new("Player", .{
         TestComponent{},
         loom.Renderer{
             .img_path = "logo_large.png",
         },
         loom.Transform{
             .position = loom.Vec3(0, 0, 0),
-            .scale = loom.Vec2(88, 32),
         },
-        loom.RectCollider.init(.{
-            .rect = loom.Rect(0, 0, 88, 32),
-            .dynamic = true,
+        loom.RectangleCollider{
+            .type = .dynamic,
+            .collider_transform = .{},
             .weight = 1,
-        }),
+        },
 
         loom.Animator.init(&.{
             .init("walk-left", 30, loom.interpolation.lerp, &.{
@@ -158,25 +169,7 @@ pub fn main() !void {
                 },
             }),
         }),
-        // loom.CameraTarget{},
-    });
-
-    const box = loom.Prefab.new("Box", .{
-        loom.Renderer.tile("img3.png", .init(88, 32)),
-        loom.Transform{
-            .position = loom.Vec3(100, 0, 0),
-            .scale = loom.Vec2(88 * 3, 32 * 2),
-        },
-        loom.RectCollider.init(.{
-            .rect = loom.Rect(0, 0, 88, 32),
-            .dynamic = true,
-            .weight = 2,
-            .onCollisionEnter = struct {
-                pub fn callback(_: *loom.Entity, other: *loom.Entity) !void {
-                    loom.eventloop.active_scene.?.removeEntityByUuid(other.uuid);
-                }
-            }.callback,
-        }),
+        loom.CameraTarget{},
     });
 
     loom.project({
@@ -190,15 +183,22 @@ pub fn main() !void {
     })({
         loom.scene("default")({
             loom.prefabs(.{
-                player,
-                box,
+                player_new,
             });
         });
+    });
+}
 
-        loom.scene("other")({
-            loom.prefabs(.{
-                player,
-            });
-        });
+pub fn NewBox(comptime position: loom.Vector2) loom.Prefab {
+    return loom.Prefab.new("Box", .{
+        loom.Renderer.tile("img3.png", .init(88, 32)),
+        loom.Transform{
+            .position = comptime loom.vec2ToVec3(position),
+        },
+        loom.RectangleCollider{
+            .type = .static,
+            .collider_transform = .{},
+            .weight = 1,
+        },
     });
 }

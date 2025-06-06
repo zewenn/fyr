@@ -59,7 +59,7 @@ pub fn add(self: *Self, event: Events, callback: FnType) void {
 pub fn callSafe(self: *Self, event: Events, entity: *Entity) void {
     if (!self.is_alive) return;
 
-    defer if (event == .end) {
+    defer if (event == .end and self.is_alive) {
         self.is_alive = false;
         std.c.free(self.cache);
     };
@@ -125,13 +125,22 @@ fn attachEvents(self: *Self, comptime T: type) void {
             const func = comptime @field(T, fn_name);
             const typeinfo = comptime @typeInfo(@TypeOf(func)).@"fn";
 
-            try switch (comptime determineFunctionType(T, typeinfo) orelse return) {
-                .generic => @call(.auto, func, .{ @as(*T, @ptrCast(@alignCast(cache))), entity }),
-                .reversed => @call(.auto, func, .{ entity, @as(*T, @ptrCast(@alignCast(cache))) }),
-                .self_only => @call(.auto, func, .{@as(*T, @ptrCast(@alignCast(cache)))}),
-                .entity_only => @call(.auto, func, .{entity}),
-                .empty => @call(.auto, func, .{}),
-            };
+            if (comptime (typeinfo.return_type.? == void))
+                switch (comptime determineFunctionType(T, typeinfo) orelse return) {
+                    .generic => @call(.auto, func, .{ @as(*T, @ptrCast(@alignCast(cache))), entity }),
+                    .reversed => @call(.auto, func, .{ entity, @as(*T, @ptrCast(@alignCast(cache))) }),
+                    .self_only => @call(.auto, func, .{@as(*T, @ptrCast(@alignCast(cache)))}),
+                    .entity_only => @call(.auto, func, .{entity}),
+                    .empty => @call(.auto, func, .{}),
+                }
+            else
+                try switch (comptime determineFunctionType(T, typeinfo) orelse return) {
+                    .generic => @call(.auto, func, .{ @as(*T, @ptrCast(@alignCast(cache))), entity }),
+                    .reversed => @call(.auto, func, .{ entity, @as(*T, @ptrCast(@alignCast(cache))) }),
+                    .self_only => @call(.auto, func, .{@as(*T, @ptrCast(@alignCast(cache)))}),
+                    .entity_only => @call(.auto, func, .{entity}),
+                    .empty => @call(.auto, func, .{}),
+                };
         }
 
         pub fn awake(cache: *anyopaque, entity: *Entity) !void {

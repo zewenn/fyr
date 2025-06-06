@@ -69,7 +69,7 @@ pub fn Start(self: *Self, entity: *loom.Entity) !void {
     }
 }
 
-pub fn Update(self: *Self) !void {
+pub fn Update(self: *Self, entity: *loom.Entity) !void {
     const display_cache: *DisplayCache = try loom.ensureComponent(self.display_cache);
     const transform: *Transform = try loom.ensureComponent(self.transform);
 
@@ -112,6 +112,7 @@ pub fn Update(self: *Self) !void {
             .img_path = self.img_path,
             .tint = self.tint,
         },
+        .entity = entity,
     });
 }
 

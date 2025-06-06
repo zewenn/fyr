@@ -81,7 +81,7 @@ pub fn unload(self: *Self) void {
     const clone = loom.Array(*loom.Entity).fromArrayList(self.entities) catch return;
     defer clone.deinit();
 
-    for (clone) |entity| {
+    for (clone.items) |entity| {
         for (self.entities.items, 0..) |original, index| {
             if (original.uuid != entity.uuid) continue;
 

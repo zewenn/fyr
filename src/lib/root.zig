@@ -32,6 +32,7 @@ pub const Dimensions = clay.Dimensions;
 pub const Transform = @import("builtin-components/Transform.zig");
 pub const Renderer = @import("builtin-components/Renderer.zig");
 pub const RectCollider = @import("builtin-components/collision.zig").RectCollider;
+pub const RectangleCollider = @import("builtin-components/collision.zig").RectangleCollider;
 pub const CameraTarget = @import("builtin-components/camera.zig").CameraTarget;
 pub const Animator = @import("builtin-components/animator/Animator.zig");
 pub const Animation = @import("builtin-components/animator/Animation.zig");

@@ -1,0 +1,6 @@
+
+x 2025-06-06 rewrite collision system
+
+fix removeComponent
+fix summoning mess
+change prefabs from comptime to runtime
